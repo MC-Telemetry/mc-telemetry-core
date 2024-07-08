@@ -10,13 +10,13 @@ credits="The OpenTelemetry team and KotlinForForge"
 authors="pixix4, ZincFox"
 description='''
 Monitor Minecraft with OpenTelemetry'''
-[[dependencies.integratedprometheus]]
+[[dependencies.mctelemetrycore]]
     modId="forge"
     mandatory=true
     versionRange="[38,)"
     ordering="NONE"
     side="BOTH"
-[[dependencies.integratedprometheus]]
+[[dependencies.mctelemetrycore]]
     modId="minecraft"
     mandatory=true
     versionRange="[1.18,1.19.3)"
