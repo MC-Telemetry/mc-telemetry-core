@@ -1,0 +1,24 @@
+modLoader="kotlinforforge"
+loaderVersion="[3,)"
+license='MIT'
+
+[[mods]]
+modId="mctelemetrycore"
+version="${file.jarVersion}"
+displayName="MC Telemetry Core"
+credits="The OpenTelemetry team and KotlinForForge"
+authors="pixix4, ZincFox"
+description='''
+Monitor Minecraft with OpenTelemetry'''
+[[dependencies.integratedprometheus]]
+    modId="forge"
+    mandatory=true
+    versionRange="[38,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.integratedprometheus]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.18,1.19.3)"
+    ordering="NONE"
+    side="BOTH"
