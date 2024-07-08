@@ -4,11 +4,11 @@ import net.minecraftforge.event.RegisterCommandsEvent
 import net.minecraftforge.fml.common.Mod
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext
 import org.apache.logging.log4j.Level
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import thedarkcolour.kotlinforforge.forge.FORGE_BUS
+import thedarkcolour.kotlinforforge.forge.MOD_BUS
 import thedarkcolour.kotlinforforge.forge.runForDist
 
 @Mod("mctelemetrycore")
@@ -18,7 +18,7 @@ object MCTelemetryCoreMod {
 
     init {
         LOGGER.log(Level.INFO, "Hello world!")
-        val bus = FMLJavaModLoadingContext.get().modEventBus
+        val bus = MOD_BUS
         FORGE_BUS.addListener(::onRegisterCommands)
 
         runForDist(
