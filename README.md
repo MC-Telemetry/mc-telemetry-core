@@ -1,3 +1,3 @@
-![MC Telemtry Banner](images/banner.png)
+![MC Telemetry Banner](images/banner.png)
 
 # mc-telemetry-core
