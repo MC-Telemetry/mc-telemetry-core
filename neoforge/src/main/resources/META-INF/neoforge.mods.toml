@@ -1,5 +1,5 @@
 modLoader = "kotlinforforge"
-loaderVersion = "[4,)"
+loaderVersion = "[5,)"
 issueTrackerURL = "https://github.com/MC-Telemetry/mc-telemetry-core/issues"
 license = "MIT"
 
@@ -13,11 +13,14 @@ Monitor Minecraft with OpenTelemetry'''
 #logoFile = ""
 
 [[dependencies.${mod_id}]]
-modId = "forge"
+modId = "neoforge"
 mandatory = true
-versionRange = "[${forge_version},)"
+versionRange = "[${neoforge_version},)"
 ordering = "NONE"
 side = "BOTH"
+
+[[mixins]]
+config = "mcotelcore.mixins.json"
 
 [[dependencies.${mod_id}]]
 modId = "minecraft"

@@ -28,10 +28,13 @@
       }
     ]
   },
-  "mixins": [],
+  "mixins": [
+    "mcotelcore.mixins.json"
+  ],
   "depends": {
-    "fabric": "*",
-    "minecraft": ">=${minecraft_version}",
+    "fabric-api": "*",
+    "java": ">=21",
+    "minecraft": "~${minecraft_version}",
     "architectury": ">=${architectury_version}",
     "fabric-language-kotlin": ">=${fabric_kotlin_version}"
   }

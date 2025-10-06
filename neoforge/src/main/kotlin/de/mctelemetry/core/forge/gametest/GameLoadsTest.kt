@@ -3,8 +3,8 @@ package de.mctelemetry.core.forge.gametest
 import de.mctelemetry.core.OTelCoreMod
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestHelper
-import net.minecraftforge.gametest.GameTestHolder
-import net.minecraftforge.gametest.PrefixGameTestTemplate
+import net.neoforged.neoforge.gametest.GameTestHolder
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate
 
 @GameTestHolder(OTelCoreMod.MOD_ID)
 @PrefixGameTestTemplate(false)
