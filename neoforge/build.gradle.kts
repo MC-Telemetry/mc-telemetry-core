@@ -23,11 +23,11 @@ loom {
             server()
             runDir = "gameTestRun"
 
-            property("forge.logging.console.level", "debug")
-            property("forge.logging.markers", "REGISTRIES")
-            property("forge.enabledGameTestNamespaces", MOD_ID)
-            property("forge.enableGameTest", "true")
-            property("forge.gameTestServer", "true")
+            property("neoforge.logging.console.level", "debug")
+            property("neoforge.logging.markers", "REGISTRIES")
+            property("neoforge.enabledGameTestNamespaces", MOD_ID)
+            property("neoforge.enableGameTest", "true")
+            property("neoforge.gameTestServer", "true")
         }
     }
 }

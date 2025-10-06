@@ -1,4 +1,4 @@
-package de.mctelemetry.core.forge.gametest
+package de.mctelemetry.core.neoforge.gametest
 
 import de.mctelemetry.core.OTelCoreMod
 import net.minecraft.gametest.framework.GameTest
