@@ -16,7 +16,11 @@ out
 # gradle
 build
 .gradle
+gradle/gradle-daemon-jvm.properties
 
 # other
 eclipse
 run
+
+/forge/gameTestRun
+/fabric/gameTestRun
