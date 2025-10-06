@@ -32,13 +32,19 @@ loom {
 
 tasks["check"].dependsOn("runGameTestServer")
 
-val common: Configuration by configurations.creating
-val shadowCommon: Configuration by configurations.creating
+val common: Configuration by configurations.creating {
+    this.isCanBeResolved = true
+    this.isCanBeConsumed = false
+}
+val shadowBundle: Configuration by configurations.creating {
+    this.isCanBeResolved = true
+    this.isCanBeConsumed = false
+}
 val developmentFabric: Configuration by configurations.getting
 
 configurations {
-    compileOnly.configure { extendsFrom(common) }
-    runtimeOnly.configure { extendsFrom(common) }
+    compileClasspath.configure { extendsFrom(common) }
+    runtimeClasspath.configure { extendsFrom(common) }
     developmentFabric.extendsFrom(common)
 }
 
@@ -51,7 +57,7 @@ dependencies {
     common(project(":common", "namedElements")) {
         isTransitive = false
     }
-    shadowCommon(project(":common", "transformProductionFabric")) {
+    shadowBundle(project(":common", "transformProductionFabric")) {
         isTransitive = false
     }
     // Fabric Kotlin
@@ -97,7 +103,7 @@ tasks.shadowJar {
     )) {
         relocate(pattern, "$relocatePrefix.$pattern")
     }
-    configurations = listOf(shadowCommon)
+    configurations = listOf(shadowBundle)
     archiveClassifier.set("dev-shadow")
 }
 

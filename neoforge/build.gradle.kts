@@ -45,8 +45,8 @@ val shadowBundle: Configuration by configurations.creating {
 val developmentNeoForge: Configuration by configurations.getting
 
 configurations {
-    compileOnly.configure { extendsFrom(common) }
-    runtimeOnly.configure { extendsFrom(common) }
+    compileClasspath.configure { extendsFrom(common) }
+    runtimeClasspath.configure { extendsFrom(common) }
     developmentNeoForge.extendsFrom(common)
 }
 
