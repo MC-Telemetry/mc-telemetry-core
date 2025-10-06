@@ -1,4 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.relocation.SimpleRelocator
+import de.undercouch.gradle.tasks.download.Download
+import de.undercouch.gradle.tasks.download.Verify
 import org.jetbrains.kotlin.gradle.utils.extendsFrom
 import java.nio.file.Paths
 import java.util.Properties
@@ -6,6 +8,7 @@ import java.util.jar.JarFile
 
 plugins {
     id("com.gradleup.shadow")
+    id("de.undercouch.download")
 }
 
 val MOD_ID: String = rootProject.property("mod_id").toString()
@@ -19,6 +22,14 @@ architectury {
 
 loom {
     runs {
+        named("server") {
+            vmArg("-javaagent:${rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar").get().asFile.absolutePath}")
+            environmentVariable("OTEL_JAVAAGENT_CONFIGURATION_FILE",rootProject.layout.projectDirectory.file("otel.properties"))
+        }
+        named("client") {
+            vmArg("-javaagent:${rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar").get().asFile.absolutePath}")
+            environmentVariable("OTEL_JAVAAGENT_CONFIGURATION_FILE",rootProject.layout.projectDirectory.file("otel.properties"))
+        }
         create("gameTestServer") {
             server()
             runDir = "gameTestRun"
@@ -74,6 +85,10 @@ dependencies {
     implementation("thedarkcolour:kotlinforforge-neoforge:${rootProject.property("kotlin_for_forge_version")}")
 
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
+}
+
+tasks.named("configureLaunch") {
+    dependsOn(rootProject.tasks.named("verifyOTelAgent"))
 }
 
 tasks.processResources {

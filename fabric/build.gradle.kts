@@ -22,6 +22,14 @@ architectury {
 
 loom {
     runs {
+        named("server") {
+            vmArg("-javaagent:${rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar").get().asFile.absolutePath}")
+            environmentVariable("OTEL_JAVAAGENT_CONFIGURATION_FILE",rootProject.layout.projectDirectory.file("otel.properties"))
+        }
+        named("client") {
+            vmArg("-javaagent:${rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar").get().asFile.absolutePath}")
+            environmentVariable("OTEL_JAVAAGENT_CONFIGURATION_FILE",rootProject.layout.projectDirectory.file("otel.properties"))
+        }
         create("gameTestServer") {
             server()
             this.property("fabric-api.gametest")
@@ -64,6 +72,10 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${rootProject.property("fabric_kotlin_version")}")
 
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
+}
+
+tasks.named("configureLaunch") {
+    dependsOn(rootProject.tasks.named("verifyOTelAgent"))
 }
 
 tasks.processResources {
