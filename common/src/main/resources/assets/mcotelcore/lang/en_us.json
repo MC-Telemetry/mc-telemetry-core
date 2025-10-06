@@ -1,3 +1,5 @@
 {
-  "item.mcotelcore.ruby": "Ruby"
+  "item.mcotelcore.ruby_block": "Ruby",
+  "block.mcotelcore.ruby_block": "Ruby",
+  "category.mcotelcore_tab": "MC Telemetry"
 }

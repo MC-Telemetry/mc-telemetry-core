@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "mcotelcore:item/ruby"
+    "model": "mcotelcore:item/ruby_block"
   }
 }
