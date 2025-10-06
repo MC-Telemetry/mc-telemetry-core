@@ -21,8 +21,6 @@ architectury {
 }
 
 loom {
-    accessWidenerPath.set(project(":common").loom.accessWidenerPath)
-
     runs {
         create("gameTestServer") {
             server()
@@ -104,7 +102,6 @@ tasks.shadowJar {
 }
 
 tasks.remapJar {
-    injectAccessWidener.set(true)
     inputFile.set(tasks.shadowJar.get().archiveFile)
     dependsOn(tasks.shadowJar)
     archiveClassifier.set(null as String?)
@@ -127,7 +124,7 @@ components.getByName("java") {
     }
 }
 
-tasks.create("configureGameTestServer") {
+tasks.register("configureGameTestServer") {
     val serverProperties = mapOf(
         "enable-command-block" to "true",
         "level-type" to "minecraft:flat",

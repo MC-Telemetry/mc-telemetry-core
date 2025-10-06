@@ -14,17 +14,10 @@ val relocatePrefix = (rootProject.property("relocate_prefix") as String)
 
 architectury {
     platformSetupLoomIde()
-    forge()
+    neoForge()
 }
 
 loom {
-    accessWidenerPath.set(project(":common").loom.accessWidenerPath)
-
-    forge.apply {
-        convertAccessWideners.set(true)
-        extraAccessWideners.add(loom.accessWidenerPath.get().asFile.name)
-    }
-
     runs {
         create("gameTestServer") {
             server()
@@ -41,14 +34,20 @@ loom {
 
 tasks["check"].dependsOn("runGameTestServer")
 
-val common: Configuration by configurations.creating
-val shadowCommon: Configuration by configurations.creating
-val developmentForge: Configuration by configurations.getting
+val common: Configuration by configurations.creating {
+    this.isCanBeResolved = true
+    this.isCanBeConsumed = false
+}
+val shadowBundle: Configuration by configurations.creating {
+    this.isCanBeResolved = true
+    this.isCanBeConsumed = false
+}
+val developmentNeoForge: Configuration by configurations.getting
 
 configurations {
     compileOnly.configure { extendsFrom(common) }
     runtimeOnly.configure { extendsFrom(common) }
-    developmentForge.extendsFrom(common)
+    developmentNeoForge.extendsFrom(common)
 }
 
 repositories {
@@ -57,18 +56,22 @@ repositories {
         name = "Kotlin for Forge"
         setUrl("https://thedarkcolour.github.io/KotlinForForge/")
     }
+    maven {
+        name = "NeoForged"
+        setUrl("https://maven.neoforged.net/releases")
+    }
 }
 
 dependencies {
-    forge("net.minecraftforge:forge:${rootProject.property("minecraft_version")}-${rootProject.property("forge_version")}")
+    neoForge("net.neoforged:neoforge:${rootProject.property("neoforge_version")}")
     // Remove the next line if you don't want to depend on the API
-    modApi("dev.architectury:architectury-forge:${rootProject.property("architectury_version")}")
+    modApi("dev.architectury:architectury-neoforge:${rootProject.property("architectury_version")}")
 
     common(project(":common", "namedElements")) { isTransitive = false }
-    shadowCommon(project(":common", "transformProductionForge")) { isTransitive = false }
+    shadowBundle(project(":common", "transformProductionNeoForge")) { isTransitive = false }
 
     // Kotlin For Forge
-    implementation("thedarkcolour:kotlinforforge:${rootProject.property("kotlin_for_forge_version")}")
+    implementation("thedarkcolour:kotlinforforge-neoforge:${rootProject.property("kotlin_for_forge_version")}")
 
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
 }
@@ -80,13 +83,13 @@ tasks.processResources {
 
         "mod_id" to rootProject.property("mod_id"),
         "minecraft_version" to rootProject.property("minecraft_version"),
-        "forge_version" to rootProject.property("forge_version"),
+        "neoforge_version" to rootProject.property("neoforge_version"),
         "architectury_version" to rootProject.property("architectury_version"),
         "kotlin_for_forge_version" to rootProject.property("kotlin_for_forge_version")
     )
     inputs.properties(expansionMap)
 
-    filesMatching("META-INF/mods.toml") {
+    filesMatching("META-INF/neoforge.mods.toml") {
         expand(expansionMap)
     }
 }
@@ -94,7 +97,7 @@ tasks.processResources {
 tasks.shadowJar {
     exclude("fabric.mod.json")
     exclude("architectury.common.json")
-    configurations = listOf(shadowCommon)
+    configurations = listOf(shadowBundle)
     dependencies {
         this.exclude {
             it.moduleGroup == "org.jetbrains.kotlin"
@@ -110,12 +113,10 @@ tasks.shadowJar {
             this.exclude("org.apache.**")
         }
     }
-    mergeServiceFiles()
     archiveClassifier.set("dev-shadow")
 }
 
 tasks.remapJar {
-    injectAccessWidener.set(true)
     inputFile.set(tasks.shadowJar.get().archiveFile)
     dependsOn(tasks.shadowJar)
     archiveClassifier.set(null as String?)
@@ -138,7 +139,7 @@ components.getByName("java") {
     }
 }
 
-tasks.create("configureGameTestServer") {
+tasks.register("configureGameTestServer") {
     val serverProperties = mapOf(
         "enable-command-block" to "true",
         "level-type" to "minecraft:flat",

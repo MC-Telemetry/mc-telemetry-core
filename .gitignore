@@ -22,5 +22,5 @@ gradle/gradle-daemon-jvm.properties
 eclipse
 run
 
-/forge/gameTestRun
+/neoforge/gameTestRun
 /fabric/gameTestRun
