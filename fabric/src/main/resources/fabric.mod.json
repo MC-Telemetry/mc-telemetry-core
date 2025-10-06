@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "MC Telemetry Core",
+  "description": "",
+  "authors": [
+    "Zincfox",
+    "pixix4"
+  ],
+  "contact": {
+    "homepage": "https://mctelemetry.de/",
+    "sources": "https://github.com/MC-Telemetry/mc-telemetry-core"
+  },
+  "license": "MIT",
+  "icon": "assets/mcotelcore/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "de.mctelemetry.core.fabric.OTelCoreModFabric"
+      }
+    ],
+    "fabric-gametest": [
+      {
+        "value": "de.mctelemetry.core.fabric.gametest.GameLoadsTest"
+      }
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabric": "*",
+    "minecraft": ">=${minecraft_version}",
+    "architectury": ">=${architectury_version}",
+    "fabric-language-kotlin": ">=${fabric_kotlin_version}"
+  }
+}
