@@ -1,14 +1,8 @@
-import com.github.jengelman.gradle.plugins.shadow.relocation.SimpleRelocator
-import de.undercouch.gradle.tasks.download.Download
-import de.undercouch.gradle.tasks.download.Verify
-import org.jetbrains.kotlin.gradle.utils.extendsFrom
 import java.nio.file.Paths
 import java.util.Properties
-import java.util.jar.JarFile
 
 plugins {
     id("com.gradleup.shadow")
-    id("de.undercouch.download")
 }
 
 val MOD_ID: String = rootProject.property("mod_id").toString()
