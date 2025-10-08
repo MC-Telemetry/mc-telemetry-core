@@ -23,15 +23,46 @@ architectury {
 loom {
     runs {
         named("server") {
-            vmArg("-javaagent:${rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar").get().asFile.absolutePath}")
-            environmentVariable("OTEL_JAVAAGENT_CONFIGURATION_FILE",rootProject.layout.projectDirectory.file("otel.properties"))
+            vmArg(
+                "-javaagent:${
+                    rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar")
+                        .get().asFile.absolutePath
+                }"
+            )
+            environmentVariable(
+                "OTEL_JAVAAGENT_CONFIGURATION_FILE",
+                rootProject.layout.projectDirectory.file("dev.otel.properties")
+            )
         }
         named("client") {
-            vmArg("-javaagent:${rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar").get().asFile.absolutePath}")
-            environmentVariable("OTEL_JAVAAGENT_CONFIGURATION_FILE",rootProject.layout.projectDirectory.file("otel.properties"))
+            vmArg(
+                "-javaagent:${
+                    rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar")
+                        .get().asFile.absolutePath
+                }"
+            )
+            environmentVariable(
+                "OTEL_JAVAAGENT_CONFIGURATION_FILE",
+                rootProject.layout.projectDirectory.file("dev.otel.properties")
+            )
         }
         create("gameTestServer") {
             server()
+
+            vmArg(
+                "-javaagent:${
+                    rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar")
+                        .get().asFile.absolutePath
+                }"
+            )
+            environmentVariable(
+                "OTEL_JAVAAGENT_CONFIGURATION_FILE",
+                rootProject.layout.projectDirectory.file("gameTest.otel.properties")
+            )
+            environmentVariable("OTEL_JAVAAGENT_EXTENSIONS",
+                                tasks.named("shadowJar").get().outputs.files.singleFile
+                                    .absolutePath.replace(Regex("""-all\.jar$"""),".jar"))
+
             this.property("fabric-api.gametest")
             runDir = "gameTestRun"
         }
@@ -72,6 +103,8 @@ dependencies {
     modImplementation("net.fabricmc:fabric-language-kotlin:${rootProject.property("fabric_kotlin_version")}")
 
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
+    common("io.opentelemetry:opentelemetry-sdk-metrics:$otelVersion")
+    shadowBundle("io.opentelemetry:opentelemetry-sdk-metrics:$otelVersion")
 }
 
 tasks.named("configureLaunch") {
