@@ -32,6 +32,7 @@ loom {
                 rootProject.project("common").tasks.named("jar").get()
                     .outputs.files.singleFile.absolutePath
             )
+            runDir = "serverRun"
         }
         named("client") {
             vmArg(
