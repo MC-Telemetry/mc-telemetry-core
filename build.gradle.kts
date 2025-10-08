@@ -2,6 +2,7 @@ import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.Verify
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
 import org.gradle.kotlin.dsl.register
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     java
@@ -63,6 +64,12 @@ allprojects {
     tasks.withType<JavaCompile> {
         options.encoding = "UTF-8"
         options.release.set(21)
+    }
+
+    tasks.withType<KotlinCompile> {
+        compilerOptions {
+            freeCompilerArgs.add("-Xcontext-parameters")
+        }
     }
 
     java {
