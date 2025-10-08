@@ -7,7 +7,7 @@ plugins {
     java
     kotlin("jvm") version "2.2.20"
     id("architectury-plugin") version "3.4-SNAPSHOT"
-    id("dev.architectury.loom") version "1.11-SNAPSHOT" apply false
+    id("dev.architectury.loom") version "1.11.445" apply false
     id("com.gradleup.shadow") version "8.3.8" apply false
     id("de.undercouch.download") version "5.6.0"
 }
