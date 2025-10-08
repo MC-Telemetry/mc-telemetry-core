@@ -33,6 +33,11 @@ loom {
                 "OTEL_JAVAAGENT_CONFIGURATION_FILE",
                 rootProject.layout.projectDirectory.file("dev.otel.properties")
             )
+            environmentVariable(
+                "OTEL_JAVAAGENT_EXTENSIONS",
+                rootProject.project("common").tasks.named("jar").get()
+                    .outputs.files.singleFile.absolutePath
+            )
         }
         named("client") {
             vmArg(
@@ -44,6 +49,11 @@ loom {
             environmentVariable(
                 "OTEL_JAVAAGENT_CONFIGURATION_FILE",
                 rootProject.layout.projectDirectory.file("dev.otel.properties")
+            )
+            environmentVariable(
+                "OTEL_JAVAAGENT_EXTENSIONS",
+                rootProject.project("common").tasks.named("jar").get()
+                    .outputs.files.singleFile.absolutePath
             )
         }
         create("gameTestServer") {
@@ -59,9 +69,11 @@ loom {
                 "OTEL_JAVAAGENT_CONFIGURATION_FILE",
                 rootProject.layout.projectDirectory.file("gameTest.otel.properties")
             )
-            environmentVariable("OTEL_JAVAAGENT_EXTENSIONS",
-                                tasks.named("shadowJar").get().outputs.files.singleFile
-                                    .absolutePath.replace(Regex("""-all\.jar$"""),".jar"))
+            environmentVariable(
+                "OTEL_JAVAAGENT_EXTENSIONS",
+                rootProject.project("common").tasks.named("jar").get()
+                    .outputs.files.singleFile.absolutePath
+            )
 
             this.property("fabric-api.gametest")
             runDir = "gameTestRun"
