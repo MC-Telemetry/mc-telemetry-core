@@ -1,4 +1,4 @@
-package de.mctelemetry.core.utils.commanddsl
+package de.mctelemetry.core.utils.dsl.commands
 
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.arguments.ArgumentType
@@ -20,21 +20,38 @@ interface ICommandDSLBuilder<S> {
 
     fun then(node: CommandNode<S>)
     fun then(builder: ArgumentBuilder<S, *>) = then(builder.build())
-    fun then(builder: ArgumentBuilder<S, *>, thenBlock: ICommandDSLBuilder<S>.() -> Unit)
 }
 
-fun ICommandDSLBuilder<CommandSourceStack>.literal(
+@CommandDSL
+inline fun ICommandDSLBuilder<CommandSourceStack>.then(
+    builder: ArgumentBuilder<CommandSourceStack, *>,
+    thenBlock: ICommandDSLBuilder<CommandSourceStack>.() -> Unit,
+) {
+    then(CommandDSLBuilder(builder).apply(thenBlock).build())
+}
+
+@CommandDSL
+inline fun ICommandDSLBuilder<CommandSourceStack>.literal(
     value: String,
     thenBlock: ICommandDSLBuilder<CommandSourceStack>.() -> Unit,
 ) = then(Commands.literal(value), thenBlock)
 
-fun ICommandDSLBuilder<CommandSourceStack>.argument(
+
+@CommandDSL
+inline fun ICommandDSLBuilder<CommandSourceStack>.argument(
     name: String,
     type: ArgumentType<*>,
     thenBlock: ICommandDSLBuilder<CommandSourceStack>.() -> Unit,
 ) = then(Commands.argument(name, type), thenBlock)
 
+@CommandDSL
 context (builder: ICommandDSLBuilder<CommandSourceStack>)
-operator fun String.invoke(thenBlock: ICommandDSLBuilder<CommandSourceStack>.() -> Unit) {
+inline operator fun String.invoke(thenBlock: ICommandDSLBuilder<CommandSourceStack>.() -> Unit) {
     builder.literal(this, thenBlock)
+}
+
+@CommandDSL
+context (builder: ICommandDSLBuilder<S>)
+operator fun <S> CommandNode<S>.unaryPlus() {
+    builder.then(this)
 }

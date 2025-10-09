@@ -2,7 +2,7 @@ package de.mctelemetry.core
 
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.exporters.metrics.MetricsAccessor
-import de.mctelemetry.core.utils.commanddsl.CommandDSLBuilder
+import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import dev.architectury.event.events.common.CommandRegistrationEvent
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -19,7 +19,7 @@ object OTelCoreMod {
     fun init() {
         debugMetrics()
         CommandRegistrationEvent.EVENT.register { evt,a,b ->
-            evt.root.addChild(CommandDSLBuilder.buildCommand("mcotel") {
+            evt.root.addChild(buildCommand("mcotel") {
                 then(CommandScrape().command)
             })
         }

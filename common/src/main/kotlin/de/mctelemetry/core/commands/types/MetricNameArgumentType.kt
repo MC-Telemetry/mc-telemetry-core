@@ -1,12 +1,11 @@
 package de.mctelemetry.core.commands.types
 
 import com.mojang.brigadier.StringReader
-import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.utils.Validators
 import net.minecraft.commands.synchronization.SingletonArgumentInfo
 
-object MetricNameArgumentType : ArgumentType<String> {
+object MetricNameArgumentType : SimpleArgumentTypeBase<String>() {
 
     val Info: SingletonArgumentInfo<MetricNameArgumentType> = SingletonArgumentInfo.contextFree { MetricNameArgumentType }
 
@@ -22,7 +21,7 @@ object MetricNameArgumentType : ArgumentType<String> {
         return EXAMPLES
     }
 
-    fun getMetricName(context: CommandContext<*>, name: String): String {
+    override fun getValue(context: CommandContext<*>, name: String): String {
         return context.getArgument(name, String::class.java)
     }
 }

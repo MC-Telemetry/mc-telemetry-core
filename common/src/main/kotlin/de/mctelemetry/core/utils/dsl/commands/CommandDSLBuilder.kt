@@ -1,4 +1,4 @@
-package de.mctelemetry.core.utils.commanddsl
+package de.mctelemetry.core.utils.dsl.commands
 
 import com.mojang.brigadier.Command
 import com.mojang.brigadier.builder.ArgumentBuilder
@@ -8,7 +8,8 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import java.util.function.Predicate
 
-class CommandDSLBuilder(
+@PublishedApi
+internal class CommandDSLBuilder(
     val argumentBuilder: ArgumentBuilder<CommandSourceStack, *>,
 ) : ICommandDSLBuilder<CommandSourceStack> {
 
@@ -28,27 +29,22 @@ class CommandDSLBuilder(
         argumentBuilder.then(node)
     }
 
-    override fun then(
-        builder: ArgumentBuilder<CommandSourceStack, *>,
-        thenBlock: ICommandDSLBuilder<CommandSourceStack>.() -> Unit,
-    ) {
-        then(CommandDSLBuilder(builder).apply(thenBlock).build())
-    }
-
     fun build(): CommandNode<CommandSourceStack> {
         return argumentBuilder.build()
     }
 
     companion object {
 
-        fun buildCommand(
+        @CommandDSL
+        inline fun buildCommand(
             name: String,
             builderBlock: ICommandDSLBuilder<CommandSourceStack>.() -> Unit,
         ): CommandNode<CommandSourceStack> {
             return CommandDSLBuilder(name).apply(builderBlock).build()
         }
 
-        fun buildCommandBuilder(
+        @CommandDSL
+        inline fun buildCommandBuilder(
             name: String,
             builderBlock: ICommandDSLBuilder<CommandSourceStack>.() -> Unit,
         ): LiteralArgumentBuilder<CommandSourceStack> {
