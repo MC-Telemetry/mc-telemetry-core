@@ -31,13 +31,14 @@ class ObjectMetricReader : MetricReader {
         private fun serializeMetricData(
             metricData: MetricData,
             attributesFilter: Map<String, String>? = null,
+            exact: Boolean = true,
         ): Array<Any> {
             return arrayOf(
                 metricData.name,
                 metricData.description,
                 metricData.unit,
                 metricData.type.name,
-                serializeMetricValues(metricData, attributesFilter),
+                serializeMetricValues(metricData, attributesFilter, exact),
             )
         }
 
@@ -50,16 +51,25 @@ class ObjectMetricReader : MetricReader {
             )
         }
 
-        private fun Attributes.match(attributesFilter: Map<String, String>?): Boolean {
+        private fun Attributes.match(attributesFilter: Map<String, String>?, exact: Boolean): Boolean {
             if (attributesFilter == null) return true
-            var remainingAttributes = attributesFilter.size
-            forEach { key, value ->
-                if (attributesFilter[key.key] == value.toString())
-                    remainingAttributes--
-                else
-                    remainingAttributes = Int.MAX_VALUE
+            if (exact) {
+                var remainingAttributes = attributesFilter.size
+                forEach { key, value ->
+                    if (attributesFilter[key.key] == value.toString())
+                        remainingAttributes--
+                    else
+                        remainingAttributes = Int.MAX_VALUE
+                }
+                return remainingAttributes == 0
+            } else {
+                if (attributesFilter.isEmpty()) return true
+                var failed = false
+                forEach { key, value ->
+                    failed = failed || (attributesFilter.getOrElse(key.key) { return@forEach } != value.toString())
+                }
+                return !failed
             }
-            return remainingAttributes == 0
         }
 
         private fun wrapMetricValue(
@@ -80,31 +90,37 @@ class ObjectMetricReader : MetricReader {
         private fun serializeMetricValues(
             metricData: MetricData,
             attributesFilter: Map<String, String>? = null,
+            exact: Boolean = true,
         ): Array<Array<Any>> {
             return when (metricData.type) {
                 MetricDataType.LONG_GAUGE -> metricData.longGaugeData.points.filter {
                     it.attributes.match(
-                        attributesFilter
+                        attributesFilter,
+                        exact,
                     )
                 }.mapArray { wrapMetricValue(it.attributes, it.value) }
                 MetricDataType.DOUBLE_GAUGE -> metricData.doubleGaugeData.points.filter {
                     it.attributes.match(
-                        attributesFilter
+                        attributesFilter,
+                        exact
                     )
                 }.mapArray { wrapMetricValue(it.attributes, it.value) }
                 MetricDataType.LONG_SUM -> metricData.longSumData.points.filter {
                     it.attributes.match(
-                        attributesFilter
+                        attributesFilter,
+                        exact
                     )
                 }.mapArray { wrapMetricValue(it.attributes, it.value) }
                 MetricDataType.DOUBLE_SUM -> metricData.doubleSumData.points.filter {
                     it.attributes.match(
-                        attributesFilter
+                        attributesFilter,
+                        exact
                     )
                 }.mapArray { wrapMetricValue(it.attributes, it.value) }
                 MetricDataType.SUMMARY -> metricData.summaryData.points.filter {
                     it.attributes.match(
-                        attributesFilter
+                        attributesFilter,
+                        exact
                     )
                 }.mapArray {
                     val quantileData = DoubleArray(it.values.size * 2)
@@ -115,7 +131,7 @@ class ObjectMetricReader : MetricReader {
                     wrapMetricValue(it.attributes, arrayOf(METRIC_OBJECT_TYPE_SUMMARY, it.count, it.sum, quantileData))
                 }
                 MetricDataType.HISTOGRAM -> metricData.histogramData.points.filter {
-                    it.attributes.match(attributesFilter)
+                    it.attributes.match(attributesFilter, exact)
                 }.mapArray {
                     val countData = DoubleArray(it.boundaries.size * 2 + 1)
                     // structure:
@@ -129,7 +145,7 @@ class ObjectMetricReader : MetricReader {
                     wrapMetricValue(it.attributes, arrayOf(METRIC_OBJECT_TYPE_HISTOGRAM, it.count, it.sum, countData))
                 }
                 MetricDataType.EXPONENTIAL_HISTOGRAM -> metricData.exponentialHistogramData.points.filter {
-                    it.attributes.match(attributesFilter)
+                    it.attributes.match(attributesFilter, exact)
                 }.mapArray {
                     wrapMetricValue(it.attributes, arrayOf<Any>(METRIC_OBJECT_TYPE_EXP_HISTOGRAM, it.count, it.sum))
                 }
@@ -189,30 +205,28 @@ class ObjectMetricReader : MetricReader {
         return serializeMetricData(data.firstOrNull { it.name == name } ?: return null)
     }
 
-    fun collectDataPoint(name: String, attributes: Array<String>): Array<Any>? {
+    fun collectDataPoint(name: String, filter: Array<Any>): Array<Any>? {
         ensureActive()
         val data = registration.collectAllMetrics()
-        val mapFilter: Map<String, String> = if (attributes.isEmpty()) emptyMap() else {
-            buildMap(attributes.size / 2) {
-                for (i in 0..<attributes.lastIndex step 2) {
-                    put(attributes[i], attributes[i + 1])
-                }
+        val exact = filter[0] as Boolean
+        val mapFilter: Map<String, String> = buildMap((filter.size - 1) / 2) {
+            for (i in 1..<filter.lastIndex step 2) {
+                put(filter[i] as String, filter[i + 1] as String)
             }
         }
-        return serializeMetricData(data.firstOrNull { it.name == name } ?: return null, mapFilter)
+        return serializeMetricData(data.firstOrNull { it.name == name } ?: return null, mapFilter, exact)
     }
 
-    fun collectDataPointValue(name: String, attributes: Array<String>): Any? {
+    fun collectDataPointValue(name: String, filter: Array<Any>): Any? {
         ensureActive()
         val data = registration.collectAllMetrics()
-        val mapFilter: Map<String, String> = if (attributes.isEmpty()) emptyMap() else {
-            buildMap(attributes.size / 2) {
-                for (i in 0..<attributes.lastIndex step 2) {
-                    put(attributes[i], attributes[i + 1])
-                }
+        val exact = filter[0] as Boolean
+        val mapFilter: Map<String, String> = buildMap((filter.size - 1) / 2) {
+            for (i in 1..<filter.lastIndex step 2) {
+                put(filter[i] as String, filter[i + 1] as String)
             }
         }
-        return serializeMetricValues(data.firstOrNull { it.name == name } ?: return null, mapFilter)
+        return serializeMetricValues(data.firstOrNull { it.name == name } ?: return null, mapFilter, exact)
             .firstOrNull()
             ?.get(0)
     }

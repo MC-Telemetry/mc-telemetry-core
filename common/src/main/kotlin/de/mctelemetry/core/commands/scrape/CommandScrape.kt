@@ -10,9 +10,17 @@ class CommandScrape(
     val metricsAccessor: MetricsAccessor? = MetricsAccessor.INSTANCE,
 ) {
 
+    companion object {
+        const val SCRAPE_ERROR_RESULT_NO_ACCESSOR = -1
+        const val SCRAPE_ERROR_RESULT_NO_METRIC = -2
+        const val SCRAPE_ERROR_RESULT_NO_DATA = -3
+        const val SCRAPE_ERROR_RESULT_BAD_DATA = -4
+    }
+
     val command: CommandNode<CommandSourceStack>
     val subCommandInfo = CommandScrapeInfo(metricsAccessor)
     val subCommandCardinality = CommandScrapeCardinality(metricsAccessor)
+    val subCommandValue = CommandScrapeValue(metricsAccessor)
 
     init {
         command = buildCommand("scrape") {
@@ -21,6 +29,7 @@ class CommandScrape(
             }
             +subCommandInfo.command
             +subCommandCardinality.command
+            +subCommandValue.command
         }
     }
 }

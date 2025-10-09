@@ -9,6 +9,8 @@ import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import de.mctelemetry.core.utils.dsl.components.append
+import de.mctelemetry.core.utils.dsl.components.onClickSuggestCommand
+import de.mctelemetry.core.utils.dsl.components.style
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.MutableComponent
 
@@ -24,7 +26,12 @@ class CommandScrapeInfo(val metricsAccessor: MetricsAccessor?) {
     }
 
     private fun infoComponent(definition: ObjectMetricReconverter.MetricDefinitionReadback): MutableComponent {
-        return buildComponent(definition.name) {
+        return buildComponent {
+            append(definition.name) {
+                style {
+                    onClickSuggestCommand("/mcotel scrape value matching ${definition.name}")
+                }
+            }
             val unit = definition.unit
             if (unit.isNotEmpty()) {
                 +" ("
@@ -49,7 +56,7 @@ class CommandScrapeInfo(val metricsAccessor: MetricsAccessor?) {
     fun commandScrapeInfo(context: CommandContext<CommandSourceStack>): Int = with(context) {
         if (metricsAccessor == null) {
             source.sendFailure(TranslationKeys.Errors.metricsAccessorMissing())
-            return -2
+            return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_ACCESSOR
         }
         val metricNameFilter: String? = MetricNameArgumentType["metric"]
         val definitions: Map<String, ObjectMetricReconverter.MetricDefinitionReadback> =
@@ -63,7 +70,7 @@ class CommandScrapeInfo(val metricsAccessor: MetricsAccessor?) {
         if (definitions.isEmpty()) {
             if (metricNameFilter != null) {
                 source.sendFailure(TranslationKeys.Commands.metricNameNotFound(metricNameFilter))
-                return -1
+                return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_METRIC
             } else {
                 source.sendSuccess(TranslationKeys.Commands::noMetrics, false)
                 return 0

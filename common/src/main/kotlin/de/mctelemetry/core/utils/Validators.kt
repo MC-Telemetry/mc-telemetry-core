@@ -1,53 +1,59 @@
 package de.mctelemetry.core.utils
 
-import com.mojang.brigadier.ImmutableStringReader
-import de.mctelemetry.core.TranslationKeys
+import com.mojang.brigadier.StringReader
+import com.mojang.brigadier.exceptions.CommandSyntaxException
 import de.mctelemetry.core.commands.CommandExceptions
-import de.mctelemetry.core.commands.createWithNullableContext
-import net.minecraft.network.chat.MutableComponent
+import net.minecraft.network.chat.Component
 
 object Validators {
 
-    fun validateMetricName(metricName: String): MutableComponent? {
-        if (metricName.isEmpty()) return TranslationKeys.Errors.metricNameEmpty()
+    fun parseOTelName(reader: StringReader, stopAtInvalid: Boolean = false): String {
+        val startCursor = reader.cursor
+        if (!reader.canRead() || reader.peek() == ' ') throw CommandExceptions.metricNameEmpty(reader)
+        val firstChar = reader.read()
+        if (firstChar !in 'a'..'z') throw CommandExceptions.metricNameBadStart(reader)
+        var lastChar = firstChar
         var previousWasSeparator = false
-        metricName.forEachIndexed { idx, char ->
+        while (reader.canRead()) {
+            val char = reader.read()
             when (char) {
                 in 'a'..'z', in '0'..'9' -> {
                     previousWasSeparator = false
                 }
                 '_', '.' -> {
                     if (previousWasSeparator) {
-                        return TranslationKeys.Errors.metricNameDoubleDelimiter()
+                        throw CommandExceptions.metricNameDoubleDelimiter(reader)
                     }
                     previousWasSeparator = true
                 }
-                else -> return TranslationKeys.Errors.metricNameInvalidChar(char, idx)
+                else -> {
+                    if(stopAtInvalid){
+                        reader.cursor--
+                        break
+                    }
+                    throw CommandExceptions.metricNameInvalidChar(char, reader.cursor - startCursor, reader)
+                }
             }
+            lastChar = char
         }
-        if (!metricName.first().isLetter()) return TranslationKeys.Errors.metricNameBadStart()
-        if (!metricName.last().isLetterOrDigit()) return TranslationKeys.Errors.metricNameBadEnd()
-        return null
+        if (!lastChar.isLetterOrDigit()) throw CommandExceptions.metricNameBadEnd(reader)
+        return reader.string.substring(startCursor, reader.cursor)
     }
 
-    fun requireValidMetricName(metricName: String, context: ImmutableStringReader? = null) {
-        if (metricName.isEmpty()) throw CommandExceptions.METRIC_NAME_EMPTY.createWithNullableContext(context)
-        var previousWasSeparator = false
-        metricName.forEachIndexed { idx, char ->
-            when (char) {
-                in 'a'..'z', in '0'..'9' -> {
-                    previousWasSeparator = false
-                }
-                '_', '.' -> {
-                    if (previousWasSeparator) {
-                        throw CommandExceptions.METRIC_NAME_DOUBLE_DELIMITER.createWithNullableContext(context)
-                    }
-                    previousWasSeparator = true
-                }
-                else -> throw CommandExceptions.METRIC_NAME_INVALID_CHAR.createWithNullableContext(context, char, idx)
+    fun parseOTelName(name: String, stopAtInvalid: Boolean = false): String {
+        return parseOTelName(StringReader(name), stopAtInvalid)
+    }
+
+    fun validateOTelName(name: String, stopAtInvalid: Boolean = false, forceBoxedMessage: Boolean = false): Component? {
+        try {
+            parseOTelName(name, stopAtInvalid)
+        } catch (e: CommandSyntaxException) {
+            val message = e.rawMessage
+            if (!forceBoxedMessage && message is Component) {
+                return message
             }
+            return Component.literal(e.message!!)
         }
-        if (!metricName.first().isLetter()) throw CommandExceptions.METRIC_NAME_BAD_START.createWithNullableContext(context)
-        if (!metricName.last().isLetterOrDigit()) throw CommandExceptions.METRIC_NAME_BAD_END.createWithNullableContext(context)
+        return null
     }
 }

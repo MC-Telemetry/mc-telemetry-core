@@ -20,11 +20,11 @@ object ObjectMetricReconverter {
         val data: Map<Map<String, String>, MetricValueReadback>,
     )
 
-    sealed class MetricValueReadback {
-        data class MetricLongValue(val value: Long) : MetricValueReadback()
-        data class MetricDoubleValue(val value: Double) : MetricValueReadback()
+    sealed class MetricValueReadback(val type: String) {
+        data class MetricLongValue(val value: Long) : MetricValueReadback("value_long")
+        data class MetricDoubleValue(val value: Double) : MetricValueReadback("value_double")
         data class MetricSummaryValue(val count: Long, val sum: Double, val quantiles: List<QuantileData>) :
-                MetricValueReadback() {
+                MetricValueReadback("summary") {
 
             data class QuantileData(
                 val quantile: Double,
@@ -37,12 +37,12 @@ object ObjectMetricReconverter {
             val sum: Double,
             val buckets: DoubleList,
             val counts: DoubleList,
-        ) : MetricValueReadback()
+        ) : MetricValueReadback("histogram")
 
         data class MetricExponentialHistogramValue(
             val count: Long,
             val sum: Double,
-        ) : MetricValueReadback()
+        ) : MetricValueReadback("exponential_histogram")
     }
 
     internal fun convertMetric(metricData: Array<Any>): MetricDataReadback {

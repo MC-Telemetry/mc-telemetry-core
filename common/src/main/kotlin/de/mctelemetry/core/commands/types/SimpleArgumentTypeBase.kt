@@ -1,7 +1,9 @@
 package de.mctelemetry.core.commands.types
 
+import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.context.CommandContext
+import com.mojang.brigadier.exceptions.CommandSyntaxException
 
 abstract class SimpleArgumentTypeBase<T> : ArgumentType<T> {
 
@@ -26,3 +28,9 @@ abstract class SimpleArgumentTypeBase<T> : ArgumentType<T> {
 
 fun <T> CommandContext<*>.getValue(name: String, type: SimpleArgumentTypeBase<T>): T = type.getValue(this, name)
 operator fun <T> CommandContext<*>.get(name: String, type: SimpleArgumentTypeBase<T>): T? = type.get(this, name)
+fun <T> ArgumentType<T>.parse(text: String): T = parse(StringReader(text))
+fun <T : Any> ArgumentType<T>.parseOrNull(text: String): T? = try {
+    parse(StringReader(text))
+} catch (_: CommandSyntaxException) {
+    null
+}
