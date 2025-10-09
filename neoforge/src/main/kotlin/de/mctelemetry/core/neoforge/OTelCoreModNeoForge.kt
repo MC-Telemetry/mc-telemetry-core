@@ -5,20 +5,27 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.commands.types.ArgumentTypes
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.commands.synchronization.ArgumentTypeInfos
+import net.minecraft.core.registries.Registries
 import net.neoforged.fml.common.Mod
+import net.neoforged.neoforge.registries.DeferredRegister
+import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
 
 @Mod(OTelCoreMod.MOD_ID)
 object OTelCoreModNeoForge {
 
     fun <A : ArgumentType<*>, T : ArgumentTypeInfo.Template<A>, I: ArgumentTypeInfo<A,T>>
-            ArgumentTypes.PreparedArgumentTypeRegistration<A,T,I>.register() {
+            ArgumentTypes.PreparedArgumentTypeRegistration<A,T,I>.register(defReg: DeferredRegister<ArgumentTypeInfo<*,*>>) {
         ArgumentTypeInfos.registerByClass<A,T,I>(infoClass, info)
+        defReg.register<I>(this.id.path) { -> info}
     }
 
     init {
         OTelCoreMod.init()
-        ArgumentTypes.register {
-            it.register()
+        DeferredRegister.create(Registries.COMMAND_ARGUMENT_TYPE, OTelCoreMod.MOD_ID).let { defReg ->
+            ArgumentTypes.register {
+                it.register(defReg)
+            }
+            defReg.register(MOD_BUS)
         }
     }
 }
