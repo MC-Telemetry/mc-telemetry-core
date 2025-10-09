@@ -12,6 +12,7 @@ object TranslationKeys {
         const val ERRORS_METRIC_NAME_BAD_START = "errors.mctelemetry.core.metric.name.bad_start"
         const val ERRORS_METRIC_NAME_BAD_END = "errors.mctelemetry.core.metric.name.bad_end"
         const val ERRORS_METRIC_NAME_DOUBLE_DELIMITER = "errors.mctelemetry.core.metric.name.double_delimiter"
+        const val ERRORS_METRIC_RESPONSE_TYPE_UNEXPECTED = "errors.mctelemetry.core.metric.response_type.unexpected"
 
         fun metricsAccessorMissing(): MutableComponent =
             Component.translatableWithFallback(
@@ -50,21 +51,41 @@ object TranslationKeys {
                 ERRORS_METRIC_NAME_DOUBLE_DELIMITER,
                 "Metric name must not have two delimiter ('.' and '_') in a row"
             )
+
+        fun metricResponseTypeUnexpected(metricName: String, actualType: String, expectedType: String): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_METRIC_RESPONSE_TYPE_UNEXPECTED,
+                $$"Unexpected metric response type for %1$s: Got %2$s but expected %3$s",
+                metricName,
+                actualType,
+                expectedType,
+            )
     }
 
     object Commands {
 
         const val COMMANDS_METRIC_NAME_NOT_FOUND = "commands.mctelemetry.core.metric.name.not_found"
+        const val COMMANDS_METRIC_DATAPOINT_NOT_FOUND = "commands.mctelemetry.core.metric.datapoint.not_found"
         const val COMMANDS_METRIC_NONE = "commands.mctelemetry.core.metric.none"
         const val COMMANDS_MCOTEL_SCRAPE_INFO_SUCCESS = "commands.mctelemetry.core.mcotel.scrape.info.success"
         const val COMMANDS_MCOTEL_SCRAPE_CARDINALITY_SUCCESS =
             "commands.mctelemetry.core.mcotel.scrape.cardinality.success"
+        const val COMMANDS_MCOTEL_SCRAPE_VALUE_SUCCESS =
+            "commands.mctelemetry.core.mcotel.scrape.value.success"
 
         fun metricNameNotFound(name: String): MutableComponent =
             Component.translatableWithFallback(
                 COMMANDS_METRIC_NAME_NOT_FOUND,
                 $$"Metric not found: %1$s",
                 name
+            )
+
+        fun metricDatapointNotFound(name: String, labelMap: Map<String,String>): MutableComponent =
+            Component.translatableWithFallback(
+                COMMANDS_METRIC_DATAPOINT_NOT_FOUND,
+                $$"Datapoint not found: %1$s with %2$s",
+                name,
+                labelMap.toString()
             )
 
         fun noMetrics(): MutableComponent =
@@ -86,6 +107,14 @@ object TranslationKeys {
                 $$"Found %1$s metrics with a combined cardinality of %2$s",
                 count,
                 totalCardinality
+            )
+
+        fun scrapeValueSuccess(count: Int, sum: Double): MutableComponent =
+            Component.translatableWithFallback(
+                COMMANDS_MCOTEL_SCRAPE_VALUE_SUCCESS,
+                $$"Found %1$s data-points with a sum of %2$s",
+                count,
+                sum
             )
     }
 }

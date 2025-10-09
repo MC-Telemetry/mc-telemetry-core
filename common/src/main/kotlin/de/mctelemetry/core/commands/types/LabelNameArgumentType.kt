@@ -7,30 +7,31 @@ import de.mctelemetry.core.utils.Validators
 import net.minecraft.commands.synchronization.SingletonArgumentInfo
 import net.minecraft.resources.ResourceLocation
 
-object MetricNameArgumentType : SimpleArgumentTypeBase<String>() {
-
+object LabelNameArgumentType : SimpleArgumentTypeBase<String>() {
 
     val registration = ArgumentTypes.PreparedArgumentTypeRegistration(
-        ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "metric_name"),
+        ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "label_name"),
         this,
-        SingletonArgumentInfo.contextFree { MetricNameArgumentType },
+        SingletonArgumentInfo.contextFree { LabelNameArgumentType }
     )
 
     val examples = listOf(
-        "jvm.memory.used",
-        "jvm.gc.duration",
-        "jvm.class.loaded"
+        "job",
+        "item",
+        "jvm.memory.pool.name",
+        "jvm.memory.type",
+        "jvm.gc.cause"
     )
 
     override fun parse(reader: StringReader): String {
         return Validators.parseOTelName(reader, stopAtInvalid = true)
     }
 
-    override fun getExamples(): Collection<String> {
-        return examples
-    }
-
     override fun getValue(context: CommandContext<*>, name: String): String {
         return context.getArgument(name, String::class.java)
+    }
+
+    override fun getExamples(): Collection<String> {
+        return examples
     }
 }

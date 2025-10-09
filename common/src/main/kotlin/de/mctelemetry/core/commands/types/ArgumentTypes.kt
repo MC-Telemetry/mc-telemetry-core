@@ -1,7 +1,6 @@
 package de.mctelemetry.core.commands.types
 
 import com.mojang.brigadier.arguments.ArgumentType
-import de.mctelemetry.core.OTelCoreMod
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.resources.ResourceLocation
 
@@ -38,7 +37,10 @@ object ArgumentTypes {
             }
 
     val ALL_CUSTOM: Collection<PreparedArgumentTypeRegistration<*,*,*>> = listOf(
-        PreparedArgumentTypeRegistration(ResourceLocation.tryBuild(OTelCoreMod.MOD_ID,"metricname")!!, MetricNameArgumentType, MetricNameArgumentType.Info)
+        MetricNameArgumentType.registration,
+        LabelNameArgumentType.registration,
+        LabelStringMapArgumentType.registration,
+        LabelValueArgumentType.registration,
     )
     inline fun register(registrationBlock: (PreparedArgumentTypeRegistration<*, *, *>) -> Unit) {
         ALL_CUSTOM.forEach(registrationBlock)

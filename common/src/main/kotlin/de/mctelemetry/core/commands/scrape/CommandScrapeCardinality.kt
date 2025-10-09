@@ -10,6 +10,7 @@ import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import de.mctelemetry.core.utils.dsl.components.append
+import de.mctelemetry.core.utils.dsl.components.onClickSuggestCommand
 import de.mctelemetry.core.utils.dsl.components.onHoverShowText
 import de.mctelemetry.core.utils.dsl.components.style
 import net.minecraft.commands.CommandSourceStack
@@ -67,7 +68,12 @@ class CommandScrapeCardinality(val metricsAccessor: MetricsAccessor?) {
                 +"0"
             }
         }
-        return buildComponent(name) {
+        return buildComponent {
+            append(name) {
+                style {
+                    onClickSuggestCommand("/mcotel scrape value matching $name")
+                }
+            }
             +"["
             var isFirst = true
             cardinality.forEach { (k, v) ->
@@ -90,7 +96,7 @@ class CommandScrapeCardinality(val metricsAccessor: MetricsAccessor?) {
     fun commandScrapeCardinality(context: CommandContext<CommandSourceStack>): Int = with(context) {
         if (metricsAccessor == null) {
             source.sendFailure(TranslationKeys.Errors.metricsAccessorMissing())
-            return -2
+            return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_ACCESSOR
         }
         val metricNameFilter = MetricNameArgumentType["metric"]
         val data: Map<String, ObjectMetricReconverter.MetricDataReadback> =
@@ -120,7 +126,7 @@ class CommandScrapeCardinality(val metricsAccessor: MetricsAccessor?) {
         if (data.isEmpty()) {
             if (metricNameFilter != null) {
                 source.sendFailure(TranslationKeys.Commands.metricNameNotFound(metricNameFilter))
-                return -1
+                return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_METRIC
             } else {
                 source.sendSuccess(TranslationKeys.Commands::noMetrics, false)
                 return 0

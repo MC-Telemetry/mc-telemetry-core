@@ -14,8 +14,8 @@ class MetricsAccessor(
     private val collectDefinitions: Supplier<Array<Array<String>>>,
     private val collectDefinition: Function<String, Array<String>?>,
     private val collectNamed: Function<String, Array<Any>?>,
-    private val collectDataPoint: BiFunction<String, Array<String>, Array<Any>?>,
-    private val collectDataPointValue: BiFunction<String, Array<String>, Any?>,
+    private val collectDataPoint: BiFunction<String, Array<Any>, Array<Any>?>,
+    private val collectDataPointValue: BiFunction<String, Array<Any>, Any?>,
 ) {
 
     companion object {
@@ -34,8 +34,8 @@ class MetricsAccessor(
         private lateinit var collectDefinitions: Supplier<Array<Array<String>>>
         private lateinit var collectDefinition: Function<String, Array<String>?>
         private lateinit var collectNamed: Function<String, Array<Any>?>
-        private lateinit var collectDataPoint: BiFunction<String, Array<String>, Array<Any>?>
-        private lateinit var collectDataPointValue: BiFunction<String, Array<String>, Any?>
+        private lateinit var collectDataPoint: BiFunction<String, Array<Any>, Array<Any>?>
+        private lateinit var collectDataPointValue: BiFunction<String, Array<Any>, Any?>
 
 
         private lateinit var _INSTANCE: MetricsAccessor
@@ -51,8 +51,8 @@ class MetricsAccessor(
                     collectDefinitions = callbackArray[1] as Supplier<Array<Array<String>>>,
                     collectDefinition = callbackArray[2] as Function<String, Array<String>?>,
                     collectNamed = callbackArray[3] as Function<String, Array<Any>?>,
-                    collectDataPoint = callbackArray[4] as BiFunction<String, Array<String>, Array<Any>?>,
-                    collectDataPointValue = callbackArray[5] as BiFunction<String, Array<String>, Any?>,
+                    collectDataPoint = callbackArray[4] as BiFunction<String, Array<Any>, Array<Any>?>,
+                    collectDataPointValue = callbackArray[5] as BiFunction<String, Array<Any>, Any?>,
                 )
                 return _INSTANCE
             }
@@ -114,8 +114,8 @@ class MetricsAccessor(
             collectDefinitions: Supplier<Array<Array<String>>>,
             collectDefinition: Function<String, Array<String>?>,
             collectNamed: Function<String, Array<Any>?>,
-            collectDataPoint: BiFunction<String, Array<String>, Array<Any>?>,
-            collectDataPointValue: BiFunction<String, Array<String>, Any?>,
+            collectDataPoint: BiFunction<String, Array<Any>, Array<Any>?>,
+            collectDataPointValue: BiFunction<String, Array<Any>, Any?>,
         ) {
             val syncClassLoader = getSynchronizationClassLoader()
             if (syncClassLoader != Companion::class.java.classLoader) {
@@ -182,58 +182,75 @@ class MetricsAccessor(
         return ObjectMetricReconverter.convertMetric(collectNamed.apply(name) ?: return null)
     }
 
-    fun collectDataPoint(name: String, attributes: Map<String, String>): ObjectMetricReconverter.MetricDataReadback? {
-        val attributeArray = arrayOfNulls<String>(attributes.size * 2)
-        var i = 0
+    fun collectDataPoint(
+        name: String,
+        attributes: Map<String, String>,
+        exact: Boolean = true,
+    ): ObjectMetricReconverter.MetricDataReadback? {
+        val filterArray = arrayOfNulls<Any>(1+attributes.size * 2)
+        filterArray[0] = exact
+        var i = 1
         attributes.forEach {
-            attributeArray[i++] = it.key
-            attributeArray[i++] = it.value
+            filterArray[i++] = it.key
+            filterArray[i++] = it.value
         }
         @Suppress("UNCHECKED_CAST")
         return ObjectMetricReconverter.convertMetric(
-            collectDataPoint.apply(name, attributeArray as Array<String>) ?: return null
+            collectDataPoint.apply(name, filterArray as Array<Any>) ?: return null
         )
     }
 
-    fun collectDataPoint(name: String, attributes: Attributes): ObjectMetricReconverter.MetricDataReadback? {
-        val attributeArray = arrayOfNulls<String>(attributes.size() * 2)
-        var i = 0
+    fun collectDataPoint(
+        name: String,
+        attributes: Attributes,
+        exact: Boolean = true,
+    ): ObjectMetricReconverter.MetricDataReadback? {
+        val filterArray = arrayOfNulls<Any>(1+attributes.size() * 2)
+        filterArray[0] = exact
+        var i = 1
         attributes.forEach { key, value ->
-            attributeArray[i++] = key.key
-            attributeArray[i++] = value.toString()
+            filterArray[i++] = key.key
+            filterArray[i++] = value.toString()
         }
         @Suppress("UNCHECKED_CAST")
         return ObjectMetricReconverter.convertMetric(
-            collectDataPoint.apply(name, attributeArray as Array<String>) ?: return null
+            collectDataPoint.apply(name, filterArray as Array<Any>) ?: return null
         )
     }
 
     fun collectDataPointValue(
         name: String,
         attributes: Map<String, String>,
+        exact: Boolean = true,
     ): ObjectMetricReconverter.MetricValueReadback? {
-        val attributeArray = arrayOfNulls<String>(attributes.size * 2)
-        var i = 0
+        val filterArray = arrayOfNulls<Any>(1+attributes.size * 2)
+        filterArray[0] = exact
+        var i = 1
         attributes.forEach {
-            attributeArray[i++] = it.key
-            attributeArray[i++] = it.value
+            filterArray[i++] = it.key
+            filterArray[i++] = it.value
         }
         @Suppress("UNCHECKED_CAST")
         return ObjectMetricReconverter.convertMetricDataPointValue(
-            collectDataPointValue.apply(name, attributeArray as Array<String>) ?: return null
+            collectDataPointValue.apply(name, filterArray as Array<Any>) ?: return null
         )
     }
 
-    fun collectDataPointValue(name: String, attributes: Attributes): ObjectMetricReconverter.MetricValueReadback? {
-        val attributeArray = arrayOfNulls<String>(attributes.size() * 2)
-        var i = 0
+    fun collectDataPointValue(
+        name: String,
+        attributes: Attributes,
+        exact: Boolean = true,
+    ): ObjectMetricReconverter.MetricValueReadback? {
+        val filterArray = arrayOfNulls<Any>(1+attributes.size() * 2)
+        filterArray[0] = exact
+        var i = 1
         attributes.forEach { key, value ->
-            attributeArray[i++] = key.key
-            attributeArray[i++] = value.toString()
+            filterArray[i++] = key.key
+            filterArray[i++] = value.toString()
         }
         @Suppress("UNCHECKED_CAST")
         return ObjectMetricReconverter.convertMetricDataPointValue(
-            collectDataPointValue.apply(name, attributeArray as Array<String>) ?: return null
+            collectDataPointValue.apply(name, filterArray as Array<Any>) ?: return null
         )
     }
 }

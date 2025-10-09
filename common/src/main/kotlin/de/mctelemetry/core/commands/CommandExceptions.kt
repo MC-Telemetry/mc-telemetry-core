@@ -19,6 +19,18 @@ object CommandExceptions {
     val METRIC_NAME_BAD_START = SimpleCommandExceptionType(TranslationKeys.Errors.metricNameBadStart())
     val METRIC_NAME_BAD_END = SimpleCommandExceptionType(TranslationKeys.Errors.metricNameBadEnd())
     val METRIC_NAME_DOUBLE_DELIMITER = SimpleCommandExceptionType(TranslationKeys.Errors.metricNameDoubleDelimiter())
+
+    fun metricNameEmpty(reader: ImmutableStringReader? = null): CommandSyntaxException =
+        METRIC_NAME_EMPTY.createWithNullableContext(reader)
+    fun metricNameInvalidChar(char: Char, index: Int, reader: ImmutableStringReader?=null): CommandSyntaxException =
+        METRIC_NAME_INVALID_CHAR.createWithNullableContext(reader, char, index)
+    fun metricNameBadStart(reader: ImmutableStringReader? = null): CommandSyntaxException =
+        METRIC_NAME_BAD_START.createWithNullableContext(reader)
+    fun metricNameBadEnd(reader: ImmutableStringReader? = null): CommandSyntaxException =
+        METRIC_NAME_BAD_END.createWithNullableContext(reader)
+    fun metricNameDoubleDelimiter(reader: ImmutableStringReader? = null): CommandSyntaxException =
+        METRIC_NAME_DOUBLE_DELIMITER.createWithNullableContext(reader)
+
 }
 
 fun SimpleCommandExceptionType.createWithNullableContext(reader: ImmutableStringReader?): CommandSyntaxException {
