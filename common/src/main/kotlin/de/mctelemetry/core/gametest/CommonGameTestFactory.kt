@@ -1,6 +1,7 @@
 package de.mctelemetry.core.gametest
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.gametest.commands.mcotel.scrape.ScrapeInfoCommandCommonTest
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestGenerator
 import net.minecraft.gametest.framework.StructureUtils
@@ -14,6 +15,7 @@ class CommonGameTestFactory {
         private val testClasses: List<Class<*>> = listOf(
             GameLoadsCommonTest::class.java,
             MetricScrapeCommonTest::class.java,
+            ScrapeInfoCommandCommonTest::class.java,
         )
 
         @GameTestGenerator
@@ -47,7 +49,7 @@ class CommonGameTestFactory {
                             null
                         else
                             instance
-                        val testBaseName = "${clazz.simpleName}.${met.name}".lowercase()
+                        val testBaseName = "${clazz.simpleName}.${met.name}"
                         val isMultiple = testAnnotations.size > 1
                         return@mapNotNull testAnnotations.mapIndexed { idx, annotation ->
                             val testName = if (isMultiple) "${testBaseName}.$idx" else testBaseName

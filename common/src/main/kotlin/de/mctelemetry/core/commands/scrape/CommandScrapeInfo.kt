@@ -11,6 +11,7 @@ import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.b
 import de.mctelemetry.core.utils.dsl.components.append
 import de.mctelemetry.core.utils.dsl.components.onClickSuggestCommand
 import de.mctelemetry.core.utils.dsl.components.style
+import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.MutableComponent
 
@@ -55,8 +56,7 @@ class CommandScrapeInfo(val metricsAccessor: MetricsAccessor?) {
 
     fun commandScrapeInfo(context: CommandContext<CommandSourceStack>): Int = with(context) {
         if (metricsAccessor == null) {
-            source.sendFailure(TranslationKeys.Errors.metricsAccessorMissing())
-            return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_ACCESSOR
+            source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
         }
         val metricNameFilter: String? = MetricNameArgumentType["metric"]
         val definitions: Map<String, ObjectMetricReconverter.MetricDefinitionReadback> =
@@ -69,8 +69,10 @@ class CommandScrapeInfo(val metricsAccessor: MetricsAccessor?) {
             }
         if (definitions.isEmpty()) {
             if (metricNameFilter != null) {
-                source.sendFailure(TranslationKeys.Commands.metricNameNotFound(metricNameFilter))
-                return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_METRIC
+                source.sendFailureAndThrow(
+                    TranslationKeys.Commands.metricNameNotFound(metricNameFilter),
+                    ::NoSuchElementException
+                )
             } else {
                 source.sendSuccess(TranslationKeys.Commands::noMetrics, false)
                 return 0
