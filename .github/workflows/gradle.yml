@@ -55,34 +55,34 @@ jobs:
 
     - name: Check
       id: check
-      run: ./gradlew :$project:check
+      run: ./gradlew :${{matrix.project}}:check
     - name: Upload GameTest logs
       uses: actions/upload-artifact@v4
       if: ${{ success() || (failure() && steps.check.outcome == 'failure') }}
       with:
         name: ${{project}}-gametest-logs
         path: |
-          $project/gameTestRun/logs/latest.log
-          $project/gameTestRun/logs/debug.log
+          ${{matrix.project}}/gameTestRun/logs/latest.log
+          ${{matrix.project}}/gameTestRun/logs/debug.log
         if-no-files-found: error
     - name: Upload GameTest world
       uses: actions/upload-artifact@v4
       if: ${{ failure() && steps.check.outcome == 'failure' }}
       with:
-        name: ${{project}}-gametest-world
+        name: ${{matrix.project}}-gametest-world
         path: |
-          $project/gameTestRun/world/
+          ${{matrix.project}}/gameTestRun/world/
         retention-days: 3
         if-no-files-found: error
 
     - name: Build
-      run: ./gradlew :${{project}}:build -x :${{project}}:check
+      run: ./gradlew :${{matrix.project}}:build -x :${{matrix.project}}:check
     - name: Upload Build result
       uses: actions/upload-artifact@v4
       with:
-        name: ${{project}}-gametest-world
+        name: ${{matrix.project}}-gametest-world
         path: |
-          $project/build/libs/
+          ${{matrix.project}}/build/libs/
         retention-days: 1
 
 
