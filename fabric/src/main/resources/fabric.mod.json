@@ -24,10 +24,7 @@
     ],
     "fabric-gametest": [
       {
-        "value": "de.mctelemetry.core.fabric.gametest.GameLoadsTest"
-      },
-      {
-        "value": "de.mctelemetry.core.fabric.gametest.MetricScrapeTest"
+        "value": "de.mctelemetry.core.gametest.CommonGameTestFactory"
       }
     ]
   },
