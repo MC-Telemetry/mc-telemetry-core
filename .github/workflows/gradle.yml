@@ -60,7 +60,7 @@ jobs:
       uses: actions/upload-artifact@v4
       if: ${{ success() || (failure() && steps.check.outcome == 'failure') }}
       with:
-        name: ${{project}}-gametest-logs
+        name: ${{matrix.project}}-gametest-logs
         path: |
           ${{matrix.project}}/gameTestRun/logs/latest.log
           ${{matrix.project}}/gameTestRun/logs/debug.log
