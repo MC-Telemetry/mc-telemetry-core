@@ -1,12 +1,16 @@
 package de.mctelemetry.core
 
+import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.exporters.metrics.MetricsAccessor
+import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import dev.architectury.event.events.common.CommandRegistrationEvent
 import dev.architectury.registry.CreativeTabRegistry
 import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
+import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.metrics.Meter
 import java.util.function.Supplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
@@ -24,18 +28,12 @@ object OTelCoreMod {
 
     val logger: Logger = LogManager.getLogger(MOD_ID)
 
+    internal val meter: Meter by lazy {
+        GlobalOpenTelemetry.getMeter("minecraft.mod.${MOD_ID}")
+    }
+
     val TABS: DeferredRegister<CreativeModeTab> = DeferredRegister.create(MOD_ID, Registries.CREATIVE_MODE_TAB)
-    val BLOCKS: DeferredRegister<Block> = DeferredRegister.create(MOD_ID, Registries.BLOCK)
-    val ITEMS: DeferredRegister<Item> = DeferredRegister.create(MOD_ID, Registries.ITEM);
-
     val OTEL_TAB: RegistrySupplier<CreativeModeTab>
-
-    val RUBY_BLOCK: RegistrySupplier<Block> = registerBlock("ruby_block", {
-        Block(BlockBehaviour.Properties.of())
-    })
-    val RUBY: RegistrySupplier<Item> = registerItem("ruby_block", {
-        BlockItem(RUBY_BLOCK.get(), Item.Properties().`arch$tab`(OTEL_TAB))
-    })
 
     init {
         OTEL_TAB = TABS.register(
@@ -43,7 +41,7 @@ object OTelCoreMod {
             {
                 CreativeTabRegistry.create(
                     Component.translatable("category.mcotelcore_tab"),
-                    Supplier { ItemStack(RUBY) }
+                    Supplier { ItemStack(OTelCoreModItems.RUBY_BLOCK) }
                 )
             }
         )
@@ -51,8 +49,8 @@ object OTelCoreMod {
 
     fun init() {
         TABS.register()
-        BLOCKS.register()
-        ITEMS.register()
+        OTelCoreModBlocks.init()
+        OTelCoreModItems.init()
 
         debugMetrics()
         CommandRegistrationEvent.EVENT.register { evt, a, b ->
@@ -60,14 +58,6 @@ object OTelCoreMod {
                 then(CommandScrape().command)
             })
         }
-    }
-
-    fun registerItem(name: String, item: Supplier<Item>): RegistrySupplier<Item> {
-        return ITEMS.register(ResourceLocation.fromNamespaceAndPath(MOD_ID, name), item);
-    }
-
-    fun registerBlock(name: String, block: Supplier<Block?>?): RegistrySupplier<Block> {
-        return BLOCKS.register(ResourceLocation.fromNamespaceAndPath(MOD_ID, name), block)
     }
 
     init {

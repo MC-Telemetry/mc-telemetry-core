@@ -8,8 +8,6 @@ import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
 
 object OTelCoreModFabric : ModInitializer {
-
-
     fun <A : ArgumentType<*>, T : ArgumentTypeInfo.Template<A>, I: ArgumentTypeInfo<A,T>>
             ArgumentTypes.PreparedArgumentTypeRegistration<A,T,I>.register() {
         ArgumentTypeRegistry.registerArgumentType(
@@ -21,6 +19,8 @@ object OTelCoreModFabric : ModInitializer {
 
     override fun onInitialize() {
         OTelCoreMod.init()
+        OTelCoreModBlockEntityTypesFabric.init()
+
         ArgumentTypes.register {
             it.register()
         }

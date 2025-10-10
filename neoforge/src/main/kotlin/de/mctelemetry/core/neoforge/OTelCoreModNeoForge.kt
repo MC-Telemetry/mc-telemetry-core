@@ -12,7 +12,6 @@ import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
 
 @Mod(OTelCoreMod.MOD_ID)
 object OTelCoreModNeoForge {
-
     fun <A : ArgumentType<*>, T : ArgumentTypeInfo.Template<A>, I: ArgumentTypeInfo<A,T>>
             ArgumentTypes.PreparedArgumentTypeRegistration<A,T,I>.register(defReg: DeferredRegister<ArgumentTypeInfo<*,*>>) {
         ArgumentTypeInfos.registerByClass<A,T,I>(infoClass, info)
@@ -21,6 +20,8 @@ object OTelCoreModNeoForge {
 
     init {
         OTelCoreMod.init()
+        OTelCoreModBlockEntityTypesNeoForge.init()
+
         DeferredRegister.create(Registries.COMMAND_ARGUMENT_TYPE, OTelCoreMod.MOD_ID).let { defReg ->
             ArgumentTypes.register {
                 it.register(defReg)
