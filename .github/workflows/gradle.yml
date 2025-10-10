@@ -1,11 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
-
-name: Gradle build and check on main
+name: Gradle build
 
 on:
   push:
@@ -32,7 +25,7 @@ jobs:
     - name: Build
       run: ./gradlew :common:build
 
-  
+
   build-mod:
     needs:
       - build-common
@@ -76,11 +69,15 @@ jobs:
         if-no-files-found: error
 
     - name: Build
+      id: build
+      if: ${{startsWith(github.ref_name, 'release/') || (github.ref_name == 'release')}}
       run: ./gradlew :${{matrix.project}}:build -x :${{matrix.project}}:check
     - name: Upload Build result
+      if: ${{success() && (steps.build.outcome == 'success')}} # don't run if build did not run
       uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.project}}-build
         path: |
           ${{matrix.project}}/build/libs/
         retention-days: 1
+        if-no-files-found: error
