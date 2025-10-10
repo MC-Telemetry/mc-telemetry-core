@@ -6,7 +6,7 @@ import de.mctelemetry.core.utils.runCommand
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestHelper
 
-object ScrapeInfoCommandCommonTest {
+object ScrapeCardinalityCommandCommonTest {
 
     private val permissionLevel = 2
 
@@ -15,7 +15,7 @@ object ScrapeInfoCommandCommonTest {
     @GameTest
     fun permission0Fails(helper: GameTestHelper) {
         helper.assertCommandCannotParse(
-            "mcotel scrape info",
+            "mcotel scrape cardinality",
             permissionLevel = 0,
         )
         helper.succeed()
@@ -26,7 +26,7 @@ object ScrapeInfoCommandCommonTest {
     @GameTest
     fun permission0WithMetricFails(helper: GameTestHelper) {
         helper.assertCommandCannotParse(
-            "mcotel scrape info jvm.class.loaded",
+            "mcotel scrape cardinality system.memory.utilization",
             permissionLevel = 0,
         )
         helper.succeed()
@@ -37,7 +37,7 @@ object ScrapeInfoCommandCommonTest {
     @GameTest
     fun permission1Fails(helper: GameTestHelper) {
         helper.assertCommandCannotParse(
-            "mcotel scrape info",
+            "mcotel scrape cardinality",
             permissionLevel = 1,
         )
         helper.succeed()
@@ -48,7 +48,7 @@ object ScrapeInfoCommandCommonTest {
     @GameTest
     fun permission1WithMetricFails(helper: GameTestHelper) {
         helper.assertCommandCannotParse(
-            "mcotel scrape info jvm.class.loaded",
+            "mcotel scrape cardinality system.memory.utilization",
             permissionLevel = 1,
         )
         helper.succeed()
@@ -59,7 +59,7 @@ object ScrapeInfoCommandCommonTest {
     @GameTest
     fun normalSucceeds(helper: GameTestHelper) {
         helper.runCommand(
-            "mcotel scrape info",
+            "mcotel scrape cardinality",
             permissionLevel = permissionLevel,
             requiredSuccess = true
         ).let { commandResult ->
@@ -86,7 +86,7 @@ object ScrapeInfoCommandCommonTest {
     @GameTest
     fun filterForMetricReturns1(helper: GameTestHelper) {
         helper.runCommand(
-            "mcotel scrape info jvm.class.loaded",
+            "mcotel scrape info system.memory.utilization",
             permissionLevel = permissionLevel,
             requiredSuccess = true
         ).let { commandResult ->
@@ -98,13 +98,13 @@ object ScrapeInfoCommandCommonTest {
                 "messages.size"
             )
             val messageString = commandResult.messages.single().string
-            val matches = Regex("""\s{2}-\s([\w._]+)(?:\s?\([^)]+\))?: """).findAll(messageString)
+            val matches = Regex("""\s{2}-\s([\w._]+(?:\[\d+(?:⨉\d+)*])?:\s\d+)""").findAll(messageString)
                 .map { it.groupValues[1] }
                 .toList()
-            helper.assertValueEqual(matches, listOf("jvm.class.loaded"), "messages[0]")
+            helper.assertValueEqual(matches, listOf("system.memory.utilization[2]: 2"), "messages[0]")
             helper.assertValueEqual(
                 result,
-                1,
+                2,
                 "result"
             )
         }
@@ -117,7 +117,7 @@ object ScrapeInfoCommandCommonTest {
     fun filterForMissingMetricFails(helper: GameTestHelper) {
         helper.assertThrows<NoSuchElementException> {
             helper.runCommand(
-                "mcotel scrape info missing.metric",
+                "mcotel scrape cardinality missing.metric",
                 permissionLevel = permissionLevel,
                 requiredSuccess = false
             )
