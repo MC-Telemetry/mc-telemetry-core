@@ -8,4 +8,6 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${rootProject.property("fabric_loader_version")}")
     // Remove the next line if you don't want to depend on the API
     modApi("dev.architectury:architectury:${rootProject.property("architectury_version")}")
+
+    compileOnly("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:${rootProject.property("otel_version")}")
 }
