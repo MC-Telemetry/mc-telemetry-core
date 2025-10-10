@@ -14,6 +14,7 @@ import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.b
 import de.mctelemetry.core.utils.dsl.components.append
 import de.mctelemetry.core.utils.dsl.components.onClickSuggestCommand
 import de.mctelemetry.core.utils.dsl.components.style
+import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.Component
 import kotlin.collections.component1
@@ -61,8 +62,7 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
 
     fun commandScrapeValueRaw(context: CommandContext<CommandSourceStack>): Int = with(context) {
         if (metricsAccessor == null) {
-            source.sendFailure(TranslationKeys.Errors.metricsAccessorMissing())
-            return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_ACCESSOR
+            source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
         }
         val metricNameFilter = MetricNameArgumentType.getValue("metric")
         val labelMap = LabelStringMapArgumentType["attributes"] ?: emptyMap()
@@ -76,8 +76,10 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
         }
         val scrapeResponse = metricsAccessor.collectDataPointValue(metricNameFilter, labelMap, exact = true)
         if (scrapeResponse == null) {
-            source.sendFailure(TranslationKeys.Commands.metricDatapointNotFound(metricNameFilter, labelMap))
-            return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_DATA
+            source.sendFailureAndThrow(
+                TranslationKeys.Commands.metricDatapointNotFound(metricNameFilter, labelMap),
+                ::NoSuchElementException
+            )
         }
         return when (scrapeResponse) {
             is ObjectMetricReconverter.MetricValueReadback.MetricDoubleValue -> {
@@ -98,7 +100,7 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
                         "(long_value|double_value)"
                     )
                 )
-                return CommandScrape.Companion.SCRAPE_ERROR_RESULT_BAD_DATA
+                throw IllegalArgumentException("Unexpected metric response type for $metricNameFilter: Got ${scrapeResponse.type} but expected single value")
             }
         }
     }
@@ -106,8 +108,7 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
     private fun scrapeValueDefaultImpl(context: CommandContext<CommandSourceStack>, exact: Boolean): Int =
         with(context) {
             if (metricsAccessor == null) {
-                source.sendFailure(TranslationKeys.Errors.metricsAccessorMissing())
-                return CommandScrape.SCRAPE_ERROR_RESULT_NO_ACCESSOR
+                source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
             }
             val metricNameFilter = MetricNameArgumentType.getValue("metric")
             val labelMap = LabelStringMapArgumentType["attributes"] ?: emptyMap()
@@ -121,12 +122,16 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
             }
             val scrapeResponse = metricsAccessor.collectDataPoint(metricNameFilter, labelMap, exact = exact)
             if (scrapeResponse == null) {
-                source.sendFailure(TranslationKeys.Commands.metricNameNotFound(metricNameFilter))
-                return CommandScrape.SCRAPE_ERROR_RESULT_NO_METRIC
+                source.sendFailureAndThrow(
+                    TranslationKeys.Commands.metricNameNotFound(metricNameFilter),
+                    ::NoSuchElementException
+                )
             }
             if (scrapeResponse.data.isEmpty()) {
-                source.sendFailure(TranslationKeys.Commands.metricDatapointNotFound(metricNameFilter, labelMap))
-                return CommandScrape.SCRAPE_ERROR_RESULT_NO_DATA
+                source.sendFailureAndThrow(
+                    TranslationKeys.Commands.metricDatapointNotFound(metricNameFilter, labelMap),
+                    ::NoSuchElementException
+                )
             }
             var totalCount = 0
             val totalSum = scrapeResponse.data.values.sumOf { valueReadback ->
@@ -139,14 +144,14 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
                         (valueReadback.value * scale)
                     }
                     else -> {
-                        source.sendFailure(
+                        source.sendFailureAndThrow(
                             TranslationKeys.Errors.metricResponseTypeUnexpected(
                                 metricNameFilter,
                                 scrapeResponse.type,
                                 "(long_value|double_value)"
-                            )
+                            ),
+                            ::IllegalArgumentException
                         )
-                        return CommandScrape.SCRAPE_ERROR_RESULT_BAD_DATA
                     }
                 }
             }

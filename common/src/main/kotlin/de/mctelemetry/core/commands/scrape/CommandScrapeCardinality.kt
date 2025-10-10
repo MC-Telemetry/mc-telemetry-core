@@ -13,6 +13,7 @@ import de.mctelemetry.core.utils.dsl.components.append
 import de.mctelemetry.core.utils.dsl.components.onClickSuggestCommand
 import de.mctelemetry.core.utils.dsl.components.onHoverShowText
 import de.mctelemetry.core.utils.dsl.components.style
+import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.MutableComponent
 import kotlin.collections.component1
@@ -95,8 +96,7 @@ class CommandScrapeCardinality(val metricsAccessor: MetricsAccessor?) {
 
     fun commandScrapeCardinality(context: CommandContext<CommandSourceStack>): Int = with(context) {
         if (metricsAccessor == null) {
-            source.sendFailure(TranslationKeys.Errors.metricsAccessorMissing())
-            return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_ACCESSOR
+            source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
         }
         val metricNameFilter = MetricNameArgumentType["metric"]
         val data: Map<String, ObjectMetricReconverter.MetricDataReadback> =
@@ -125,8 +125,10 @@ class CommandScrapeCardinality(val metricsAccessor: MetricsAccessor?) {
         }
         if (data.isEmpty()) {
             if (metricNameFilter != null) {
-                source.sendFailure(TranslationKeys.Commands.metricNameNotFound(metricNameFilter))
-                return CommandScrape.Companion.SCRAPE_ERROR_RESULT_NO_METRIC
+                source.sendFailureAndThrow(
+                    TranslationKeys.Commands.metricNameNotFound(metricNameFilter),
+                    ::NoSuchElementException
+                )
             } else {
                 source.sendSuccess(TranslationKeys.Commands::noMetrics, false)
                 return 0
