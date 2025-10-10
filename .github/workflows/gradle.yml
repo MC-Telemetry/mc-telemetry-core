@@ -13,17 +13,17 @@ jobs:
       contents: read
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
-    - name: Build
-      run: ./gradlew :common:build
+      - name: Build
+        run: ./gradlew :common:build
 
 
   build-mod:
@@ -34,50 +34,50 @@ jobs:
       contents: read
     strategy:
       matrix:
-        project: ["neoforge", "fabric"]
+        project: [ "neoforge", "fabric" ]
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
-    - name: Check
-      id: check
-      run: ./gradlew :${{matrix.project}}:check
-    - name: Upload GameTest logs
-      uses: actions/upload-artifact@v4
-      if: ${{ success() || (failure() && steps.check.outcome == 'failure') }}
-      with:
-        name: ${{matrix.project}}-gametest-logs
-        path: |
-          ${{matrix.project}}/gameTestRun/logs/latest.log
-          ${{matrix.project}}/gameTestRun/logs/debug.log
-        if-no-files-found: error
-    - name: Upload GameTest world
-      uses: actions/upload-artifact@v4
-      if: ${{ failure() && steps.check.outcome == 'failure' }}
-      with:
-        name: ${{matrix.project}}-gametest-world
-        path: |
-          ${{matrix.project}}/gameTestRun/world/
-        retention-days: 3
-        if-no-files-found: error
+      - name: Check
+        id: check
+        run: ./gradlew :${{matrix.project}}:check
+      - name: Upload GameTest logs
+        uses: actions/upload-artifact@v4
+        if: ${{ success() || (failure() && steps.check.outcome == 'failure') }}
+        with:
+          name: ${{matrix.project}}-gametest-logs
+          path: |
+            ${{matrix.project}}/gameTestRun/logs/latest.log
+            ${{matrix.project}}/gameTestRun/logs/debug.log
+          if-no-files-found: error
+      - name: Upload GameTest world
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() && steps.check.outcome == 'failure' }}
+        with:
+          name: ${{matrix.project}}-gametest-world
+          path: |
+            ${{matrix.project}}/gameTestRun/world/
+          retention-days: 3
+          if-no-files-found: error
 
-    - name: Build
-      id: build
-      if: ${{startsWith(github.ref_name, 'release/') || (github.ref_name == 'release')}}
-      run: ./gradlew :${{matrix.project}}:build -x :${{matrix.project}}:check
-    - name: Upload Build result
-      if: ${{success() && (steps.build.outcome == 'success')}} # don't run if build did not run
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{matrix.project}}-build
-        path: |
-          ${{matrix.project}}/build/libs/
-        retention-days: 1
-        if-no-files-found: error
+      - name: Build
+        id: build
+        if: ${{startsWith(github.ref_name, 'release/') || (github.ref_name == 'release')}}
+        run: ./gradlew :${{matrix.project}}:build -x :${{matrix.project}}:check
+      - name: Upload Build result
+        if: ${{success() && (steps.build.outcome == 'success')}} # don't run if build did not run
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.project}}-build
+          path: |
+            ${{matrix.project}}/build/libs/
+          retention-days: 1
+          if-no-files-found: error
