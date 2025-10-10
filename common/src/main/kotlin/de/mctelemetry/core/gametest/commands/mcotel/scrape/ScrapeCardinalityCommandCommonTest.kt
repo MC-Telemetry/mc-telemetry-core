@@ -86,7 +86,7 @@ object ScrapeCardinalityCommandCommonTest {
     @GameTest
     fun filterForMetricReturns1(helper: GameTestHelper) {
         helper.runCommand(
-            "mcotel scrape info system.memory.utilization",
+            "mcotel scrape cardinality system.memory.utilization",
             permissionLevel = permissionLevel,
             requiredSuccess = true
         ).let { commandResult ->
