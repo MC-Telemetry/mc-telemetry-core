@@ -1,18 +1,15 @@
-package de.mctelemetry.core.neoforge.gametest
+package de.mctelemetry.core.gametest
 
-import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.exporters.metrics.MetricsAccessor
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestHelper
-import net.neoforged.neoforge.gametest.GameTestHolder
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate
 
-@GameTestHolder(OTelCoreMod.MOD_ID)
-@PrefixGameTestTemplate(false)
-object MetricScrapeTest {
+// Classes containing @GameTest or @GameTestFactory need to be added to CommonGameTestFactory to be detected.
+object MetricScrapeCommonTest {
+    @Suppress("unused")
     @JvmStatic
-    @GameTest(templateNamespace = "mcotelcore", template="gametestempty")
-    fun collectMetricsTest(helper: GameTestHelper) {
+    @GameTest
+    fun gameLoadsTest(helper: GameTestHelper) {
         val accessor = MetricsAccessor.INSTANCE
         helper.assertTrue(accessor != null, "Metrics accessor should not be null")
         val definitions = accessor!!.collect()
