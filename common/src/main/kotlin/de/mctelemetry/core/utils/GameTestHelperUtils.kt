@@ -1,0 +1,181 @@
+package de.mctelemetry.core.utils
+
+import com.mojang.brigadier.context.ContextChain
+import com.mojang.brigadier.exceptions.CommandSyntaxException
+import de.mctelemetry.core.gametest.CallbackCommandSource
+import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
+import de.mctelemetry.core.utils.dsl.components.style
+import net.minecraft.commands.CommandResultCallback
+import net.minecraft.commands.CommandSource
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.Commands
+import net.minecraft.commands.execution.ExecutionContext
+import net.minecraft.gametest.framework.GameTestHelper
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.TextColor
+import net.minecraft.server.MinecraftServer
+import net.minecraft.world.phys.Vec2
+import net.minecraft.world.phys.Vec3
+import kotlin.jvm.optionals.getOrElse
+
+val GameTestHelper.server: MinecraftServer get() = this.level.server
+
+data class GameTestHelperCommandResult(
+    val messages: List<Component>,
+    val results: List<CommandResultCallbackResult>,
+)
+
+data class CommandResultCallbackResult(
+    val success: Boolean,
+    val code: Int,
+)
+
+fun GameTestHelper.runCommand(
+    command: String,
+    permissionLevel: Int = 2,
+    requiredSuccess: Boolean? = null,
+    messageCallback: (Component) -> Unit = {},
+    resultCallback: CommandResultCallback,
+) {
+    val server = server
+    var resultCount = 0
+    val context: CommandSourceStack = CommandSourceStack(
+        CallbackCommandSource(callback = messageCallback),
+        this.absoluteVec(Vec3.ZERO),
+        Vec2.ZERO,
+        level,
+        permissionLevel,
+        "GameTest",
+        Component.literal("GameTest"),
+        server,
+        null
+    ).let { stack ->
+        when (requiredSuccess) {
+            null -> stack.withCallback(resultCallback)
+            false -> stack.withCallback { success, result ->
+                resultCount++
+                assertValueEqual(resultCount, 1, "results.size")
+                assertFalse(success, "Command should fail but succeeded instead: $result")
+                resultCallback.onResult(success, result)
+            }
+            true -> stack.withCallback { success, result ->
+                resultCount++
+                assertValueEqual(resultCount, 1, "results.size")
+                assertTrue(success, "Command should succeed but failed instead: $result")
+                resultCallback.onResult(success, result)
+            }
+        }
+    }
+    val parseResult = server.commands.dispatcher.parse(command, context)
+    Commands.validateParseResults(parseResult)
+    val commandContext = parseResult.context.build(command)
+    val commandContextChain = ContextChain.tryFlatten(commandContext).getOrElse {
+        throw CommandSyntaxException.BUILT_IN_EXCEPTIONS
+            .dispatcherUnknownCommand()
+            .createWithContext(parseResult.reader)
+    }
+    Commands.executeCommandInContext(context) { execContext ->
+        ExecutionContext.queueInitialCommandExecution(
+            execContext,
+            command,
+            commandContextChain,
+            context,
+            CommandResultCallback.EMPTY,
+        )
+    }
+    if (requiredSuccess != null) {
+        assertValueEqual(resultCount, 1, "results.size")
+    }
+}
+
+fun GameTestHelper.runCommand(
+    command: String,
+    permissionLevel: Int = 2,
+    requiredSuccess: Boolean? = null,
+): GameTestHelperCommandResult {
+    val messages: MutableList<Component> = mutableListOf()
+    val results: MutableList<CommandResultCallbackResult> = mutableListOf()
+    runCommand(
+        command,
+        permissionLevel,
+        requiredSuccess = requiredSuccess,
+        messageCallback = messages::add
+    ) { success, result ->
+        results.add(CommandResultCallbackResult(success, result))
+    }
+    return GameTestHelperCommandResult(messages, results)
+}
+
+private val noPermissionCommandMessage: Component = buildComponent {
+    style {
+        color = TextColor.parseColor("red").result()!!.get()
+    }
+    append(Component.translatable("command.unknown.argument"))
+}
+
+fun GameTestHelper.assertCommandCannotParse(
+    command: String,
+    permissionLevel: Int,
+) {
+    val server = server
+    val context = CommandSourceStack(
+        CommandSource.NULL,
+        this.absoluteVec(Vec3.ZERO),
+        Vec2.ZERO,
+        level,
+        permissionLevel,
+        "GameTest",
+        Component.literal("GameTest"),
+        server,
+        null
+    )
+    val parseResult = server.commands.dispatcher.parse(command, context)
+    val parseException = Commands.getParseException(parseResult)
+    if (parseException != null) {
+        return
+    }
+    val commandContext = parseResult.context.build(command)
+    if (ContextChain.tryFlatten(commandContext).isPresent) {
+        return
+    }
+    fail("Command did not fail to parse")
+}
+
+inline fun CommandSourceStack.sendFailureAndThrow(
+    component: Component,
+    exceptionFactory: (String) -> Exception = ::RuntimeException,
+): Nothing {
+    val sendException = try {
+        sendFailure(component)
+        null
+    } catch (ex2: Exception) {
+        ex2
+    }
+    throw exceptionFactory(component.string).apply {
+        if (sendException != null)
+            addSuppressed(sendException)
+    }
+}
+
+inline fun GameTestHelper.assertThrows(block: () -> Unit): Exception {
+    return assertThrows<Exception>(block)
+}
+
+@JvmName("assertThrowsType")
+inline fun <reified E : Exception> GameTestHelper.assertThrows(block: () -> Unit): E {
+    try {
+        block()
+    } catch (e: Exception) {
+        if (e is E)
+            return e
+        else
+            throw e
+    }
+    if (E::class.java != Exception::class.java) {
+        fail("Expected an exception of type ${E::class.java.name} to be thrown but completed successfully")
+    } else {
+        fail("Expected an exception to be thrown but completed successfully")
+    }
+    //fail(...) is actually fail(...): Nothing, so the following throw never happens
+    throw RuntimeException()
+}
