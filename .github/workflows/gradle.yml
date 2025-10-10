@@ -80,7 +80,7 @@ jobs:
     - name: Upload Build result
       uses: actions/upload-artifact@v4
       with:
-        name: ${{matrix.project}}-gametest-world
+        name: ${{matrix.project}}-build
         path: |
           ${{matrix.project}}/build/libs/
         retention-days: 1
