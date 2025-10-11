@@ -4,8 +4,11 @@ import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
+import de.mctelemetry.core.metrics.manager.GameMetricsManager
+import de.mctelemetry.core.metrics.manager.MetricMetaManager
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import dev.architectury.event.events.common.CommandRegistrationEvent
+import dev.architectury.event.events.common.LifecycleEvent
 import dev.architectury.registry.CreativeTabRegistry
 import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
@@ -48,13 +51,13 @@ object OTelCoreMod {
         TABS.register()
         OTelCoreModBlocks.init()
         OTelCoreModItems.init()
-
         debugMetrics()
         CommandRegistrationEvent.EVENT.register { evt, a, b ->
             evt.root.addChild(buildCommand("mcotel") {
                 then(CommandScrape().command)
             })
         }
+        MetricMetaManager.register()
     }
 
     init {
