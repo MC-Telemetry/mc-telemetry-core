@@ -4,6 +4,7 @@ import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.exporters.metrics.MetricsAccessor
 import de.mctelemetry.core.items.OTelCoreModItems
+import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import dev.architectury.event.events.common.CommandRegistrationEvent
 import dev.architectury.registry.CreativeTabRegistry
@@ -46,8 +47,10 @@ object OTelCoreMod {
 
     fun init() {
         TABS.register()
+
         OTelCoreModBlocks.init()
         OTelCoreModItems.init()
+        OTelCoreModMenuTypes.init()
 
         debugMetrics()
         CommandRegistrationEvent.EVENT.register { evt, a, b ->
