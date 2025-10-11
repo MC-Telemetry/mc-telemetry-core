@@ -1,10 +1,10 @@
+@file:OptIn(ExperimentalContracts::class)
+
 package de.mctelemetry.core.utils
 
 import com.mojang.brigadier.context.ContextChain
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import de.mctelemetry.core.gametest.CallbackCommandSource
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
-import de.mctelemetry.core.utils.dsl.components.style
 import net.minecraft.commands.CommandResultCallback
 import net.minecraft.commands.CommandSource
 import net.minecraft.commands.CommandSourceStack
@@ -12,10 +12,12 @@ import net.minecraft.commands.Commands
 import net.minecraft.commands.execution.ExecutionContext
 import net.minecraft.gametest.framework.GameTestHelper
 import net.minecraft.network.chat.Component
-import net.minecraft.network.chat.TextColor
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.phys.Vec2
 import net.minecraft.world.phys.Vec3
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 import kotlin.jvm.optionals.getOrElse
 
 val GameTestHelper.server: MinecraftServer get() = this.level.server
@@ -30,6 +32,7 @@ data class CommandResultCallbackResult(
     val code: Int,
 )
 
+@Suppress("LEAKED_IN_PLACE_LAMBDA")
 fun GameTestHelper.runCommand(
     command: String,
     permissionLevel: Int = 2,
@@ -37,6 +40,9 @@ fun GameTestHelper.runCommand(
     messageCallback: (Component) -> Unit = {},
     resultCallback: CommandResultCallback,
 ) {
+    contract {
+        callsInPlace(messageCallback, InvocationKind.UNKNOWN)
+    }
     val server = server
     var resultCount = 0
     val context: CommandSourceStack = CommandSourceStack(
@@ -106,13 +112,6 @@ fun GameTestHelper.runCommand(
     return GameTestHelperCommandResult(messages, results)
 }
 
-private val noPermissionCommandMessage: Component = buildComponent {
-    style {
-        color = TextColor.parseColor("red").result()!!.get()
-    }
-    append(Component.translatable("command.unknown.argument"))
-}
-
 fun GameTestHelper.assertCommandCannotParse(
     command: String,
     permissionLevel: Int,
@@ -138,13 +137,16 @@ fun GameTestHelper.assertCommandCannotParse(
     if (ContextChain.tryFlatten(commandContext).isPresent) {
         return
     }
-    fail("Command did not fail to parse")
+    failC("Command did not fail to parse")
 }
 
 inline fun CommandSourceStack.sendFailureAndThrow(
     component: Component,
     exceptionFactory: (String) -> Exception = ::RuntimeException,
 ): Nothing {
+    contract {
+        callsInPlace(exceptionFactory, InvocationKind.EXACTLY_ONCE)
+    }
     val sendException = try {
         sendFailure(component)
         null
@@ -158,11 +160,18 @@ inline fun CommandSourceStack.sendFailureAndThrow(
 }
 
 inline fun GameTestHelper.assertThrows(block: () -> Unit): Exception {
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
     return assertThrows<Exception>(block)
 }
 
 @JvmName("assertThrowsType")
 inline fun <reified E : Exception> GameTestHelper.assertThrows(block: () -> Unit): E {
+    @Suppress("WRONG_INVOCATION_KIND")
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
     try {
         block()
     } catch (e: Exception) {
@@ -172,10 +181,8 @@ inline fun <reified E : Exception> GameTestHelper.assertThrows(block: () -> Unit
             throw e
     }
     if (E::class.java != Exception::class.java) {
-        fail("Expected an exception of type ${E::class.java.name} to be thrown but completed successfully")
+        failC("Expected an exception of type ${E::class.java.name} to be thrown but completed successfully")
     } else {
-        fail("Expected an exception to be thrown but completed successfully")
+        failC("Expected an exception to be thrown but completed successfully")
     }
-    //fail(...) is actually fail(...): Nothing, so the following throw never happens
-    throw RuntimeException()
 }
