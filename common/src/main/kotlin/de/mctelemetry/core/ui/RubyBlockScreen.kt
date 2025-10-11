@@ -6,6 +6,7 @@ import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.b
 import de.mctelemetry.core.utils.dsl.components.append
 import de.mctelemetry.core.utils.dsl.components.style
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.client.renderer.GameRenderer
 import net.minecraft.network.chat.Component
@@ -15,6 +16,14 @@ import net.minecraft.world.entity.player.Inventory
 
 class RubyBlockScreen(menu: RubyBlockMenu, playerInventory: Inventory, title: Component) :
     AbstractContainerScreen<RubyBlockMenu>(menu, playerInventory, title) {
+
+    override fun init() {
+        super.init()
+
+        val editBox = EditBox(font, leftPos - 100, topPos + 10, 150, 20, buildComponent { +"EditBox" })
+        addRenderableWidget(editBox)
+    }
+
     override fun renderBg(guiGraphics: GuiGraphics, partialTick: Float, mouseX: Int, mouseY: Int) {
         RenderSystem.setShader(GameRenderer::getPositionTexShader)
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f)
@@ -27,20 +36,21 @@ class RubyBlockScreen(menu: RubyBlockMenu, playerInventory: Inventory, title: Co
 
     override fun render(guiGraphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         super.render(guiGraphics, mouseX, mouseY, partialTick)
-        renderTooltip(guiGraphics, mouseX, mouseY)
 
         val y1 = ((height - imageHeight) / 2) + 12
         val y2 = ((height - imageHeight) / 2) + 24
 
-        guiGraphics.drawCenteredString(font, "Stored Water: " + this.menu.data.get(0), width / 2, y1, 0x909090)
-        guiGraphics.drawCenteredString(font, buildComponent {
+        guiGraphics.drawString(font, "Stored Water: " + this.menu.data.get(0), width / 2, y1, 0x909090, false)
+        guiGraphics.drawString(font, buildComponent {
             +"Redstone: "
             append(menu.data.get(1).toString()) {
                 style {
                     isBold = true
                 }
             }
-        }, width / 2, y2, 0x909090)
+        }, width / 2, y2, 0x909090, false)
+
+        renderTooltip(guiGraphics, mouseX, mouseY)
     }
 
     companion object {
