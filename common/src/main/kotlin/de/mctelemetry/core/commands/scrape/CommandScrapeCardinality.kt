@@ -4,8 +4,8 @@ import com.google.common.math.LongMath
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.exporters.metrics.MetricsAccessor
-import de.mctelemetry.core.exporters.metrics.ObjectMetricReconverter
+import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
+import de.mctelemetry.core.metrics.exporters.agent.ObjectMetricReconverter
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -20,7 +20,7 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.math.min
 
-class CommandScrapeCardinality(val metricsAccessor: MetricsAccessor?) {
+class CommandScrapeCardinality(val metricsAccessor: IMetricsAccessor?) {
 
     val command = CommandDSLBuilder.Companion.buildCommand("cardinality") {
         requires { it.hasPermission(2) }

@@ -1,6 +1,6 @@
 package de.mctelemetry.core.gametest
 
-import de.mctelemetry.core.exporters.metrics.MetricsAccessor
+import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestHelper
 
@@ -10,7 +10,7 @@ object MetricScrapeCommonTest {
     @JvmStatic
     @GameTest
     fun gameLoadsTest(helper: GameTestHelper) {
-        val accessor = MetricsAccessor.INSTANCE
+        val accessor = IMetricsAccessor.GLOBAL
         helper.assertTrue(accessor != null, "Metrics accessor should not be null")
         val definitions = accessor!!.collect()
         helper.assertFalse(definitions.isEmpty(), "Collected metrics should not be empty")

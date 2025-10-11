@@ -2,8 +2,8 @@ package de.mctelemetry.core
 
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
-import de.mctelemetry.core.exporters.metrics.MetricsAccessor
 import de.mctelemetry.core.items.OTelCoreModItems
+import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import dev.architectury.event.events.common.CommandRegistrationEvent
 import dev.architectury.registry.CreativeTabRegistry
@@ -64,7 +64,7 @@ object OTelCoreMod {
                 OTelCoreMod::class.java.classLoader
             )
         }
-        val metricsAccessor = MetricsAccessor.INSTANCE
+        val metricsAccessor = IMetricsAccessor.GLOBAL
         logger.debug("MetricsAccessor during mod class loading: {}", metricsAccessor)
         if (metricsAccessor != null) {
             logger.info("Performing initial metrics collection, may throw errors which can be safely ignored (probably?)")
@@ -76,7 +76,7 @@ object OTelCoreMod {
     }
 
     private fun debugMetrics() {
-        val accessor = MetricsAccessor.INSTANCE
+        val accessor = IMetricsAccessor.GLOBAL
         if (accessor != null) {
             logger.info("Metrics: ")
             accessor.collect().forEach { (k, v) ->
