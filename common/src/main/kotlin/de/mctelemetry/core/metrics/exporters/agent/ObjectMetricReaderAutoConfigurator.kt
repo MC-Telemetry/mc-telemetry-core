@@ -1,4 +1,4 @@
-package de.mctelemetry.core.exporters.metrics
+package de.mctelemetry.core.metrics.exporters.agent
 
 import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizer
 import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvider
@@ -19,7 +19,7 @@ class ObjectMetricReaderAutoConfigurator : AutoConfigurationCustomizerProvider {
             debugLog("Customizing meter provider on ClassLoader ${ObjectMetricReaderAutoConfigurator::class.java.classLoader}")
             val newReader = ObjectMetricReader()
             provider.registerMetricReader(newReader).also {
-                MetricsAccessor.provideCallbacks(
+                ObjectMetricsAccessor.provideCallbacks(
                     collectAll = newReader::collect,
                     collectDefinitions = newReader::collectDefinitions,
                     collectDefinition = newReader::collectDefinition,

@@ -5,8 +5,8 @@ import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.LabelStringMapArgumentType
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.exporters.metrics.MetricsAccessor
-import de.mctelemetry.core.exporters.metrics.ObjectMetricReconverter
+import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
+import de.mctelemetry.core.metrics.exporters.agent.ObjectMetricReconverter
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.commands.invoke
@@ -20,7 +20,7 @@ import net.minecraft.network.chat.Component
 import kotlin.collections.component1
 import kotlin.collections.component2
 
-class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
+class CommandScrapeValue(val metricsAccessor: IMetricsAccessor?) {
 
     val command = CommandDSLBuilder.Companion.buildCommand("value") {
         requires { it.hasPermission(2) }

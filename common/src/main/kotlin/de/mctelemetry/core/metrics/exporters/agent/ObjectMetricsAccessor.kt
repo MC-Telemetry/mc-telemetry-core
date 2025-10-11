@@ -1,22 +1,24 @@
-package de.mctelemetry.core.exporters.metrics
+package de.mctelemetry.core.metrics.exporters.agent
 
+import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
+import de.mctelemetry.core.metrics.exporters.MetricDataReadback
+import de.mctelemetry.core.metrics.exporters.MetricDefinitionReadback
+import de.mctelemetry.core.metrics.exporters.MetricValueReadback
 import io.opentelemetry.api.common.Attributes
 import java.lang.reflect.AccessFlag
 import java.util.function.BiFunction
 import java.util.function.Function
 import java.util.function.Supplier
-import kotlin.Any
-import kotlin.Array
-import kotlin.collections.forEach
 
-class MetricsAccessor(
+@Suppress("unused")
+class ObjectMetricsAccessor(
     private val collectAll: Supplier<Array<Array<Any>>>,
     private val collectDefinitions: Supplier<Array<Array<String>>>,
     private val collectDefinition: Function<String, Array<String>?>,
     private val collectNamed: Function<String, Array<Any>?>,
     private val collectDataPoint: BiFunction<String, Array<Any>, Array<Any>?>,
     private val collectDataPointValue: BiFunction<String, Array<Any>, Any?>,
-) {
+): IMetricsAccessor {
 
     companion object {
 
@@ -38,15 +40,15 @@ class MetricsAccessor(
         private lateinit var collectDataPointValue: BiFunction<String, Array<Any>, Any?>
 
 
-        private lateinit var _INSTANCE: MetricsAccessor
-        val INSTANCE: MetricsAccessor?
+        private lateinit var _INSTANCE: ObjectMetricsAccessor
+        internal val INSTANCE: ObjectMetricsAccessor?
             get() {
                 if (::_INSTANCE.isInitialized) {
                     return _INSTANCE
                 }
                 val callbackArray = getSynchronizedCallbacks() ?: return null
                 @Suppress("UNCHECKED_CAST")
-                _INSTANCE = MetricsAccessor(
+                _INSTANCE = ObjectMetricsAccessor(
                     collectAll = callbackArray[0] as Supplier<Array<Array<Any>>>,
                     collectDefinitions = callbackArray[1] as Supplier<Array<Array<String>>>,
                     collectDefinition = callbackArray[2] as Function<String, Array<String>?>,
@@ -75,7 +77,7 @@ class MetricsAccessor(
 
                 // JvmStatic defines this method as static *on the containing class* (="MetricsAccessor").
                 // The companion-method still exists, but is not truly static.
-                val accessorClass = syncClassLoader.loadClass(MetricsAccessor::class.java.canonicalName)
+                val accessorClass = syncClassLoader.loadClass(ObjectMetricsAccessor::class.java.canonicalName)
                 val callbackGetter = accessorClass.getDeclaredMethod(::getSynchronizedCallbacks.name)
                 @Suppress("UNCHECKED_CAST")
                 return (callbackGetter.invoke(null) as Array<Any>?).also {
@@ -124,7 +126,7 @@ class MetricsAccessor(
 
                 // JvmStatic defines this method as static *on the containing class* (="MetricsAccessor").
                 // The companion-method still exists, but is not truly static.
-                val accessorClass = syncClassLoader.loadClass(MetricsAccessor::class.java.canonicalName)
+                val accessorClass = syncClassLoader.loadClass(ObjectMetricsAccessor::class.java.canonicalName)
                 val provideCallbacksMethod = accessorClass.getDeclaredMethod(
                     ::provideCallbacks.name,
                     Supplier::class.java,
@@ -166,27 +168,27 @@ class MetricsAccessor(
         }
     }
 
-    fun collect(): Map<String, ObjectMetricReconverter.MetricDataReadback> {
+    override fun collect(): Map<String, MetricDataReadback> {
         return ObjectMetricReconverter.convertMetrics(collectAll.get())
     }
 
-    fun collectDefinitions(): Map<String, ObjectMetricReconverter.MetricDefinitionReadback> {
+    override fun collectDefinitions(): Map<String, MetricDefinitionReadback> {
         return ObjectMetricReconverter.convertMetricDefinitions(collectDefinitions.get())
     }
 
-    fun collectDefinition(name: String): ObjectMetricReconverter.MetricDefinitionReadback? {
+    override fun collectDefinition(name: String): MetricDefinitionReadback? {
         return ObjectMetricReconverter.convertMetricDefinition(collectDefinition.apply(name) ?: return null)
     }
 
-    fun collectNamed(name: String): ObjectMetricReconverter.MetricDataReadback? {
+    override fun collectNamed(name: String): MetricDataReadback? {
         return ObjectMetricReconverter.convertMetric(collectNamed.apply(name) ?: return null)
     }
 
-    fun collectDataPoint(
+    override fun collectDataPoint(
         name: String,
         attributes: Map<String, String>,
-        exact: Boolean = true,
-    ): ObjectMetricReconverter.MetricDataReadback? {
+        exact: Boolean,
+    ): MetricDataReadback? {
         val filterArray = arrayOfNulls<Any>(1+attributes.size * 2)
         filterArray[0] = exact
         var i = 1
@@ -200,11 +202,11 @@ class MetricsAccessor(
         )
     }
 
-    fun collectDataPoint(
+    override fun collectDataPoint(
         name: String,
         attributes: Attributes,
-        exact: Boolean = true,
-    ): ObjectMetricReconverter.MetricDataReadback? {
+        exact: Boolean,
+    ): MetricDataReadback? {
         val filterArray = arrayOfNulls<Any>(1+attributes.size() * 2)
         filterArray[0] = exact
         var i = 1
@@ -218,11 +220,11 @@ class MetricsAccessor(
         )
     }
 
-    fun collectDataPointValue(
+    override fun collectDataPointValue(
         name: String,
         attributes: Map<String, String>,
-        exact: Boolean = true,
-    ): ObjectMetricReconverter.MetricValueReadback? {
+        exact: Boolean,
+    ): MetricValueReadback? {
         val filterArray = arrayOfNulls<Any>(1+attributes.size * 2)
         filterArray[0] = exact
         var i = 1
@@ -236,11 +238,11 @@ class MetricsAccessor(
         )
     }
 
-    fun collectDataPointValue(
+    override fun collectDataPointValue(
         name: String,
         attributes: Attributes,
-        exact: Boolean = true,
-    ): ObjectMetricReconverter.MetricValueReadback? {
+        exact: Boolean,
+    ): MetricValueReadback? {
         val filterArray = arrayOfNulls<Any>(1+attributes.size() * 2)
         filterArray[0] = exact
         var i = 1

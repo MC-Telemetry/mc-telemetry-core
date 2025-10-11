@@ -1,5 +1,6 @@
-package de.mctelemetry.core.exporters.metrics
+package de.mctelemetry.core.metrics.exporters.agent
 
+import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.metrics.InstrumentType
@@ -51,27 +52,6 @@ class ObjectMetricReader : MetricReader {
             )
         }
 
-        private fun Attributes.match(attributesFilter: Map<String, String>?, exact: Boolean): Boolean {
-            if (attributesFilter == null) return true
-            if (exact) {
-                var remainingAttributes = attributesFilter.size
-                forEach { key, value ->
-                    if (attributesFilter[key.key] == value.toString())
-                        remainingAttributes--
-                    else
-                        remainingAttributes = Int.MAX_VALUE
-                }
-                return remainingAttributes == 0
-            } else {
-                if (attributesFilter.isEmpty()) return true
-                var failed = false
-                forEach { key, value ->
-                    failed = failed || (attributesFilter.getOrElse(key.key) { return@forEach } != value.toString())
-                }
-                return !failed
-            }
-        }
-
         private fun wrapMetricValue(
             attributes: Attributes,
             value: Any,
@@ -94,33 +74,38 @@ class ObjectMetricReader : MetricReader {
         ): Array<Array<Any>> {
             return when (metricData.type) {
                 MetricDataType.LONG_GAUGE -> metricData.longGaugeData.points.filter {
-                    it.attributes.match(
+                    IMetricsAccessor.matchFilter(
+                        it.attributes,
                         attributesFilter,
                         exact,
                     )
                 }.mapArray { wrapMetricValue(it.attributes, it.value) }
                 MetricDataType.DOUBLE_GAUGE -> metricData.doubleGaugeData.points.filter {
-                    it.attributes.match(
+                    IMetricsAccessor.matchFilter(
+                        it.attributes,
                         attributesFilter,
-                        exact
+                        exact,
                     )
                 }.mapArray { wrapMetricValue(it.attributes, it.value) }
                 MetricDataType.LONG_SUM -> metricData.longSumData.points.filter {
-                    it.attributes.match(
+                    IMetricsAccessor.matchFilter(
+                        it.attributes,
                         attributesFilter,
-                        exact
+                        exact,
                     )
                 }.mapArray { wrapMetricValue(it.attributes, it.value) }
                 MetricDataType.DOUBLE_SUM -> metricData.doubleSumData.points.filter {
-                    it.attributes.match(
+                    IMetricsAccessor.matchFilter(
+                        it.attributes,
                         attributesFilter,
-                        exact
+                        exact,
                     )
                 }.mapArray { wrapMetricValue(it.attributes, it.value) }
                 MetricDataType.SUMMARY -> metricData.summaryData.points.filter {
-                    it.attributes.match(
+                    IMetricsAccessor.matchFilter(
+                        it.attributes,
                         attributesFilter,
-                        exact
+                        exact,
                     )
                 }.mapArray {
                     val quantileData = DoubleArray(it.values.size * 2)
@@ -131,7 +116,11 @@ class ObjectMetricReader : MetricReader {
                     wrapMetricValue(it.attributes, arrayOf(METRIC_OBJECT_TYPE_SUMMARY, it.count, it.sum, quantileData))
                 }
                 MetricDataType.HISTOGRAM -> metricData.histogramData.points.filter {
-                    it.attributes.match(attributesFilter, exact)
+                    IMetricsAccessor.matchFilter(
+                        it.attributes,
+                        attributesFilter,
+                        exact,
+                    )
                 }.mapArray {
                     val countData = DoubleArray(it.boundaries.size * 2 + 1)
                     // structure:
@@ -145,7 +134,11 @@ class ObjectMetricReader : MetricReader {
                     wrapMetricValue(it.attributes, arrayOf(METRIC_OBJECT_TYPE_HISTOGRAM, it.count, it.sum, countData))
                 }
                 MetricDataType.EXPONENTIAL_HISTOGRAM -> metricData.exponentialHistogramData.points.filter {
-                    it.attributes.match(attributesFilter, exact)
+                    IMetricsAccessor.matchFilter(
+                        it.attributes,
+                        attributesFilter,
+                        exact,
+                    )
                 }.mapArray {
                     wrapMetricValue(it.attributes, arrayOf<Any>(METRIC_OBJECT_TYPE_EXP_HISTOGRAM, it.count, it.sum))
                 }
@@ -205,7 +198,11 @@ class ObjectMetricReader : MetricReader {
         return serializeMetricData(data.firstOrNull { it.name == name } ?: return null)
     }
 
-    fun collectDataPoint(name: String, filter: Array<Any>): Array<Any>? {
+    private inline fun <T> collectDataPointImpl(
+        name: String,
+        filter: Array<Any>,
+        serializationBlock: (MetricData, Map<String, String>, Boolean) -> T,
+    ): T? {
         ensureActive()
         val data = registration.collectAllMetrics()
         val exact = filter[0] as Boolean
@@ -214,20 +211,16 @@ class ObjectMetricReader : MetricReader {
                 put(filter[i] as String, filter[i + 1] as String)
             }
         }
-        return serializeMetricData(data.firstOrNull { it.name == name } ?: return null, mapFilter, exact)
+        return serializationBlock(data.firstOrNull { it.name == name } ?: return null, mapFilter, exact)
+    }
+
+    fun collectDataPoint(name: String, filter: Array<Any>): Array<Any>? {
+        return collectDataPointImpl(name, filter, ::serializeMetricData)
     }
 
     fun collectDataPointValue(name: String, filter: Array<Any>): Any? {
-        ensureActive()
-        val data = registration.collectAllMetrics()
-        val exact = filter[0] as Boolean
-        val mapFilter: Map<String, String> = buildMap((filter.size - 1) / 2) {
-            for (i in 1..<filter.lastIndex step 2) {
-                put(filter[i] as String, filter[i + 1] as String)
-            }
-        }
-        return serializeMetricValues(data.firstOrNull { it.name == name } ?: return null, mapFilter, exact)
-            .firstOrNull()
+        return collectDataPointImpl(name, filter, ::serializeMetricValues)
+            ?.firstOrNull()
             ?.get(0)
     }
 
