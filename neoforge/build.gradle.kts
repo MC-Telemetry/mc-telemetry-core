@@ -107,12 +107,21 @@ repositories {
         name = "NeoForged"
         setUrl("https://maven.neoforged.net/releases")
     }
+    maven {
+        name = "CurseMaven"
+        setUrl("https://cursemaven.com")
+        content {
+            includeGroup("curse.maven")
+        }
+    }
 }
 
 dependencies {
     neoForge("net.neoforged:neoforge:${rootProject.property("neoforge_version")}")
     // Remove the next line if you don't want to depend on the API
     modApi("dev.architectury:architectury-neoforge:${rootProject.property("architectury_version")}")
+
+    modRuntimeOnly("curse.maven:jei-238222:7057366")
 
     common(project(":common", "namedElements")) { isTransitive = false }
     shadowBundle(project(":common", "transformProductionNeoForge")) { isTransitive = false }
