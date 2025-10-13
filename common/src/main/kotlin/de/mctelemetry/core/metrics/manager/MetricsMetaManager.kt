@@ -6,6 +6,7 @@ import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import dev.architectury.event.events.common.LifecycleEvent
+import dev.architectury.platform.Platform
 import net.minecraft.server.MinecraftServer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -50,7 +51,14 @@ object MetricsMetaManager {
     }
 
     private fun onServerStarted(server: MinecraftServer) {
-        val serverManager = serverMetricsManagers.getValue(server)
+        val serverManager = if (Platform.isForgeLike()) {
+            serverMetricsManagers.getValue(server)
+        } else {
+            serverMetricsManagers.getOrElse(server) { // Fabric does not trigger [LifecycleEvent.SERVER_STARTING]?
+                onServerStarting(server)
+                serverMetricsManagers.getValue(server)
+            }
+        }
         IWorldInstrumentManager.Events.LOADED.invoker().worldInstrumentManagerLoaded(serverManager, server)
     }
 
