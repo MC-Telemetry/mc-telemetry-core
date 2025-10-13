@@ -1,6 +1,6 @@
 package de.mctelemetry.core.metrics.exporters.agent
 
-import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
+import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import de.mctelemetry.core.metrics.exporters.MetricDataReadback
 import de.mctelemetry.core.metrics.exporters.MetricDefinitionReadback
 import de.mctelemetry.core.metrics.exporters.MetricValueReadback

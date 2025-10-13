@@ -1,6 +1,6 @@
 package de.mctelemetry.core.gametest
 
-import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
+import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestHelper
 

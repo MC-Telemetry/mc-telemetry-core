@@ -1,6 +1,6 @@
 package de.mctelemetry.core.metrics.exporters.agent
 
-import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
+import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.metrics.InstrumentType

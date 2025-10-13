@@ -3,7 +3,7 @@ package de.mctelemetry.core.commands.scrape
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.metrics.exporters.IMetricsAccessor
+import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import de.mctelemetry.core.metrics.exporters.agent.ObjectMetricReconverter
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
