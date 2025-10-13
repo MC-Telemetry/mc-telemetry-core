@@ -11,7 +11,7 @@ import net.minecraft.server.MinecraftServer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
-object MetricsMetaManager {
+object InstrumentMetaManager {
 
     fun register() {
         LifecycleEvent.SETUP.register(::onSetup)
