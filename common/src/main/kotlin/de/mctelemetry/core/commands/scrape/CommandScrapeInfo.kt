@@ -4,7 +4,7 @@ import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
 import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
-import de.mctelemetry.core.metrics.exporters.agent.ObjectMetricReconverter
+import de.mctelemetry.core.metrics.exporters.MetricDefinitionReadback
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -26,7 +26,7 @@ class CommandScrapeInfo(val metricsAccessor: IMetricsAccessor?) {
         }
     }
 
-    private fun infoComponent(definition: ObjectMetricReconverter.MetricDefinitionReadback): MutableComponent {
+    private fun infoComponent(definition: MetricDefinitionReadback): MutableComponent {
         return buildComponent {
             append(definition.name) {
                 style {
@@ -59,7 +59,7 @@ class CommandScrapeInfo(val metricsAccessor: IMetricsAccessor?) {
             source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
         }
         val metricNameFilter: String? = MetricNameArgumentType["metric"]
-        val definitions: Map<String, ObjectMetricReconverter.MetricDefinitionReadback> =
+        val definitions: Map<String, MetricDefinitionReadback> =
             if (metricNameFilter == null) {
                 metricsAccessor.collectDefinitions()
             } else {

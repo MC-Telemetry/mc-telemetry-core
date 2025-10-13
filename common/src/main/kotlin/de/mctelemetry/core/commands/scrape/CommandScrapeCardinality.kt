@@ -5,7 +5,7 @@ import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
 import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
-import de.mctelemetry.core.metrics.exporters.agent.ObjectMetricReconverter
+import de.mctelemetry.core.metrics.exporters.MetricDataReadback
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -99,7 +99,7 @@ class CommandScrapeCardinality(val metricsAccessor: IMetricsAccessor?) {
             source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
         }
         val metricNameFilter = MetricNameArgumentType["metric"]
-        val data: Map<String, ObjectMetricReconverter.MetricDataReadback> =
+        val data: Map<String, MetricDataReadback> =
             if (metricNameFilter == null) {
                 metricsAccessor.collect()
             } else {
@@ -108,7 +108,7 @@ class CommandScrapeCardinality(val metricsAccessor: IMetricsAccessor?) {
                 else mapOf(result.name to result)
             }
         val cardinalities: Map<String, Pair<Map<String, Int>, Long>> =
-            data.mapValues { (_, value: ObjectMetricReconverter.MetricDataReadback) ->
+            data.mapValues { (_, value: MetricDataReadback) ->
                 val cardinality = analyzeCardinality(value.data.keys)
                 if (cardinality == null) return@mapValues emptyMap<String, Int>() to 0L
                 return@mapValues cardinality to (cardinality.values.fold(1L) { acc, i ->

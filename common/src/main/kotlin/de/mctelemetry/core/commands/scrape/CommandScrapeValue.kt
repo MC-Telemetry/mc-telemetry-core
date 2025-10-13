@@ -6,7 +6,7 @@ import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.LabelStringMapArgumentType
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
 import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
-import de.mctelemetry.core.metrics.exporters.agent.ObjectMetricReconverter
+import de.mctelemetry.core.metrics.exporters.MetricValueReadback
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.commands.invoke
@@ -82,12 +82,12 @@ class CommandScrapeValue(val metricsAccessor: IMetricsAccessor?) {
             )
         }
         return when (scrapeResponse) {
-            is ObjectMetricReconverter.MetricValueReadback.MetricDoubleValue -> {
+            is MetricValueReadback.MetricDoubleValue -> {
                 val value = (scrapeResponse.value * scale)
                 source.sendSuccess({ Component.literal(value.toString()) }, false)
                 value.toInt()
             }
-            is ObjectMetricReconverter.MetricValueReadback.MetricLongValue -> {
+            is MetricValueReadback.MetricLongValue -> {
                 val value = (scrapeResponse.value * scale)
                 source.sendSuccess({ Component.literal(value.toString()) }, false)
                 value.toInt()
@@ -135,12 +135,13 @@ class CommandScrapeValue(val metricsAccessor: IMetricsAccessor?) {
             }
             var totalCount = 0
             val totalSum = scrapeResponse.data.values.sumOf { valueReadback ->
+                @Suppress("AssignedValueIsNeverRead") // actual read in success response not detected?
                 totalCount++
                 when (valueReadback) {
-                    is ObjectMetricReconverter.MetricValueReadback.MetricDoubleValue -> {
+                    is MetricValueReadback.MetricDoubleValue -> {
                         (valueReadback.value * scale)
                     }
-                    is ObjectMetricReconverter.MetricValueReadback.MetricLongValue -> {
+                    is MetricValueReadback.MetricLongValue -> {
                         (valueReadback.value * scale)
                     }
                     else -> {
@@ -180,10 +181,10 @@ class CommandScrapeValue(val metricsAccessor: IMetricsAccessor?) {
                                                +": "
                                                append(
                                                    when (valueReadback) {
-                                                       is ObjectMetricReconverter.MetricValueReadback.MetricDoubleValue -> {
+                                                       is MetricValueReadback.MetricDoubleValue -> {
                                                            (valueReadback.value * scale).toString()
                                                        }
-                                                       is ObjectMetricReconverter.MetricValueReadback.MetricLongValue -> {
+                                                       is MetricValueReadback.MetricLongValue -> {
                                                            (valueReadback.value * scale).toString()
                                                        }
                                                        else -> throw IllegalArgumentException("Unexpected value readback, should already have been handled: $valueReadback")
