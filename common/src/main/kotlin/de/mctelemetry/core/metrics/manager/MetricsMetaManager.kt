@@ -3,6 +3,7 @@ package de.mctelemetry.core.metrics.manager
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.managar.IGameInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
+import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import dev.architectury.event.events.common.LifecycleEvent
 import net.minecraft.server.MinecraftServer
@@ -60,6 +61,20 @@ object MetricsMetaManager {
 
     private fun onServerStopped(server: MinecraftServer) {
         val serverManager = serverMetricsManagers.getOrElse(server) { return }
-        IWorldInstrumentManager.Events.UNLOADED.invoker().worldInstrumentManagerUnloaded(serverManager, server)
+
+        var exceptionAccumulator: Exception? = null
+        try {
+            serverManager.stop()
+        } catch (ex: Exception) {
+            exceptionAccumulator = ex
+        }
+        try {
+            IWorldInstrumentManager.Events.UNLOADED.invoker().worldInstrumentManagerUnloaded(serverManager, server)
+        } catch (ex: Exception) {
+            exceptionAccumulator += ex
+        }
+        if (exceptionAccumulator != null) {
+            throw exceptionAccumulator
+        }
     }
 }

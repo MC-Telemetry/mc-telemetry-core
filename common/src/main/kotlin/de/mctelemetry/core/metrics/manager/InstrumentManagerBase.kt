@@ -20,6 +20,7 @@ import io.opentelemetry.api.metrics.ObservableMeasurement
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentMap
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 
@@ -33,6 +34,11 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             MutableLongGaugeInstrumentRegistration,
             MutableDoubleGaugeInstrumentRegistration,
             GaugeInstrumentRegistration<*>>> = ConcurrentHashMap()
+
+    protected val allowRegistration: AtomicBoolean = AtomicBoolean(true)
+
+    val allowsRegistration: Boolean
+        get() = allowRegistration.get()
 
     override fun findGlobal(pattern: Regex): Sequence<IMetricDefinition> {
         val parent = parent ?: return findLocal(pattern)
@@ -66,10 +72,33 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         return name !in localInstruments
     }
 
+    protected fun unregisterAllLocal() {
+        var firstException: Exception? = null
+        outerLoop@ do {
+            val (key, value) = localInstruments.entries.firstOrNull() ?: break@outerLoop
+            try {
+                value.value.close()
+            } catch (ex: Exception) {
+                if (firstException == null)
+                    firstException = ex
+                else
+                    firstException.addSuppressed(ex)
+            }
+            localInstruments.remove(key, value)
+        } while (true)
+        if (firstException != null)
+            throw firstException
+    }
+
+    protected fun assertAllowsRegistration() {
+        if (!allowsRegistration) throw IllegalStateException("Manager does not accept new registrations")
+    }
+
     protected open fun createImmutableDoubleRegistration(
         builder: GB,
         callback: IInstrumentRegistration.Callback<ObservableDoubleMeasurement>,
     ): ImmutableGaugeInstrumentRegistration<ObservableDoubleMeasurement> {
+        assertAllowsRegistration()
         return ImmutableGaugeInstrumentRegistration(builder, callback)
     }
 
@@ -77,16 +106,19 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         builder: GB,
         callback: IInstrumentRegistration.Callback<ObservableLongMeasurement>,
     ): ImmutableGaugeInstrumentRegistration<ObservableLongMeasurement> {
+        assertAllowsRegistration()
         return ImmutableGaugeInstrumentRegistration(builder, callback)
     }
 
     protected open fun createMutableDoubleRegistration(builder: GB):
             MutableDoubleGaugeInstrumentRegistration {
+        assertAllowsRegistration()
         return MutableDoubleGaugeInstrumentRegistration(builder)
     }
 
     protected open fun createMutableLongRegistration(builder: GB):
             MutableLongGaugeInstrumentRegistration {
+        assertAllowsRegistration()
         return MutableLongGaugeInstrumentRegistration(builder)
     }
 
@@ -195,20 +227,29 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             builder.attributes.associate { it.key.lowercase() to BoundDomainAttributeKeyInfo.ofBuiltin(it) },
         )
 
-        abstract fun observe(instrument: R)
+        private val unregisterCallback: AtomicReference<AutoCloseable?> = AtomicReference(null)
+
+        private val closed: AtomicBoolean = AtomicBoolean(false)
+
+        fun observe(instrument: R) {
+            if(closed.get()) {
+                unregisterCallback.get()?.close()
+                return
+            }
+            observeImpl(instrument)
+        }
+
+        protected abstract fun observeImpl(instrument: R)
 
         fun provideUnregisterCallback(callback: AutoCloseable) {
             val previous = unregisterCallback.compareAndExchange(null, callback)
             if (previous != null) throw IllegalStateException("Unregister callback already provided: $previous (tried to set $callback)")
+            if (closed.get())
+                callback.close()
         }
 
-        private val unregisterCallback: AtomicReference<AutoCloseable?> = AtomicReference(null)
-
-        private var closed: Boolean = false
-
         override fun close() {
-            if (closed) return
-            closed = true
+            if (!closed.compareAndSet(false, true)) return
             var ex: Exception? = null
             try {
                 unregisterCallback.get()?.close()
@@ -254,7 +295,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         }
 
         val callback: IInstrumentRegistration.Callback<R>
-        override fun observe(instrument: R) {
+        override fun observeImpl(instrument: R) {
             callback.observe(instrument)
         }
     }
@@ -282,7 +323,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         val callbacks: ConcurrentLinkedDeque<IInstrumentRegistration.Callback<ObservableLongMeasurement>> =
             ConcurrentLinkedDeque()
 
-        override fun observe(instrument: ObservableLongMeasurement) {
+        override fun observeImpl(instrument: ObservableLongMeasurement) {
             callbacks.forEach {
                 it.observe(instrument)
             }
@@ -322,7 +363,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         val callbacks: ConcurrentLinkedDeque<IInstrumentRegistration.Callback<ObservableDoubleMeasurement>> =
             ConcurrentLinkedDeque()
 
-        override fun observe(instrument: ObservableDoubleMeasurement) {
+        override fun observeImpl(instrument: ObservableDoubleMeasurement) {
             callbacks.forEach {
                 it.observe(instrument)
             }
