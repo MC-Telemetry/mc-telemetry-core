@@ -19,6 +19,7 @@ interface IInstrumentManager {
     fun findLocalMutable(pattern: Regex): Sequence<IInstrumentRegistration.Mutable<*>> {
         return findLocal(pattern).filterIsInstance<IInstrumentRegistration.Mutable<*>>()
     }
+
     fun findLocalMutable(name: String): IInstrumentRegistration.Mutable<*>? {
         return findLocalMutable(Regex.fromLiteral(name)).firstOrNull()
     }
@@ -29,3 +30,8 @@ interface IInstrumentManager {
 
     fun gaugeInstrument(name: String): IGaugeInstrumentBuilder<*>
 }
+
+inline fun IInstrumentManager.gaugeInstrument(
+    name: String,
+    block: IGaugeInstrumentBuilder<*>.() -> Unit,
+): IGaugeInstrumentBuilder<*> = gaugeInstrument(name).apply(block)

@@ -4,6 +4,7 @@ import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
+import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
 import de.mctelemetry.core.metrics.manager.MetricsMetaManager
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import dev.architectury.event.events.common.CommandRegistrationEvent
@@ -56,6 +57,7 @@ object OTelCoreMod {
             })
         }
         MetricsMetaManager.register()
+        BuiltinInstruments.register()
     }
 
     init {
