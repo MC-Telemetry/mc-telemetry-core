@@ -34,7 +34,7 @@ object InstrumentMetaManager {
 
     private fun onServerStarting(server: MinecraftServer) {
         val serverManager = serverMetricsManagers.computeIfAbsent(server) {
-            WorldInstrumentManager(
+            WorldInstrumentManager.withPersistentStorage(
                 gameInstrumentManager.meter,
                 gameInstrumentManager,
                 it

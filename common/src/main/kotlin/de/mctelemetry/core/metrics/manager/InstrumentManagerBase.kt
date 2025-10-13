@@ -23,22 +23,29 @@ import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
+internal typealias InstrumentManagerBaseRegistrationUnion = Union3<
+        InstrumentManagerBase.ImmutableGaugeInstrumentRegistration<*>,
+        InstrumentManagerBase.MutableLongGaugeInstrumentRegistration,
+        InstrumentManagerBase.MutableDoubleGaugeInstrumentRegistration,
+        InstrumentManagerBase.GaugeInstrumentRegistration<*>>
 
-internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstrumentBuilder<*>>(
+internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstrumentBuilder<*>> protected constructor(
     val meter: Meter,
     val parent: IInstrumentManager?,
+    protected open val localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion> =
+        ConcurrentHashMap(),
 ) : IInstrumentManager {
-
-    protected val localInstruments: ConcurrentMap<String, Union3<
-            ImmutableGaugeInstrumentRegistration<*>,
-            MutableLongGaugeInstrumentRegistration,
-            MutableDoubleGaugeInstrumentRegistration,
-            GaugeInstrumentRegistration<*>>> = ConcurrentHashMap()
 
     protected val allowRegistration: AtomicBoolean = AtomicBoolean(true)
 
     val allowsRegistration: Boolean
         get() = allowRegistration.get()
+
+    init {
+        localInstruments.values.forEach {
+            it.value.provideUntrackCallback(this::untrackRegistration)
+        }
+    }
 
     override fun findGlobal(pattern: Regex): Sequence<IMetricDefinition> {
         val parent = parent ?: return findLocal(pattern)
@@ -94,6 +101,12 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         if (!allowsRegistration) throw IllegalStateException("Manager does not accept new registrations")
     }
 
+    protected fun untrackRegistration(name: String, value: IInstrumentRegistration) {
+        localInstruments.computeIfPresent(name) { k, v ->
+            v.takeIf { v.value !== value }
+        }
+    }
+
     protected open fun createImmutableDoubleRegistration(
         builder: GB,
         callback: IInstrumentRegistration.Callback<ObservableDoubleMeasurement>,
@@ -141,14 +154,14 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                 val registration = manager.createImmutableDoubleRegistration(this, callback)
                 runWithExceptionCleanup(registration::close) {
                     if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
-                    val unregisterClosable = manager.meter.gaugeBuilder(name).let {
+                    val otelRegistration = manager.meter.gaugeBuilder(name).let {
                         if (unit.isNotEmpty()) it.setUnit(unit) else it
                     }.let {
                         if (description.isNotEmpty()) it.setDescription(description) else it
                     }.buildWithCallback {
                         registration.observe(it)
                     }
-                    registration.provideUnregisterCallback(unregisterClosable)
+                    registration.provideOTelRegistration(otelRegistration)
                     Union3.of1(registration)
                 }
             }
@@ -160,14 +173,14 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                 val registration = manager.createImmutableLongRegistration(this, callback)
                 runWithExceptionCleanup(registration::close) {
                     if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
-                    val unregisterClosable = manager.meter.gaugeBuilder(name).let {
+                    val otelRegistration = manager.meter.gaugeBuilder(name).let {
                         if (unit.isNotEmpty()) it.setUnit(unit) else it
                     }.let {
                         if (description.isNotEmpty()) it.setDescription(description) else it
                     }.ofLongs().buildWithCallback {
                         registration.observe(it)
                     }
-                    registration.provideUnregisterCallback(unregisterClosable)
+                    registration.provideOTelRegistration(otelRegistration)
                     Union3.of1(registration)
                 }
             }
@@ -179,14 +192,14 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                 val registration = manager.createMutableLongRegistration(this)
                 runWithExceptionCleanup(registration::close) {
                     if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
-                    val unregisterClosable = manager.meter.gaugeBuilder(name).let {
+                    val otelRegistration = manager.meter.gaugeBuilder(name).let {
                         if (unit.isNotEmpty()) it.setUnit(unit) else it
                     }.let {
                         if (description.isNotEmpty()) it.setDescription(description) else it
                     }.ofLongs().buildWithCallback {
                         registration.observe(it)
                     }
-                    registration.provideUnregisterCallback(unregisterClosable)
+                    registration.provideOTelRegistration(otelRegistration)
                     Union3.of2(registration)
                 }
             }
@@ -198,14 +211,14 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                 val registration = manager.createMutableDoubleRegistration(this)
                 runWithExceptionCleanup(registration::close) {
                     if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
-                    val unregisterClosable = manager.meter.gaugeBuilder(name).let {
+                    val otelRegistration = manager.meter.gaugeBuilder(name).let {
                         if (unit.isNotEmpty()) it.setUnit(unit) else it
                     }.let {
                         if (description.isNotEmpty()) it.setDescription(description) else it
                     }.buildWithCallback {
                         registration.observe(it)
                     }
-                    registration.provideUnregisterCallback(unregisterClosable)
+                    registration.provideOTelRegistration(otelRegistration)
                     Union3.of3(registration)
                 }
             }
@@ -213,7 +226,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         }
     }
 
-    internal abstract inner class GaugeInstrumentRegistration<R : ObservableMeasurement>(
+    internal abstract class GaugeInstrumentRegistration<R : ObservableMeasurement>(
         override val name: String,
         override val description: String,
         override val unit: String,
@@ -225,15 +238,20 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             builder.description,
             builder.unit,
             builder.attributes.associate { it.key.lowercase() to BoundDomainAttributeKeyInfo.ofBuiltin(it) },
-        )
+        ) {
+            untrackCallback.set(builder.manager::untrackRegistration)
+        }
 
-        private val unregisterCallback: AtomicReference<AutoCloseable?> = AtomicReference(null)
+        private val otelRegistration: AtomicReference<AutoCloseable?> = AtomicReference(null)
+        private val untrackCallback: AtomicReference<((name: String, value: IInstrumentRegistration) -> Unit)?> =
+            AtomicReference(null)
 
         private val closed: AtomicBoolean = AtomicBoolean(false)
 
         fun observe(instrument: R) {
-            if(closed.get()) {
-                unregisterCallback.get()?.close()
+            if (closed.get()) {
+                otelRegistration.get()?.close()
+                untrackCallback.get()?.invoke(name, this)
                 return
             }
             observeImpl(instrument)
@@ -241,29 +259,30 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
 
         protected abstract fun observeImpl(instrument: R)
 
-        fun provideUnregisterCallback(callback: AutoCloseable) {
-            val previous = unregisterCallback.compareAndExchange(null, callback)
-            if (previous != null) throw IllegalStateException("Unregister callback already provided: $previous (tried to set $callback)")
+        fun provideOTelRegistration(otelRegistration: AutoCloseable) {
+            val previous = this.otelRegistration.compareAndExchange(null, otelRegistration)
+            if (previous != null) throw IllegalStateException("Unregister callback already provided: $previous (tried to set $otelRegistration)")
             if (closed.get())
-                callback.close()
+                otelRegistration.close()
+        }
+
+        fun provideUntrackCallback(callback: (name: String, value: IInstrumentRegistration) -> Unit) {
+            val previous = untrackCallback.compareAndExchange(null, callback)
+            if (previous != null) throw IllegalStateException("Untrack callback already provided: $previous (tried to set $callback)")
+            if (closed.get())
+                callback.invoke(name, this)
         }
 
         override fun close() {
             if (!closed.compareAndSet(false, true)) return
             var ex: Exception? = null
             try {
-                unregisterCallback.get()?.close()
+                otelRegistration.get()!!.close()
             } catch (ex2: Exception) {
                 ex = ex2
             }
             try {
-                localInstruments.compute(name) { key, old ->
-                    return@compute when {
-                        old == null -> null
-                        old.value === this -> null
-                        else -> old
-                    }
-                }
+                untrackCallback.get()!!.invoke(name, this)
             } catch (ex2: Exception) {
                 if (ex == null)
                     ex = ex2
@@ -274,7 +293,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         }
     }
 
-    internal open inner class ImmutableGaugeInstrumentRegistration<R : ObservableMeasurement> :
+    internal open class ImmutableGaugeInstrumentRegistration<R : ObservableMeasurement> :
             GaugeInstrumentRegistration<R> {
 
         constructor(
@@ -300,7 +319,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         }
     }
 
-    internal open inner class MutableLongGaugeInstrumentRegistration :
+    internal open class MutableLongGaugeInstrumentRegistration :
             GaugeInstrumentRegistration<ObservableLongMeasurement>,
             ILongInstrumentRegistration.Mutable {
 
@@ -340,7 +359,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         }
     }
 
-    internal open inner class MutableDoubleGaugeInstrumentRegistration :
+    internal open class MutableDoubleGaugeInstrumentRegistration :
             GaugeInstrumentRegistration<ObservableDoubleMeasurement>,
             IDoubleInstrumentRegistration.Mutable {
 
