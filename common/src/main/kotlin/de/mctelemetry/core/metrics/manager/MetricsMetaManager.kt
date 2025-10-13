@@ -1,5 +1,6 @@
 package de.mctelemetry.core.metrics.manager
 
+import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.managar.IGameInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.utils.runWithExceptionCleanup
@@ -18,21 +19,22 @@ object MetricsMetaManager {
         LifecycleEvent.SERVER_STOPPED.register(::onServerStopped)
     }
 
-    private lateinit var gameMetricsManager: GameInstrumentManager
+    private lateinit var gameInstrumentManager: GameInstrumentManager
     private val serverMetricsManagers: ConcurrentMap<MinecraftServer, WorldInstrumentManager> = ConcurrentHashMap(1)
 
     private fun onSetup() {
-        if (::gameMetricsManager.isInitialized) {
+        if (::gameInstrumentManager.isInitialized) {
             return
         }
-        gameMetricsManager = GameInstrumentManager()
-        IGameInstrumentManager.Events.READY.invoker().gameMetricsManagerReady(gameMetricsManager)
+        gameInstrumentManager = GameInstrumentManager(OTelCoreMod.meter)
+        IGameInstrumentManager.Events.READY.invoker().gameMetricsManagerReady(gameInstrumentManager)
     }
 
     private fun onServerStarting(server: MinecraftServer) {
         val serverManager = serverMetricsManagers.computeIfAbsent(server) {
             WorldInstrumentManager(
-                gameMetricsManager,
+                gameInstrumentManager.meter,
+                gameInstrumentManager,
                 it
             )
         }
