@@ -5,15 +5,13 @@ import de.mctelemetry.core.ui.RedstoneScraperBlockMenu
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import net.minecraft.core.BlockPos
-import net.minecraft.core.NonNullList
 import net.minecraft.network.chat.Component
+import net.minecraft.world.MenuProvider
 import net.minecraft.world.entity.player.Inventory
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.inventory.AbstractContainerMenu
 import net.minecraft.world.inventory.ContainerData
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
 import net.minecraft.world.level.Level
-import net.minecraft.world.level.block.entity.BaseContainerBlockEntity
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityTicker
 import net.minecraft.world.level.block.state.BlockState
@@ -22,24 +20,20 @@ import kotlin.jvm.optionals.getOrElse
 
 
 class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
-    BaseContainerBlockEntity(OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get(), pos, state) {
+    MenuProvider, BlockEntity(OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get(), pos, state) {
 
-    private var storedBuckets = 0
-    private var items: NonNullList<ItemStack> = NonNullList.withSize(INVENTORY_SIZE, ItemStack.EMPTY)
     private var data: ContainerData = object : ContainerData {
         override fun get(index: Int): Int {
-            if (index == 0) return storedBuckets
-            else if (index == 1) return signalValue
+            if (index == 0) return signalValue
             else return -1
         }
 
         override fun set(index: Int, value: Int) {
-            if (index == 0) storedBuckets = value
-            else if (index == 1) signalValue = value
+            if (index == 0) signalValue = value
         }
 
         override fun getCount(): Int {
-            return 2
+            return 1
         }
     }
 
@@ -53,24 +47,12 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
         Ticker.unregister(this)
     }
 
-    override fun getDefaultName(): Component {
+    override fun getDisplayName(): Component {
         return Component.translatable("container.mcotelcore.redstone_scraper_block")
     }
 
-    override fun getItems(): NonNullList<ItemStack> {
-        return this.items
-    }
-
-    override fun setItems(items: NonNullList<ItemStack>) {
-        this.items = items
-    }
-
-    override fun createMenu(containerId: Int, inventory: Inventory): AbstractContainerMenu {
-        return RedstoneScraperBlockMenu(containerId, inventory, this, this.data)
-    }
-
-    override fun getContainerSize(): Int {
-        return INVENTORY_SIZE
+    override fun createMenu(containerId: Int, inventory: Inventory, player: Player): AbstractContainerMenu {
+        return RedstoneScraperBlockMenu(containerId, inventory, this.data)
     }
 
     class Ticker<T : BlockEntity> : BlockEntityTicker<T> {
@@ -122,28 +104,9 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
 
         override fun tick(level: Level, blockPos: BlockPos, blockState: BlockState, blockEntity: T) {
             if (blockEntity is RedstoneScraperBlockEntity) {
-                val firstSlot: ItemStack = blockEntity.getItem(0)
-                if (firstSlot.`is`(Items.WATER_BUCKET)) {
-                    if (blockEntity.storedBuckets < 64) {
-                        blockEntity.storedBuckets++
-                        blockEntity.setItem(0, ItemStack(Items.BUCKET))
-                    }
-                }
-                val secondSlot: ItemStack = blockEntity.getItem(1)
-                if (secondSlot.`is`(Items.BUCKET)) {
-                    if (blockEntity.storedBuckets > 0) {
-                        blockEntity.storedBuckets--
-                        blockEntity.setItem(1, ItemStack(Items.WATER_BUCKET))
-                    }
-                }
-
                 val signal = level.getBestNeighborSignal(blockPos)
                 blockEntity.signalValue = signal
             }
         }
-    }
-
-    companion object {
-        const val INVENTORY_SIZE: Int = 2
     }
 }

@@ -28,11 +28,12 @@ object OTelCoreModMenuTypes {
     fun init() {
         MENU_TYPES.register()
 
-            ClientLifecycleEvent.CLIENT_STARTED.register(ClientLifecycleEvent.ClientState { _ ->
-                MenuRegistry.registerScreenFactory(
-                    REDSTONE_SCRAPER_BLOCK.get(),
-                    MenuRegistry.ScreenFactory(::RedstoneScraperBlockScreen))
-            })
+        ClientLifecycleEvent.CLIENT_STARTED.register(ClientLifecycleEvent.ClientState { _ ->
+            MenuRegistry.registerScreenFactory(
+                REDSTONE_SCRAPER_BLOCK.get(),
+                MenuRegistry.ScreenFactory(::RedstoneScraperBlockScreen)
+            )
+        })
     }
 
     fun <T : MenuType<*>> registerMenuType(name: String, menuType: Supplier<T>): RegistrySupplier<T> {
