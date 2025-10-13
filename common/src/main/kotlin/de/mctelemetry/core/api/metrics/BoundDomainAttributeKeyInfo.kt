@@ -21,6 +21,19 @@ sealed class BoundDomainAttributeKeyInfo<T>(
                 AttributeType.DOUBLE_ARRAY -> DoubleArrayKeyInfo(key as AttributeKey<List<Double>>)
             } as BoundDomainAttributeKeyInfo<T>
         }
+        fun ofBuiltin(keyType: AttributeType, name: String): BoundDomainAttributeKeyInfo<*> {
+            @Suppress("UNCHECKED_CAST")
+            return when(keyType) {
+                AttributeType.STRING -> StringKeyInfo(AttributeKey.stringKey(name))
+                AttributeType.BOOLEAN -> BooleanKeyInfo(AttributeKey.booleanKey(name))
+                AttributeType.LONG -> LongKeyInfo(AttributeKey.longKey(name))
+                AttributeType.DOUBLE -> DoubleKeyInfo(AttributeKey.doubleKey(name))
+                AttributeType.STRING_ARRAY -> StringArrayKeyInfo(AttributeKey.stringArrayKey(name))
+                AttributeType.BOOLEAN_ARRAY -> BooleanArrayKeyInfo(AttributeKey.booleanArrayKey(name))
+                AttributeType.LONG_ARRAY -> LongArrayKeyInfo(AttributeKey.longArrayKey(name))
+                AttributeType.DOUBLE_ARRAY -> DoubleArrayKeyInfo(AttributeKey.doubleArrayKey(name))
+            }
+        }
     }
 
     class StringKeyInfo(attributeKey: AttributeKey<String>) :
