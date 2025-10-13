@@ -14,8 +14,8 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.entity.player.Inventory
 
 
-class RubyBlockScreen(menu: RubyBlockMenu, playerInventory: Inventory, title: Component) :
-    AbstractContainerScreen<RubyBlockMenu>(menu, playerInventory, title) {
+class RedstoneScraperBlockScreen(menu: RedstoneScraperBlockMenu, playerInventory: Inventory, title: Component) :
+    AbstractContainerScreen<RedstoneScraperBlockMenu>(menu, playerInventory, title) {
 
     override fun init() {
         super.init()
@@ -55,6 +55,6 @@ class RubyBlockScreen(menu: RubyBlockMenu, playerInventory: Inventory, title: Co
 
     companion object {
         private val BACKGROUND: ResourceLocation =
-            ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "textures/gui/ruby_block/ruby_block.png")
+            ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "textures/gui/redstone_scraper_block/redstone_scraper_block.png")
     }
 }

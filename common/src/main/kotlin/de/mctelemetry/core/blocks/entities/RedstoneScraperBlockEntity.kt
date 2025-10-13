@@ -1,7 +1,7 @@
 package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.ui.RubyBlockMenu
+import de.mctelemetry.core.ui.RedstoneScraperBlockMenu
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import net.minecraft.core.BlockPos
@@ -21,8 +21,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.jvm.optionals.getOrElse
 
 
-class RubyBlockEntity(pos: BlockPos, state: BlockState) :
-    BaseContainerBlockEntity(OTelCoreModBlockEntityTypes.RUBY_BLOCK_ENTITY.get(), pos, state) {
+class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
+    BaseContainerBlockEntity(OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get(), pos, state) {
 
     private var storedBuckets = 0
     private var items: NonNullList<ItemStack> = NonNullList.withSize(INVENTORY_SIZE, ItemStack.EMPTY)
@@ -54,7 +54,7 @@ class RubyBlockEntity(pos: BlockPos, state: BlockState) :
     }
 
     override fun getDefaultName(): Component {
-        return Component.translatable("container.mcotelcore.ruby_block")
+        return Component.translatable("container.mcotelcore.redstone_scraper_block")
     }
 
     override fun getItems(): NonNullList<ItemStack> {
@@ -66,7 +66,7 @@ class RubyBlockEntity(pos: BlockPos, state: BlockState) :
     }
 
     override fun createMenu(containerId: Int, inventory: Inventory): AbstractContainerMenu {
-        return RubyBlockMenu(containerId, inventory, this, this.data)
+        return RedstoneScraperBlockMenu(containerId, inventory, this, this.data)
     }
 
     override fun getContainerSize(): Int {
@@ -77,12 +77,12 @@ class RubyBlockEntity(pos: BlockPos, state: BlockState) :
 
         companion object {
 
-            private val registrations = ConcurrentLinkedQueue<RubyBlockEntity>()
-            fun register(blockEntity: RubyBlockEntity) {
+            private val registrations = ConcurrentLinkedQueue<RedstoneScraperBlockEntity>()
+            fun register(blockEntity: RedstoneScraperBlockEntity) {
                 registrations.add(blockEntity)
             }
 
-            fun unregister(blockEntity: RubyBlockEntity) {
+            fun unregister(blockEntity: RedstoneScraperBlockEntity) {
                 registrations.remove(blockEntity)
             }
 
@@ -91,14 +91,14 @@ class RubyBlockEntity(pos: BlockPos, state: BlockState) :
             }
 
             private val signalMetric =
-                OTelCoreMod.meter.gaugeBuilder("minecraft.mod.${OTelCoreMod.MOD_ID}.ruby.signal").ofLongs()
+                OTelCoreMod.meter.gaugeBuilder("minecraft.mod.${OTelCoreMod.MOD_ID}.redstone.signal").ofLongs()
                     .buildWithCallback { metric ->
-                        var toRemove: MutableSet<RubyBlockEntity>? = null
+                        var toRemove: MutableSet<RedstoneScraperBlockEntity>? = null
                         registrations.forEach {
                             val level = it.level ?: return@forEach
                             if (!level.isLoaded(it.blockPos)) return@forEach
                             val levelEntity =
-                                level.getBlockEntity(it.blockPos, OTelCoreModBlockEntityTypes.RUBY_BLOCK_ENTITY.get())
+                                level.getBlockEntity(it.blockPos, OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get())
                                     .getOrElse { return@forEach }
                             if (levelEntity != it) {
                                 toRemove = toRemove ?: mutableSetOf()
@@ -121,7 +121,7 @@ class RubyBlockEntity(pos: BlockPos, state: BlockState) :
         }
 
         override fun tick(level: Level, blockPos: BlockPos, blockState: BlockState, blockEntity: T) {
-            if (blockEntity is RubyBlockEntity) {
+            if (blockEntity is RedstoneScraperBlockEntity) {
                 val firstSlot: ItemStack = blockEntity.getItem(0)
                 if (firstSlot.`is`(Items.WATER_BUCKET)) {
                     if (blockEntity.storedBuckets < 64) {

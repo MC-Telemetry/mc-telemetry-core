@@ -1,6 +1,6 @@
 {
-  "item.mcotelcore.ruby_block": "Ruby",
-  "block.mcotelcore.ruby_block": "Ruby",
-  "container.mcotelcore.ruby_block": "Ruby",
+  "item.mcotelcore.redstone_scraper_block": "Redstone Scraper",
+  "block.mcotelcore.redstone_scraper_block": "Redstone Scraper",
+  "container.mcotelcore.redstone_scraper_block": "Redstone Scraper",
   "category.mcotelcore_tab": "MC Telemetry"
 }

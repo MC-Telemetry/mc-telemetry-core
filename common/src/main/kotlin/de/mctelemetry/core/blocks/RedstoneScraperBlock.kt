@@ -1,13 +1,12 @@
 package de.mctelemetry.core.blocks
 
 import com.mojang.serialization.MapCodec
-import de.mctelemetry.core.blocks.entities.RubyBlockEntity
+import de.mctelemetry.core.blocks.entities.RedstoneScraperBlockEntity
 import dev.architectury.event.EventResult
 import dev.architectury.event.events.common.InteractionEvent
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.world.InteractionHand
-import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.BaseEntityBlock
@@ -17,13 +16,13 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
 
-class RubyBlock(properties: Properties) : InteractionEvent.RightClickBlock, BaseEntityBlock(properties) {
+class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClickBlock, BaseEntityBlock(properties) {
     override fun codec(): MapCodec<out BaseEntityBlock> {
         return CODEC
     }
 
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity {
-        return RubyBlockEntity(pos, state)
+        return RedstoneScraperBlockEntity(pos, state)
     }
 
     override fun getRenderShape(blockState: BlockState): RenderShape {
@@ -33,7 +32,7 @@ class RubyBlock(properties: Properties) : InteractionEvent.RightClickBlock, Base
     override fun <T : BlockEntity> getTicker(
         level: Level, state: BlockState, blockEntityType: BlockEntityType<T>
     ): BlockEntityTicker<T> {
-        return RubyBlockEntity.Ticker()
+        return RedstoneScraperBlockEntity.Ticker()
     }
 
 
@@ -48,7 +47,7 @@ class RubyBlock(properties: Properties) : InteractionEvent.RightClickBlock, Base
         }
 
         val blockEntity = player.level().getBlockEntity(blockPos)
-        if (blockEntity !is RubyBlockEntity) {
+        if (blockEntity !is RedstoneScraperBlockEntity) {
             return EventResult.pass()
         }
 
@@ -66,6 +65,6 @@ class RubyBlock(properties: Properties) : InteractionEvent.RightClickBlock, Base
     }
 
     companion object {
-        val CODEC: MapCodec<RubyBlock> = simpleCodec(::RubyBlock)
+        val CODEC: MapCodec<RedstoneScraperBlock> = simpleCodec(::RedstoneScraperBlock)
     }
 }
