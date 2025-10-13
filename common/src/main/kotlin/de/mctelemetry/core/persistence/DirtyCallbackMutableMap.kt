@@ -10,19 +10,13 @@ import java.util.function.BiFunction
 import java.util.function.Function
 
 open class DirtyCallbackMutableMap<K : Any, V : Any>(
-    protected val backingMap: java.util.Map<K, V>,
+    protected val backingMap: MutableMap<K, V>,
     protected val setDirty: () -> Unit,
-) : java.util.Map<K, V> by backingMap, MutableMap<K, V> {
+) : MutableMap<K, V> by backingMap {
 
     override fun putIfAbsent(key: K, value: V): V? {
         return backingMap.putIfAbsent(key, value).also {
             if (it == null) setDirty()
-        }
-    }
-
-    override fun remove(key: Any?, value: Any?): Boolean {
-        return backingMap.remove(key, value).also {
-            if (it) setDirty()
         }
     }
 
@@ -111,14 +105,8 @@ open class DirtyCallbackMutableMap<K : Any, V : Any>(
         }
     }
 
-    override fun remove(key: Any): V? {
-        return backingMap.remove(key).also {
-            if (it != null) setDirty()
-        }
-    }
-
     override fun clear() {
-        val wasEmpty = backingMap.isEmpty
+        val wasEmpty = backingMap.isEmpty()
         return backingMap.clear().also {
             if (!wasEmpty) setDirty()
         }
@@ -161,9 +149,9 @@ open class DirtyCallbackMutableMap<K : Any, V : Any>(
         backingMap.forEach(action)
     }
 
-    override fun entrySet(): DirtyCallbackMutableSet<MutableMap.MutableEntry<K, V>> {
+    fun entrySet(): DirtyCallbackMutableSet<MutableMap.MutableEntry<K, V>> {
         @Suppress("UNCHECKED_CAST")
-        val backingSet: MutableSet<MutableMap.MutableEntry<K, V>> = backingMap.entrySet()
+        val backingSet: MutableSet<MutableMap.MutableEntry<K, V>> = backingMap.entries
         val lastEntrySetPair = lastEntrySet.get()
         if (lastEntrySetPair != null && lastEntrySetPair.first === backingSet) {
             return lastEntrySetPair.second
@@ -177,9 +165,9 @@ open class DirtyCallbackMutableMap<K : Any, V : Any>(
         }
     }
 
-    override fun keySet(): DirtyCallbackMutableSet<K> {
+    fun keySet(): DirtyCallbackMutableSet<K> {
         @Suppress("UNCHECKED_CAST")
-        val backingSet: MutableSet<K> = backingMap.keySet()
+        val backingSet: MutableSet<K> = backingMap.keys
         val lastKeySetPair = lastKeySet.get()
         if (lastKeySetPair != null && lastKeySetPair.first === backingSet) {
             return lastKeySetPair.second
@@ -193,9 +181,9 @@ open class DirtyCallbackMutableMap<K : Any, V : Any>(
         }
     }
 
-    override fun values(): DirtyCallbackMutableCollection<V> {
+    fun values(): DirtyCallbackMutableCollection<V> {
         @Suppress("UNCHECKED_CAST")
-        val backingCollection: MutableCollection<V> = backingMap.values()
+        val backingCollection: MutableCollection<V> = backingMap.values
         val lastValuesPair = lastValuesCollection.get()
         if (lastValuesPair != null && lastValuesPair.first === backingCollection) {
             return lastValuesPair.second
@@ -216,7 +204,7 @@ open class DirtyCallbackMutableMap<K : Any, V : Any>(
     private val lastValuesCollection: AtomicReference<Pair<MutableCollection<V>, DirtyCallbackMutableCollection<V>>?> =
         AtomicReference(null)
     override val size: Int
-        get() = backingMap.size()
+        get() = backingMap.size
 
     override fun containsKey(key: K): Boolean {
         return backingMap.containsKey(key)
@@ -234,8 +222,7 @@ open class DirtyCallbackMutableMap<K : Any, V : Any>(
         backingMap: ConcurrentMap<K, V> = ConcurrentHashMap(),
         setDirty: () -> Unit,
     ) : DirtyCallbackMutableMap<K, V>(
-        @Suppress("UNCHECKED_CAST")
-        (backingMap as java.util.Map<K, V>),
+        backingMap,
         setDirty
     ), ConcurrentMap<K,V> {
 

@@ -6,15 +6,9 @@ import java.util.function.Predicate
 import java.util.stream.Stream
 
 open class DirtyCallbackMutableCollection<S>(
-    protected val backingCollection: java.util.Collection<S>,
+    protected val backingCollection: MutableCollection<S>,
     protected val setDirty: () -> Unit,
-) : java.util.Collection<S> by backingCollection, MutableCollection<S> {
-
-    @Suppress("UNCHECKED_CAST")
-    constructor(backingCollection: MutableCollection<S>, setDirty: () -> Unit) : this(
-        backingCollection as java.util.Collection<S>,
-        setDirty,
-    )
+) : MutableCollection<S> by backingCollection {
 
     override fun add(element: S): Boolean {
         return backingCollection.add(element).also {
@@ -29,7 +23,7 @@ open class DirtyCallbackMutableCollection<S>(
     }
 
     override fun clear() {
-        val wasEmpty: Boolean = backingCollection.isEmpty
+        val wasEmpty: Boolean = backingCollection.isEmpty()
         return backingCollection.clear().also {
             if (!wasEmpty) setDirty()
         }
@@ -48,7 +42,7 @@ open class DirtyCallbackMutableCollection<S>(
     }
 
     override val size: Int
-        get() = backingCollection.size()
+        get() = backingCollection.size
 
     override fun contains(element: S): Boolean {
         return backingCollection.contains(element)
