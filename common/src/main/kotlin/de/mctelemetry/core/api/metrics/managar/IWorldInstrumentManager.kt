@@ -1,11 +1,12 @@
 package de.mctelemetry.core.api.metrics.managar
 
+import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.builder.IWorldGaugeInstrumentBuilder
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
 import net.minecraft.server.MinecraftServer
 
-interface IWorldInstrumentManager: IInstrumentManager {
+interface IWorldInstrumentManager : IInstrumentManager {
 
     val gameInstruments: IGameInstrumentManager
 
@@ -39,3 +40,8 @@ interface IWorldInstrumentManager: IInstrumentManager {
         }
     }
 }
+
+inline fun IWorldInstrumentManager.gaugeWorldInstrument(
+    name: String,
+    block: IWorldGaugeInstrumentBuilder<*>.() -> Unit,
+): IWorldGaugeInstrumentBuilder<*> = gaugeInstrument(name).apply(block)
