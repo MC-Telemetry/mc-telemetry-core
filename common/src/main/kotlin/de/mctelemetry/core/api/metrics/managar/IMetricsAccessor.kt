@@ -1,5 +1,8 @@
-package de.mctelemetry.core.metrics.exporters
+package de.mctelemetry.core.api.metrics.managar
 
+import de.mctelemetry.core.metrics.exporters.MetricDataReadback
+import de.mctelemetry.core.metrics.exporters.MetricDefinitionReadback
+import de.mctelemetry.core.metrics.exporters.MetricValueReadback
 import de.mctelemetry.core.metrics.exporters.agent.ObjectMetricsAccessor
 import io.opentelemetry.api.common.Attributes
 import java.util.Objects
@@ -13,7 +16,7 @@ interface IMetricsAccessor {
     companion object {
 
         val GLOBAL: IMetricsAccessor? by lazy {
-            ObjectMetricsAccessor.INSTANCE
+            ObjectMetricsAccessor.Companion.INSTANCE
         }
 
         fun matchFilter(value: Attributes, filter: Map<String, String>?, exact: Boolean): Boolean {
