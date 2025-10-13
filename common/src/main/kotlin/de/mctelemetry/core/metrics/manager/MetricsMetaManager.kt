@@ -1,14 +1,14 @@
 package de.mctelemetry.core.metrics.manager
 
-import de.mctelemetry.core.api.metrics.managar.IGameMetricsManager
-import de.mctelemetry.core.api.metrics.managar.IWorldMetricsManager
+import de.mctelemetry.core.api.metrics.managar.IGameInstrumentManager
+import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import dev.architectury.event.events.common.LifecycleEvent
 import net.minecraft.server.MinecraftServer
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
-object MetricMetaManager {
+object MetricsMetaManager {
 
     fun register() {
         LifecycleEvent.SETUP.register(::onSetup)
@@ -18,20 +18,20 @@ object MetricMetaManager {
         LifecycleEvent.SERVER_STOPPED.register(::onServerStopped)
     }
 
-    private lateinit var gameMetricsManager: GameMetricsManager
-    private val serverMetricsManagers: ConcurrentMap<MinecraftServer, WorldMetricsManager> = ConcurrentHashMap(1)
+    private lateinit var gameMetricsManager: GameInstrumentManager
+    private val serverMetricsManagers: ConcurrentMap<MinecraftServer, WorldInstrumentManager> = ConcurrentHashMap(1)
 
     private fun onSetup() {
         if (::gameMetricsManager.isInitialized) {
             return
         }
-        gameMetricsManager = GameMetricsManager()
-        IGameMetricsManager.Events.READY.invoker().gameMetricsManagerReady(gameMetricsManager)
+        gameMetricsManager = GameInstrumentManager()
+        IGameInstrumentManager.Events.READY.invoker().gameMetricsManagerReady(gameMetricsManager)
     }
 
     private fun onServerStarting(server: MinecraftServer) {
         val serverManager = serverMetricsManagers.computeIfAbsent(server) {
-            WorldMetricsManager(
+            WorldInstrumentManager(
                 gameMetricsManager,
                 it
             )
@@ -41,23 +41,23 @@ object MetricMetaManager {
             serverManager.start()
             runWithExceptionCleanup(cleanup = { serverManager.stop() })
             {
-                IWorldMetricsManager.Events.LOADING.invoker().worldMetricsManagerLoading(serverManager, server)
+                IWorldInstrumentManager.Events.LOADING.invoker().worldInstrumentManagerLoading(serverManager, server)
             }
         }
     }
 
     private fun onServerStarted(server: MinecraftServer) {
         val serverManager = serverMetricsManagers.getValue(server)
-        IWorldMetricsManager.Events.LOADED.invoker().worldMetricsManagerLoaded(serverManager, server)
+        IWorldInstrumentManager.Events.LOADED.invoker().worldInstrumentManagerLoaded(serverManager, server)
     }
 
     private fun onServerStopping(server: MinecraftServer) {
         val serverManager = serverMetricsManagers.getOrElse(server) { return }
-        IWorldMetricsManager.Events.UNLOADING.invoker().worldMetricsManagerUnloading(serverManager, server)
+        IWorldInstrumentManager.Events.UNLOADING.invoker().worldInstrumentManagerUnloading(serverManager, server)
     }
 
     private fun onServerStopped(server: MinecraftServer) {
         val serverManager = serverMetricsManagers.getOrElse(server) { return }
-        IWorldMetricsManager.Events.UNLOADED.invoker().worldMetricsManagerUnloaded(serverManager, server)
+        IWorldInstrumentManager.Events.UNLOADED.invoker().worldInstrumentManagerUnloaded(serverManager, server)
     }
 }
