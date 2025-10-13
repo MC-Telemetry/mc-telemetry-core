@@ -20,16 +20,13 @@ internal class WorldInstrumentManager(
     gameInstruments,
 ), IWorldInstrumentManager, AutoCloseable {
 
-    private var active: Boolean = false
-
     fun start() {
-        if (active) return
-        active = true
+        allowRegistration.set(true)
     }
 
     fun stop() {
-        if (!active) return
-        active = false
+        allowRegistration.set(false)
+        unregisterAllLocal()
     }
 
     override fun close() {
@@ -57,10 +54,12 @@ internal class WorldInstrumentManager(
     }
 
     override fun createMutableDoubleRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableDoubleGaugeInstrumentRegistration {
+        assertAllowsRegistration()
         return WorldMutableDoubleGaugeInstrumentRegistration(builder)
     }
 
     override fun createMutableLongRegistration(builder: WorldGaugeInstrumentBuilder): InstrumentManagerBase<WorldGaugeInstrumentBuilder>.MutableLongGaugeInstrumentRegistration {
+        assertAllowsRegistration()
         return WorldMutableLongGaugeInstrumentRegistration(builder)
     }
 

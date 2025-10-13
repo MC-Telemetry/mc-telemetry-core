@@ -30,3 +30,32 @@ inline fun <T> runWithExceptionCleanup(cleanup: () -> Unit, block: () -> T): T {
         throw e
     }
 }
+
+/**
+ * If the first exception is not null, adds the second exception to the first's suppressed list and returns the first.
+ * If the first exception is null, return the second exception unmodified.
+ *
+ * Allows constructs like this:
+ * ```kotlin
+ * var exAccumulator: Exception?
+ * try {
+ *     // [...] first possibly failing block
+ * } catch(ex: Exception) {
+ *     exAccumulator += ex
+ * }
+ * try {
+ *     // [...] second possibly failing block
+ * } catch(ex: Exception) {
+ *     exAccumulator += ex
+ * }
+ * // [...]
+ * if (exAccumulator != null)
+ *     // throw accumulated exceptions
+ *     throw exAccumulator
+ * ```
+ */
+operator fun Exception?.plus(other: Exception): Exception {
+    if(this == null) return other
+    this.addSuppressed(other)
+    return this
+}
