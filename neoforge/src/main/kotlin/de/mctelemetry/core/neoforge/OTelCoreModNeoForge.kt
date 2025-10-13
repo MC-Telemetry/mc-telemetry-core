@@ -2,10 +2,10 @@ package de.mctelemetry.core.neoforge
 
 import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.blocks.entities.RubyBlockEntity
+import de.mctelemetry.core.blocks.entities.RedstoneScraperBlockEntity
 import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.ui.OTelCoreModMenuTypes
-import de.mctelemetry.core.ui.RubyBlockScreen
+import de.mctelemetry.core.ui.RedstoneScraperBlockScreen
 import net.minecraft.client.gui.screens.MenuScreens
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.commands.synchronization.ArgumentTypeInfos
@@ -40,7 +40,7 @@ object OTelCoreModNeoForge {
             defReg.register(MOD_BUS)
         }
         FORGE_BUS.addListener(ServerStoppingEvent::class.java) { event: ServerStoppingEvent ->
-            RubyBlockEntity.Ticker.unregisterAll()
+            RedstoneScraperBlockEntity.Ticker.unregisterAll()
         }
     }
 
@@ -49,8 +49,8 @@ object OTelCoreModNeoForge {
         @SubscribeEvent
         fun registerScreens(event: RegisterMenuScreensEvent) {
             event.register(
-                OTelCoreModMenuTypes.RUBY_BLOCK.get(),
-                MenuScreens.ScreenConstructor(::RubyBlockScreen))
+                OTelCoreModMenuTypes.REDSTONE_SCRAPER_BLOCK.get(),
+                MenuScreens.ScreenConstructor(::RedstoneScraperBlockScreen))
         }
     }
 }

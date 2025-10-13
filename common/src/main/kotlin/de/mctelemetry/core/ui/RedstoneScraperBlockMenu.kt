@@ -12,12 +12,12 @@ import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 
 
-class RubyBlockMenu(
+class RedstoneScraperBlockMenu(
     containerID: Int,
     playerInventory: Inventory,
     val container: Container = SimpleContainer(2),
     val data: ContainerData = SimpleContainerData(2)
-) : AbstractContainerMenu(OTelCoreModMenuTypes.RUBY_BLOCK.get(), containerID) {
+) : AbstractContainerMenu(OTelCoreModMenuTypes.REDSTONE_SCRAPER_BLOCK.get(), containerID) {
 
     init {
         checkContainerSize(container, 2)

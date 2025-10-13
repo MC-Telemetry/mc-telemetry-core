@@ -1,0 +1,5 @@
+{
+  "variants": {
+    "": { "model": "mcotelcore:block/redstone_scraper_block" }
+  }
+}

@@ -39,7 +39,7 @@ object OTelCoreMod {
             {
                 CreativeTabRegistry.create(
                     Component.translatable("category.mcotelcore_tab"),
-                    Supplier { ItemStack(OTelCoreModItems.RUBY_BLOCK) }
+                    Supplier { ItemStack(OTelCoreModItems.REDSTONE_SCRAPER_BLOCK) }
                 )
             }
         )

@@ -12,8 +12,8 @@ import java.util.function.Supplier
 object OTelCoreModBlocks {
     val BLOCKS: DeferredRegister<Block> = DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.BLOCK)
 
-    val RUBY_BLOCK: RegistrySupplier<Block> = registerBlock("ruby_block") {
-        RubyBlock(BlockBehaviour.Properties.of())
+    val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<Block> = registerBlock("redstone_scraper_block") {
+        RedstoneScraperBlock(BlockBehaviour.Properties.of())
     }
 
     fun init() {

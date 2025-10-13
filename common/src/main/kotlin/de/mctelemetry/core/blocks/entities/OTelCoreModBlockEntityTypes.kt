@@ -13,7 +13,7 @@ object OTelCoreModBlockEntityTypes {
             : DeferredRegister<BlockEntityType<*>> =
         DeferredRegister.create<BlockEntityType<*>>(OTelCoreMod.MOD_ID, Registries.BLOCK_ENTITY_TYPE)
 
-    lateinit var RUBY_BLOCK_ENTITY: RegistrySupplier<BlockEntityType<RubyBlockEntity>>
+    lateinit var REDSTONE_SCRAPER_BLOCK_ENTITY: RegistrySupplier<BlockEntityType<RedstoneScraperBlockEntity>>
 
     fun writeRegister() {
         BLOCK_ENTITIES.register()

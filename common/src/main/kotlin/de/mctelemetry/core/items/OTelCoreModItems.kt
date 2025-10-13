@@ -13,8 +13,8 @@ import java.util.function.Supplier
 object OTelCoreModItems {
     val ITEMS: DeferredRegister<Item> = DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.ITEM);
 
-    val RUBY_BLOCK: RegistrySupplier<Item> = registerItem("ruby_block") {
-        BlockItem(OTelCoreModBlocks.RUBY_BLOCK.get(), Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB))
+    val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("redstone_scraper_block") {
+        BlockItem(OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(), Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB))
     }
 
     fun init() {
