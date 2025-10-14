@@ -1,6 +1,3 @@
 {
-  "parent": "block/cube_all",
-  "textures": {
-    "all": "mcotelcore:block/redstone_scraper_block"
-  }
+  "parent": "mcotelcore:block/redstone_scraper_block"
 }
