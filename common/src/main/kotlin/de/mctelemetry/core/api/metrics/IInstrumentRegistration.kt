@@ -4,7 +4,8 @@ import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.ObservableMeasurement
 
 interface IInstrumentRegistration : IMetricDefinition, AutoCloseable {
-    val attributes: Map<String, MappedAttributeKeyInfo<*,*>>
+
+    val attributes: Map<String, MappedAttributeKeyInfo<*, *>>
 
     fun interface Callback<in R : ObservableMeasurement> {
 
@@ -14,6 +15,8 @@ interface IInstrumentRegistration : IMetricDefinition, AutoCloseable {
             get() = TickSynchronizationHint.DEFAULT
 
         fun observe(recorder: R)
+
+        fun onRemove() {}
     }
 
     interface Mutable<out R : ObservableMeasurement> : IInstrumentRegistration {

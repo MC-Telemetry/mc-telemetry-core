@@ -10,6 +10,7 @@ import de.mctelemetry.core.api.metrics.IMetricDefinition
 import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.Union3
+import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.Meter
@@ -316,6 +317,21 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         override fun observeImpl(instrument: R) {
             callback.observe(instrument)
         }
+
+        override fun close() {
+            var accumulator: Exception? = null
+            try {
+                super.close()
+            } catch (ex: Exception) {
+                accumulator = ex
+            }
+            try {
+                callback.onRemove()
+            } catch (ex: Exception) {
+                accumulator += ex
+            }
+            if (accumulator != null) throw accumulator
+        }
     }
 
     internal open class MutableLongGaugeInstrumentRegistration :
@@ -355,6 +371,24 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             return AutoCloseable {
                 callbacks.remove(callback)
             }
+        }
+
+        override fun close() {
+            var accumulator: Exception? = null
+            try {
+                super.close()
+            } catch (ex: Exception) {
+                accumulator = ex
+            }
+            accumulator = callbacks.fold(accumulator) { acc, callback ->
+                try {
+                    callback.onRemove()
+                    acc
+                } catch (ex: Exception) {
+                    acc + ex
+                }
+            }
+            if(accumulator != null) throw accumulator
         }
     }
 

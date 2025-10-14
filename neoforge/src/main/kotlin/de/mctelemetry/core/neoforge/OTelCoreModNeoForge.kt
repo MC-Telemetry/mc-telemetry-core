@@ -2,7 +2,6 @@ package de.mctelemetry.core.neoforge
 
 import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.blocks.entities.RedstoneScraperBlockEntity
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.commands.types.ArgumentTypes
@@ -13,17 +12,12 @@ import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.commands.synchronization.ArgumentTypeInfos
 import net.minecraft.core.WritableRegistry
 import net.minecraft.core.registries.Registries
-import net.neoforged.api.distmarker.Dist
-import net.neoforged.bus.api.SubscribeEvent
-import net.neoforged.fml.common.EventBusSubscriber
 import net.neoforged.fml.common.Mod
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent
-import net.neoforged.neoforge.event.server.ServerStoppingEvent
 import net.neoforged.neoforge.registries.DeferredRegister
 import net.neoforged.neoforge.registries.NewRegistryEvent
 import net.neoforged.neoforge.registries.RegistryBuilder
 import thedarkcolour.kotlinforforge.neoforge.forge.DIST
-import thedarkcolour.kotlinforforge.neoforge.forge.FORGE_BUS
 import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
 
 
@@ -45,9 +39,6 @@ object OTelCoreModNeoForge {
     }
 
     private fun registerCallbacks() {
-        FORGE_BUS.addListener(ServerStoppingEvent::class.java) { event: ServerStoppingEvent ->
-            RedstoneScraperBlockEntity.Ticker.unregisterAll()
-        }
         MOD_BUS.addListener(::createRegistries)
         if(DIST.isClient) {
             MOD_BUS.addListener { event: RegisterMenuScreensEvent ->

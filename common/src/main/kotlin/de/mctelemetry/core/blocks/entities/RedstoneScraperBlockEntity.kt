@@ -1,10 +1,17 @@
 package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.api.BlockDimPos
+import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.metrics.IInstrumentRegistration
+import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
+import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.blocks.RedstoneScraperBlock
 import de.mctelemetry.core.ui.RedstoneScraperBlockMenu
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
+import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
+import io.opentelemetry.api.metrics.ObservableLongMeasurement
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.world.MenuProvider
@@ -16,12 +23,84 @@ import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityTicker
 import net.minecraft.world.level.block.state.BlockState
-import java.util.concurrent.ConcurrentLinkedQueue
-import kotlin.jvm.optionals.getOrElse
 
 
 class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
-    MenuProvider, BlockEntity(OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get(), pos, state) {
+        MenuProvider, BlockEntity(OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get(), pos, state) {
+
+    private var registration: AutoCloseable? = null
+        set(value) {
+            var accumulator: Exception? = null
+            try {
+                val currentValue = blockState.getValue(RedstoneScraperBlock.ERROR)
+                val targetValue = value == null
+
+                if (targetValue != currentValue) {
+                    val newBlockState = blockState.setValue(RedstoneScraperBlock.ERROR, targetValue)
+                    level?.setBlock(blockPos, newBlockState, 2)
+                }
+            } catch (ex: Exception) {
+                accumulator = ex
+            }
+            field = value
+            if (accumulator != null) {
+                throw accumulator
+            }
+        }
+
+    fun tryRegister() {
+        if (registration != null) {
+            return
+        }
+        val instrumentManager = level?.server?.instrumentManager
+        if (instrumentManager == null) {
+            return
+        }
+        val mutableInstrument =
+            instrumentManager.findLocalMutable("minecraft.mod.${OTelCoreMod.MOD_ID}.redstone.signal")
+        val facing = blockState.getValue(RedstoneScraperBlock.FACING)
+        val observePos = BlockDimPos(level!!.dimension(), blockPos.relative(facing))
+        val attributes = Attributes.of(
+            positionAttributeKey, "${
+                observePos.dimension.location().path
+            }/(${observePos.position.x},${observePos.position.y},${observePos.position.z})"
+        )
+        registration = when (mutableInstrument) {
+            is ILongInstrumentRegistration.Mutable -> mutableInstrument.addCallback(
+                Attributes.empty(),
+                object : IInstrumentRegistration.Callback<ObservableLongMeasurement> {
+                    override fun observe(recorder: ObservableLongMeasurement) {
+                        val level = level ?: return
+                        if (!(level.isLoaded(observePos.position) && level.shouldTickBlocksAt(observePos.position))) return
+                        val value = level.getBestNeighborSignal(observePos.position)
+                        recorder.record(value.toLong(), attributes)
+                    }
+
+                    override fun onRemove() {
+                        this@RedstoneScraperBlockEntity.registration = null
+                    }
+                })
+            is IDoubleInstrumentRegistration.Mutable -> mutableInstrument.addCallback(
+                Attributes.empty(),
+                object : IInstrumentRegistration.Callback<ObservableDoubleMeasurement> {
+                    override fun observe(recorder: ObservableDoubleMeasurement) {
+                        val level = level ?: return
+                        if (!(level.isLoaded(observePos.position) && level.shouldTickBlocksAt(observePos.position))) return
+                        val value = level.getBestNeighborSignal(observePos.position)
+                        recorder.record(value.toDouble(), attributes)
+                    }
+
+                    override fun onRemove() {
+                        this@RedstoneScraperBlockEntity.registration = null
+                    }
+                })
+            else -> null
+        }
+    }
+
+    init {
+        tryRegister()
+    }
 
     private var data: ContainerData = object : ContainerData {
         override fun get(index: Int): Int {
@@ -40,12 +119,8 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
 
     var signalValue: Int = 0
 
-    init {
-        Ticker.register(this)
-    }
-
     override fun setRemoved() {
-        Ticker.unregister(this)
+        registration?.close()
     }
 
     override fun getDisplayName(): Component {
@@ -56,68 +131,22 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
         return RedstoneScraperBlockMenu(containerId, inventory, this.data)
     }
 
+    companion object {
+
+        private val positionAttributeKey: AttributeKey<String> = AttributeKey.stringKey("pos")
+    }
+
     class Ticker<T : BlockEntity> : BlockEntityTicker<T> {
-
-        companion object {
-
-            private val registrations = ConcurrentLinkedQueue<RedstoneScraperBlockEntity>()
-            fun register(blockEntity: RedstoneScraperBlockEntity) {
-                registrations.add(blockEntity)
-            }
-
-            fun unregister(blockEntity: RedstoneScraperBlockEntity) {
-                registrations.remove(blockEntity)
-            }
-
-            fun unregisterAll() {
-                registrations.clear()
-            }
-
-            private val signalMetric =
-                OTelCoreMod.meter.gaugeBuilder("minecraft.mod.${OTelCoreMod.MOD_ID}.redstone.signal").ofLongs()
-                    .buildWithCallback { metric ->
-                        var toRemove: MutableSet<RedstoneScraperBlockEntity>? = null
-                        registrations.forEach {
-                            val level = it.level ?: return@forEach
-                            if (!level.isLoaded(it.blockPos)) return@forEach
-                            val levelEntity =
-                                level.getBlockEntity(
-                                    it.blockPos,
-                                    OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get()
-                                )
-                                    .getOrElse { return@forEach }
-                            if (levelEntity != it) {
-                                toRemove = toRemove ?: mutableSetOf()
-                                toRemove.add(it)
-                                return@forEach
-                            }
-                            val attributes = Attributes.of(
-                                positionAttributeKey,
-                                "${
-                                    level.dimension().location().path
-                                }/(${it.blockPos.x},${it.blockPos.y},${it.blockPos.z})"
-                            )
-                            metric.record(it.signalValue.toLong(), attributes)
-                        }
-                        if (toRemove != null) {
-                            registrations.removeAll(toRemove)
-                        }
-                    }
-            private val positionAttributeKey: AttributeKey<String> = AttributeKey.stringKey("pos")
-        }
 
         override fun tick(level: Level, blockPos: BlockPos, blockState: BlockState, blockEntity: T) {
             if (blockEntity is RedstoneScraperBlockEntity) {
-                val signal = level.getBestNeighborSignal(blockPos)
-                blockEntity.signalValue = signal
-
-                val currentValue = blockState.getValue(RedstoneScraperBlock.ERROR)
-                val targetValue = signal < 9
-
-                if (targetValue != currentValue) {
-                    val newBlockState = blockState.setValue(RedstoneScraperBlock.ERROR, targetValue)
-                    level.setBlock(blockPos, newBlockState, 2)
+                if (blockEntity.registration == null) {
+                    blockEntity.tryRegister()
                 }
+                val facing = blockState.getValue(RedstoneScraperBlock.FACING)
+                val observePos = blockPos.relative(facing)
+                val signal = level.getBestNeighborSignal(observePos)
+                blockEntity.signalValue = signal
             }
         }
     }
