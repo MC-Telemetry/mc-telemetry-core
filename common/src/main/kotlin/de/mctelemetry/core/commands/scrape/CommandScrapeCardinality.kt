@@ -4,8 +4,9 @@ import com.google.common.math.LongMath
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.exporters.metrics.MetricsAccessor
-import de.mctelemetry.core.exporters.metrics.ObjectMetricReconverter
+import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
+import de.mctelemetry.core.commands.types.get
+import de.mctelemetry.core.metrics.exporters.MetricDataReadback
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -20,7 +21,7 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.math.min
 
-class CommandScrapeCardinality(val metricsAccessor: MetricsAccessor?) {
+class CommandScrapeCardinality(private val metricsAccessor: IMetricsAccessor?) {
 
     val command = CommandDSLBuilder.Companion.buildCommand("cardinality") {
         requires { it.hasPermission(2) }
@@ -99,7 +100,7 @@ class CommandScrapeCardinality(val metricsAccessor: MetricsAccessor?) {
             source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
         }
         val metricNameFilter = MetricNameArgumentType["metric"]
-        val data: Map<String, ObjectMetricReconverter.MetricDataReadback> =
+        val data: Map<String, MetricDataReadback> =
             if (metricNameFilter == null) {
                 metricsAccessor.collect()
             } else {
@@ -108,7 +109,7 @@ class CommandScrapeCardinality(val metricsAccessor: MetricsAccessor?) {
                 else mapOf(result.name to result)
             }
         val cardinalities: Map<String, Pair<Map<String, Int>, Long>> =
-            data.mapValues { (_, value: ObjectMetricReconverter.MetricDataReadback) ->
+            data.mapValues { (_, value: MetricDataReadback) ->
                 val cardinality = analyzeCardinality(value.data.keys)
                 if (cardinality == null) return@mapValues emptyMap<String, Int>() to 0L
                 return@mapValues cardinality to (cardinality.values.fold(1L) { acc, i ->

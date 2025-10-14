@@ -1,49 +1,11 @@
-package de.mctelemetry.core.exporters.metrics
+package de.mctelemetry.core.metrics.exporters.agent
 
+import de.mctelemetry.core.metrics.exporters.MetricDataReadback
+import de.mctelemetry.core.metrics.exporters.MetricDefinitionReadback
+import de.mctelemetry.core.metrics.exporters.MetricValueReadback
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList
-import it.unimi.dsi.fastutil.doubles.DoubleList
 
 object ObjectMetricReconverter {
-
-    data class MetricDefinitionReadback(
-        val name: String,
-        val description: String,
-        val unit: String,
-        val type: String,
-    )
-
-    data class MetricDataReadback(
-        val name: String,
-        val description: String,
-        val unit: String,
-        val type: String,
-        val data: Map<Map<String, String>, MetricValueReadback>,
-    )
-
-    sealed class MetricValueReadback(val type: String) {
-        data class MetricLongValue(val value: Long) : MetricValueReadback("value_long")
-        data class MetricDoubleValue(val value: Double) : MetricValueReadback("value_double")
-        data class MetricSummaryValue(val count: Long, val sum: Double, val quantiles: List<QuantileData>) :
-                MetricValueReadback("summary") {
-
-            data class QuantileData(
-                val quantile: Double,
-                val value: Double,
-            )
-        }
-
-        data class MetricHistogramValue(
-            val count: Long,
-            val sum: Double,
-            val buckets: DoubleList,
-            val counts: DoubleList,
-        ) : MetricValueReadback("histogram")
-
-        data class MetricExponentialHistogramValue(
-            val count: Long,
-            val sum: Double,
-        ) : MetricValueReadback("exponential_histogram")
-    }
 
     internal fun convertMetric(metricData: Array<Any>): MetricDataReadback {
         @Suppress("UNCHECKED_CAST")
