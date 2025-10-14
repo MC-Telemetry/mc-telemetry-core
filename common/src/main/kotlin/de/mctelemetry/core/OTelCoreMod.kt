@@ -8,9 +8,11 @@ import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
+import de.mctelemetry.core.commands.metrics.CommandMetrics
 import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
 import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
+import de.mctelemetry.core.utils.dsl.commands.unaryPlus
 import dev.architectury.event.events.common.CommandRegistrationEvent
 import dev.architectury.registry.CreativeTabRegistry
 import dev.architectury.registry.registries.DeferredRegister
@@ -23,6 +25,7 @@ import java.util.function.Supplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceKey
+import net.minecraft.server.MinecraftServer
 import net.minecraft.world.item.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -59,9 +62,10 @@ object OTelCoreMod {
         OTelCoreModBlocks.init()
         OTelCoreModItems.init()
         debugMetrics()
-        CommandRegistrationEvent.EVENT.register { evt, a, b ->
+        CommandRegistrationEvent.EVENT.register { evt, ctx, _ ->
             evt.root.addChild(buildCommand("mcotel") {
-                then(CommandScrape().command)
+                +CommandScrape().command
+                +CommandMetrics(ctx).command
             })
         }
         InstrumentMetaManager.register()

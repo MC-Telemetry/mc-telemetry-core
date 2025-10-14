@@ -10,7 +10,7 @@ import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes.StringArrayType
 import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes.StringType
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.AttributeType
-import net.minecraft.nbt.Tag
+import net.minecraft.nbt.CompoundTag
 
 open class MappedAttributeKeyInfo<in T, B>(
     val baseKey: AttributeKey<B>,
@@ -19,7 +19,7 @@ open class MappedAttributeKeyInfo<in T, B>(
 
     companion object {
 
-        fun <T> fromNative(key: AttributeKey<T>): MappedAttributeKeyInfo<T,T> {
+        fun <T> fromNative(key: AttributeKey<T>): MappedAttributeKeyInfo<T, T> {
             return MappedAttributeKeyInfo(key, NativeAttributeKeyTypes(key))
         }
 
@@ -67,10 +67,35 @@ open class MappedAttributeKeyInfo<in T, B>(
         @JvmName("createForDoubleArrayKey")
         operator fun invoke(baseKey: AttributeKey<List<Double>>): MappedAttributeKeyInfo<List<Double>, List<Double>> =
             MappedAttributeKeyInfo(baseKey, DoubleArrayType)
+
+
+        fun forString(name: String): MappedAttributeKeyInfo<String, String> =
+            MappedAttributeKeyInfo(AttributeKey.stringKey(name))
+
+        fun forBoolean(name: String): MappedAttributeKeyInfo<Boolean, Boolean> =
+            MappedAttributeKeyInfo(AttributeKey.booleanKey(name))
+
+        fun forLong(name: String): MappedAttributeKeyInfo<Long, Long> =
+            MappedAttributeKeyInfo(AttributeKey.longKey(name))
+
+        fun forDouble(name: String): MappedAttributeKeyInfo<Double, Double> =
+            MappedAttributeKeyInfo(AttributeKey.doubleKey(name))
+
+        fun forStringArray(name: String): MappedAttributeKeyInfo<List<String>, List<String>> =
+            MappedAttributeKeyInfo(AttributeKey.stringArrayKey(name))
+
+        fun forBooleanArray(name: String): MappedAttributeKeyInfo<List<Boolean>, List<Boolean>> =
+            MappedAttributeKeyInfo(AttributeKey.booleanArrayKey(name))
+
+        fun forLongArray(name: String): MappedAttributeKeyInfo<List<Long>, List<Long>> =
+            MappedAttributeKeyInfo(AttributeKey.longArrayKey(name))
+
+        fun forDoubleArray(name: String): MappedAttributeKeyInfo<List<Double>, List<Double>> =
+            MappedAttributeKeyInfo(AttributeKey.doubleArrayKey(name))
     }
 
     @Suppress("SameReturnValue")
-    open fun save(): Tag? {
+    open fun save(): CompoundTag? {
         return null
     }
 }

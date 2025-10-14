@@ -48,12 +48,12 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
 
     override fun findGlobal(pattern: Regex): Sequence<IMetricDefinition> {
         val parent = parent ?: return findLocal(pattern)
-        return parent.findGlobal(pattern)
+        return parent.findGlobal(pattern) + findLocal(pattern)
     }
 
     override fun findGlobal(name: String): IMetricDefinition? {
         val parent = parent ?: return findLocal(name)
-        return parent.findGlobal(name)
+        return parent.findGlobal(name) ?: findLocal(name)
     }
 
     override fun findLocal(name: String): IInstrumentRegistration? {

@@ -85,4 +85,8 @@ object InstrumentMetaManager {
             throw exceptionAccumulator
         }
     }
+
+    internal fun worldInstrumentManagerForServer(server: MinecraftServer): WorldInstrumentManager? {
+        return serverMetricsManagers[server]
+    }
 }

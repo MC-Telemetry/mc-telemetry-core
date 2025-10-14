@@ -3,6 +3,7 @@ package de.mctelemetry.core.commands.types
 import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.OTelCoreMod
+import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.synchronization.SingletonArgumentInfo
 import net.minecraft.resources.ResourceLocation
 
@@ -10,7 +11,6 @@ object LabelValueArgumentType : SimpleArgumentTypeBase<String>() {
 
     val registration = ArgumentTypes.PreparedArgumentTypeRegistration(
         ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "label_value"),
-        this,
         SingletonArgumentInfo.contextFree { LabelValueArgumentType }
     )
 
@@ -47,7 +47,7 @@ object LabelValueArgumentType : SimpleArgumentTypeBase<String>() {
         return examples
     }
 
-    override fun getValue(context: CommandContext<*>, name: String): String {
+    override fun getValue(context: CommandContext<CommandSourceStack>, name: String): String {
         return context.getArgument(name, String::class.java)
     }
 }
