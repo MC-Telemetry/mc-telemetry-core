@@ -4,6 +4,7 @@ import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
 import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
+import de.mctelemetry.core.commands.types.get
 import de.mctelemetry.core.metrics.exporters.MetricDefinitionReadback
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
@@ -15,7 +16,7 @@ import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.MutableComponent
 
-class CommandScrapeInfo(val metricsAccessor: IMetricsAccessor?) {
+class CommandScrapeInfo(private val metricsAccessor: IMetricsAccessor?) {
 
     val command = CommandDSLBuilder.Companion.buildCommand("info") {
         requires { it.hasPermission(2) }

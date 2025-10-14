@@ -28,13 +28,14 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.datafix.DataFixTypes
 import net.minecraft.world.level.storage.DimensionDataStorage
 import java.lang.AutoCloseable
+import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 internal class WorldInstrumentManager private constructor(
     meter: Meter,
     override val gameInstruments: IGameInstrumentManager,
-    val server: MinecraftServer,
+    server: MinecraftServer,
     localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion>,
 ) : InstrumentManagerBase<WorldInstrumentManager.WorldGaugeInstrumentBuilder>(
     meter,
@@ -48,6 +49,8 @@ internal class WorldInstrumentManager private constructor(
         server,
         ConcurrentHashMap()
     )
+
+    private val server: WeakReference<MinecraftServer> = WeakReference(server)
 
     companion object {
 
@@ -171,7 +174,7 @@ internal class WorldInstrumentManager private constructor(
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*,*>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
             persistent: Boolean,
         ) : super(name, description, unit, attributes) {
             this.persistent = persistent
@@ -193,7 +196,7 @@ internal class WorldInstrumentManager private constructor(
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*,*>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
             persistent: Boolean,
         ) : super(name, description, unit, attributes) {
             this.persistent = persistent
@@ -329,7 +332,7 @@ internal class WorldInstrumentManager private constructor(
                         ResourceLocation.parse(type)
                     )
                 ).value()
-                return mappingType.create(name, tag.get("data"))
+                return mappingType.create(name, tag.getCompound("data"))
             }
 
             internal val Factory = Factory<WorldInstrumentSavedData>(

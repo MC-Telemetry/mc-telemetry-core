@@ -7,7 +7,7 @@ import de.mctelemetry.core.utils.dsl.commands.unaryPlus
 import net.minecraft.commands.CommandSourceStack
 
 class CommandScrape(
-    val metricsAccessor: IMetricsAccessor? = IMetricsAccessor.GLOBAL,
+    metricsAccessor: IMetricsAccessor? = IMetricsAccessor.GLOBAL,
 ) {
 
     val command: CommandNode<CommandSourceStack>

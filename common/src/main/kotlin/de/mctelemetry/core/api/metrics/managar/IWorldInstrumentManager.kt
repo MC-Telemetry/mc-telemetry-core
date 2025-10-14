@@ -1,6 +1,7 @@
 package de.mctelemetry.core.api.metrics.managar
 
 import de.mctelemetry.core.api.metrics.builder.IWorldGaugeInstrumentBuilder
+import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
 import net.minecraft.server.MinecraftServer
@@ -37,6 +38,11 @@ interface IWorldInstrumentManager : IInstrumentManager {
 
             fun worldInstrumentManagerUnloaded(manager: IWorldInstrumentManager, server: MinecraftServer)
         }
+    }
+
+    companion object {
+        val MinecraftServer.instrumentManager: IWorldInstrumentManager?
+            get() = InstrumentMetaManager.worldInstrumentManagerForServer(this)
     }
 }
 

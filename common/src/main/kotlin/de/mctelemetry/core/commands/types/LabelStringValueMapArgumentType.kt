@@ -4,15 +4,15 @@ import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.utils.Validators
+import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.synchronization.SingletonArgumentInfo
 import net.minecraft.resources.ResourceLocation
 
-object LabelStringMapArgumentType : SimpleArgumentTypeBase<Map<String, String>>() {
+object LabelStringValueMapArgumentType : SimpleArgumentTypeBase<Map<String, String>>() {
 
     val registration = ArgumentTypes.PreparedArgumentTypeRegistration(
-        ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "label_map_string"),
-        this,
-        SingletonArgumentInfo.contextFree { LabelStringMapArgumentType }
+        ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "label_map_value_string"),
+        SingletonArgumentInfo.contextFree { LabelStringValueMapArgumentType }
     )
 
     val examples =
@@ -44,7 +44,7 @@ object LabelStringMapArgumentType : SimpleArgumentTypeBase<Map<String, String>>(
     }
 
 
-    override fun getValue(context: CommandContext<*>, name: String): Map<String, String> {
+    override fun getValue(context: CommandContext<CommandSourceStack>, name: String): Map<String, String> {
         @Suppress("UNCHECKED_CAST")
         return context.getArgument(name, Map::class.java) as Map<String, String>
     }

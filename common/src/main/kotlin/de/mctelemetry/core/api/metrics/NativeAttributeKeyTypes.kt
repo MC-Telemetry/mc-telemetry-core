@@ -2,6 +2,7 @@ package de.mctelemetry.core.api.metrics
 
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.AttributeType
+import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.Tag
 import net.minecraft.resources.ResourceLocation
 
@@ -64,7 +65,7 @@ object NativeAttributeKeyTypes {
 
         override fun create(
             name: String,
-            savedData: Tag?,
+            savedData: CompoundTag?,
         ): MappedAttributeKeyInfo<String, String> {
             return MappedAttributeKeyInfo(AttributeKey.stringKey(name), this)
         }
@@ -78,7 +79,7 @@ object NativeAttributeKeyTypes {
 
         override fun create(
             name: String,
-            savedData: Tag?,
+            savedData: CompoundTag?,
         ): MappedAttributeKeyInfo<Boolean, Boolean> {
             return MappedAttributeKeyInfo(AttributeKey.booleanKey(name), this)
         }
@@ -92,7 +93,7 @@ object NativeAttributeKeyTypes {
 
         override fun create(
             name: String,
-            savedData: Tag?,
+            savedData: CompoundTag?,
         ): MappedAttributeKeyInfo<Long, Long> {
             return MappedAttributeKeyInfo(AttributeKey.longKey(name), this)
         }
@@ -106,7 +107,7 @@ object NativeAttributeKeyTypes {
 
         override fun create(
             name: String,
-            savedData: Tag?,
+            savedData: CompoundTag?,
         ): MappedAttributeKeyInfo<Double, Double> {
             return MappedAttributeKeyInfo(AttributeKey.doubleKey(name), this)
         }
@@ -120,7 +121,7 @@ object NativeAttributeKeyTypes {
 
         override fun create(
             name: String,
-            savedData: Tag?,
+            savedData: CompoundTag?,
         ): MappedAttributeKeyInfo<List<String>, List<String>> {
             return MappedAttributeKeyInfo(AttributeKey.stringArrayKey(name), this)
         }
@@ -135,7 +136,7 @@ object NativeAttributeKeyTypes {
 
         override fun create(
             name: String,
-            savedData: Tag?,
+            savedData: CompoundTag?,
         ): MappedAttributeKeyInfo<List<Boolean>, List<Boolean>> {
             return MappedAttributeKeyInfo(AttributeKey.booleanArrayKey(name), this)
         }
@@ -149,7 +150,7 @@ object NativeAttributeKeyTypes {
 
         override fun create(
             name: String,
-            savedData: Tag?,
+            savedData: CompoundTag?,
         ): MappedAttributeKeyInfo<List<Long>, List<Long>> {
             return MappedAttributeKeyInfo(AttributeKey.longArrayKey(name), this)
         }
@@ -163,7 +164,7 @@ object NativeAttributeKeyTypes {
 
         override fun create(
             name: String,
-            savedData: Tag?,
+            savedData: CompoundTag?,
         ): MappedAttributeKeyInfo<List<Double>, List<Double>> {
             return MappedAttributeKeyInfo(AttributeKey.doubleArrayKey(name), this)
         }

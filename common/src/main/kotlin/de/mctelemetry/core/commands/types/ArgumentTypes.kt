@@ -12,7 +12,6 @@ object ArgumentTypes {
             I : ArgumentTypeInfo<A, T>,
             >(
         val id: ResourceLocation,
-        val type: A,
         val info: I,
         val infoClass: Class<A>,
     ) {
@@ -23,12 +22,10 @@ object ArgumentTypes {
                             I : ArgumentTypeInfo<A, T>
                             > invoke(
                         id: ResourceLocation,
-                        type: A,
                         info: I,
                     ): PreparedArgumentTypeRegistration<A,T,I> {
-                        return PreparedArgumentTypeRegistration<A,T,I>(
+                        return PreparedArgumentTypeRegistration(
                             id,
-                            type,
                             info,
                             infoClass = A::class.java,
                         )
@@ -39,8 +36,10 @@ object ArgumentTypes {
     val ALL_CUSTOM: Collection<PreparedArgumentTypeRegistration<*,*,*>> = listOf(
         MetricNameArgumentType.registration,
         LabelNameArgumentType.registration,
-        LabelStringMapArgumentType.registration,
+        LabelStringValueMapArgumentType.registration,
         LabelValueArgumentType.registration,
+        LabelDefinitionArgumentType.registration,
+        LabelTypeArgumentType.registration,
     )
     inline fun register(registrationBlock: (PreparedArgumentTypeRegistration<*, *, *>) -> Unit) {
         ALL_CUSTOM.forEach(registrationBlock)

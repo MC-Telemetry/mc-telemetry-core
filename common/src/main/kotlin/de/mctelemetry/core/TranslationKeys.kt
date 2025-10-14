@@ -1,5 +1,7 @@
 package de.mctelemetry.core
 
+import de.mctelemetry.core.api.metrics.IInstrumentRegistration
+import de.mctelemetry.core.api.metrics.IMetricDefinition
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 
@@ -13,6 +15,7 @@ object TranslationKeys {
         const val ERRORS_METRIC_NAME_BAD_END = "errors.mctelemetry.core.metric.name.bad_end"
         const val ERRORS_METRIC_NAME_DOUBLE_DELIMITER = "errors.mctelemetry.core.metric.name.double_delimiter"
         const val ERRORS_METRIC_RESPONSE_TYPE_UNEXPECTED = "errors.mctelemetry.core.metric.response_type.unexpected"
+        const val ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING = "errors.mctelemetry.core.world.instrument_manager.missing"
 
         fun metricsAccessorMissing(): MutableComponent =
             Component.translatableWithFallback(
@@ -52,13 +55,23 @@ object TranslationKeys {
                 "Metric name must not have two delimiter ('.' and '_') in a row"
             )
 
-        fun metricResponseTypeUnexpected(metricName: String, actualType: String, expectedType: String): MutableComponent =
+        fun metricResponseTypeUnexpected(
+            metricName: String,
+            actualType: String,
+            expectedType: String,
+        ): MutableComponent =
             Component.translatableWithFallback(
                 ERRORS_METRIC_RESPONSE_TYPE_UNEXPECTED,
                 $$"Unexpected metric response type for %1$s: Got %2$s but expected %3$s",
                 metricName,
                 actualType,
                 expectedType,
+            )
+
+        fun worldInstrumentManagerMissing(): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING,
+                "Instrument manager missing for world"
             )
     }
 
@@ -72,6 +85,12 @@ object TranslationKeys {
             "commands.mctelemetry.core.mcotel.scrape.cardinality.success"
         const val COMMANDS_MCOTEL_SCRAPE_VALUE_SUCCESS =
             "commands.mctelemetry.core.mcotel.scrape.value.success"
+        const val COMMANDS_MCOTEL_METRICS_CREATE_SUCCESS =
+            "commands.mctelemetry.core.mcotel.metrics.create.success"
+        const val COMMANDS_MCOTEL_METRICS_LIST_SUCCESS =
+            "commands.mctelemetry.core.mcotel.metrics.list.success"
+        const val COMMANDS_MCOTEL_METRICS_DELETE_SUCCESS =
+            "commands.mctelemetry.core.mcotel.metrics.delete.success"
 
         fun metricNameNotFound(name: String): MutableComponent =
             Component.translatableWithFallback(
@@ -80,7 +99,7 @@ object TranslationKeys {
                 name
             )
 
-        fun metricDatapointNotFound(name: String, labelMap: Map<String,String>): MutableComponent =
+        fun metricDatapointNotFound(name: String, labelMap: Map<String, String>): MutableComponent =
             Component.translatableWithFallback(
                 COMMANDS_METRIC_DATAPOINT_NOT_FOUND,
                 $$"Datapoint not found: %1$s with %2$s",
@@ -115,6 +134,28 @@ object TranslationKeys {
                 $$"Found %1$s data-points with a sum of %2$s",
                 count,
                 sum
+            )
+
+        fun metricsDeleteSuccess(registration: IInstrumentRegistration): MutableComponent =
+            Component.translatableWithFallback(
+                COMMANDS_MCOTEL_METRICS_DELETE_SUCCESS,
+                $$"Successfully deleted metric '%1$s'",
+                registration.name
+            )
+
+        fun metricsListSuccess(count: Int, scope: String): MutableComponent =
+            Component.translatableWithFallback(
+                COMMANDS_MCOTEL_METRICS_LIST_SUCCESS,
+                $$"Found %1$s metrics in scope '%2$s'",
+                count,
+                scope
+            )
+
+        fun metricsCreateSuccess(definition: IInstrumentRegistration): MutableComponent =
+            Component.translatableWithFallback(
+                COMMANDS_MCOTEL_METRICS_CREATE_SUCCESS,
+                $$"Successfully created metric '%1$s'",
+                definition.name
             )
     }
 }

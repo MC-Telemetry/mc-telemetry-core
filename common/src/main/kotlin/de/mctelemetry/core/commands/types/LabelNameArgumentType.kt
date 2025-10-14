@@ -4,6 +4,7 @@ import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.utils.Validators
+import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.synchronization.SingletonArgumentInfo
 import net.minecraft.resources.ResourceLocation
 
@@ -11,7 +12,6 @@ object LabelNameArgumentType : SimpleArgumentTypeBase<String>() {
 
     val registration = ArgumentTypes.PreparedArgumentTypeRegistration(
         ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "label_name"),
-        this,
         SingletonArgumentInfo.contextFree { LabelNameArgumentType }
     )
 
@@ -27,7 +27,7 @@ object LabelNameArgumentType : SimpleArgumentTypeBase<String>() {
         return Validators.parseOTelName(reader, stopAtInvalid = true)
     }
 
-    override fun getValue(context: CommandContext<*>, name: String): String {
+    override fun getValue(context: CommandContext<CommandSourceStack>, name: String): String {
         return context.getArgument(name, String::class.java)
     }
 

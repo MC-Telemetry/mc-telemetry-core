@@ -4,6 +4,7 @@ import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.utils.Validators
+import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.synchronization.SingletonArgumentInfo
 import net.minecraft.resources.ResourceLocation
 
@@ -12,7 +13,6 @@ object MetricNameArgumentType : SimpleArgumentTypeBase<String>() {
 
     val registration = ArgumentTypes.PreparedArgumentTypeRegistration(
         ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "metric_name"),
-        this,
         SingletonArgumentInfo.contextFree { MetricNameArgumentType },
     )
 
@@ -30,7 +30,7 @@ object MetricNameArgumentType : SimpleArgumentTypeBase<String>() {
         return examples
     }
 
-    override fun getValue(context: CommandContext<*>, name: String): String {
+    override fun getValue(context: CommandContext<CommandSourceStack>, name: String): String {
         return context.getArgument(name, String::class.java)
     }
 }
