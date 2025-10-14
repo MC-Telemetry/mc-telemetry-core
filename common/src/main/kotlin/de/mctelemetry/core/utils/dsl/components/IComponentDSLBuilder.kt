@@ -27,6 +27,10 @@ interface IComponentDSLBuilder {
     companion object {
 
         @ComponentDSL
+        fun buildComponent(): MutableComponent {
+            return Component.empty()
+        }
+        @ComponentDSL
         inline fun buildComponent(block: IComponentDSLBuilder.() -> Unit): MutableComponent {
             return ComponentDSLBuilder(Component.empty()).apply(block).component
         }
