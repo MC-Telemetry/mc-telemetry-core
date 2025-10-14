@@ -1,6 +1,7 @@
 package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.blocks.RedstoneScraperBlock
 import de.mctelemetry.core.ui.RedstoneScraperBlockMenu
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
@@ -80,7 +81,10 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
                             val level = it.level ?: return@forEach
                             if (!level.isLoaded(it.blockPos)) return@forEach
                             val levelEntity =
-                                level.getBlockEntity(it.blockPos, OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get())
+                                level.getBlockEntity(
+                                    it.blockPos,
+                                    OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get()
+                                )
                                     .getOrElse { return@forEach }
                             if (levelEntity != it) {
                                 toRemove = toRemove ?: mutableSetOf()
@@ -106,6 +110,14 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
             if (blockEntity is RedstoneScraperBlockEntity) {
                 val signal = level.getBestNeighborSignal(blockPos)
                 blockEntity.signalValue = signal
+
+                val currentValue = blockState.getValue(RedstoneScraperBlock.ERROR)
+                val targetValue = signal < 9
+
+                if (targetValue != currentValue) {
+                    val newBlockState = blockState.setValue(RedstoneScraperBlock.ERROR, targetValue)
+                    level.setBlock(blockPos, newBlockState, 2)
+                }
             }
         }
     }
