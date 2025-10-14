@@ -2,7 +2,7 @@
 
 package de.mctelemetry.core.metrics.manager
 
-import de.mctelemetry.core.api.metrics.BoundDomainAttributeKeyInfo
+import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
@@ -11,7 +11,6 @@ import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.Union3
 import de.mctelemetry.core.utils.runWithExceptionCleanup
-import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
@@ -147,7 +146,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
 
         override var unit: String = ""
         override var description: String = ""
-        override var attributes: List<AttributeKey<*>> = emptyList()
+        override var attributes: List<MappedAttributeKeyInfo<*, *>> = emptyList()
 
         override fun registerWithCallbackOfDouble(callback: IInstrumentRegistration.Callback<ObservableDoubleMeasurement>): IDoubleInstrumentRegistration {
             val result = manager.localInstruments.compute(name) { key, old ->
@@ -230,14 +229,14 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         override val name: String,
         override val description: String,
         override val unit: String,
-        override val attributes: Map<String, BoundDomainAttributeKeyInfo<*>>,
+        override val attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
     ) : IDoubleInstrumentRegistration, ILongInstrumentRegistration {
 
         constructor(builder: GaugeInstrumentBuilder<*>) : this(
             builder.name,
             builder.description,
             builder.unit,
-            builder.attributes.associate { it.key.lowercase() to BoundDomainAttributeKeyInfo.ofBuiltin(it) },
+            builder.attributes.associateBy { it.baseKey.key.lowercase() },
         ) {
             untrackCallback.set(builder.manager::untrackRegistration)
         }
@@ -300,7 +299,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, BoundDomainAttributeKeyInfo<*>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
             callback: IInstrumentRegistration.Callback<R>,
         ) : super(name, description, unit, attributes) {
             this.callback = callback
@@ -327,7 +326,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, BoundDomainAttributeKeyInfo<*>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
         ) : super(
             name,
             description,
@@ -367,7 +366,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, BoundDomainAttributeKeyInfo<*>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
         ) : super(
             name,
             description,

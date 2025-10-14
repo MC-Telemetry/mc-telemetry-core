@@ -1,8 +1,10 @@
 package de.mctelemetry.core.metrics.manager
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.BoundDomainAttributeKeyInfo
+import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
+import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
+import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.builder.IWorldGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.managar.IGameInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
@@ -10,15 +12,17 @@ import de.mctelemetry.core.persistence.DirtyCallbackMutableMap
 import de.mctelemetry.core.persistence.SavedDataConcurrentMap
 import de.mctelemetry.core.utils.Union3
 import de.mctelemetry.core.utils.runWithExceptionCleanup
-import io.opentelemetry.api.common.AttributeType
 import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
 import io.opentelemetry.api.metrics.ObservableLongMeasurement
 import io.opentelemetry.api.metrics.ObservableMeasurement
+import net.minecraft.core.HolderGetter
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.datafix.DataFixTypes
@@ -167,7 +171,7 @@ internal class WorldInstrumentManager private constructor(
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, BoundDomainAttributeKeyInfo<*>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*,*>>,
             persistent: Boolean,
         ) : super(name, description, unit, attributes) {
             this.persistent = persistent
@@ -189,7 +193,7 @@ internal class WorldInstrumentManager private constructor(
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, BoundDomainAttributeKeyInfo<*>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*,*>>,
             persistent: Boolean,
         ) : super(name, description, unit, attributes) {
             this.persistent = persistent
@@ -255,18 +259,20 @@ internal class WorldInstrumentManager private constructor(
                 }
             }
 
-            private fun createAttributeKeyInfoTag(key: BoundDomainAttributeKeyInfo<*>): CompoundTag {
+            private fun createAttributeKeyInfoTag(key: MappedAttributeKeyInfo<*, *>): CompoundTag {
                 return CompoundTag().apply {
-                    putString("name", key.attributeKey.key)
-                    if (key is BoundDomainAttributeKeyInfo.DomainKeyInfo<*>) {
-                        TODO("Non-builtin keys cannot be serialized yet")
+                    putString("name", key.baseKey.key)
+                    putString("type", key.type.id.toString())
+                    val data = key.save()
+                    if (data != null) {
+                        put("data", data)
                     }
-                    putString("type", key.attributeKey.type.name)
                 }
             }
 
             private fun loadEntryTag(
                 tag: CompoundTag,
+                attributeKeyTypeHolderGetter: HolderGetter<IMappedAttributeKeyType<*, *>>,
             ): Pair<String, InstrumentManagerBaseRegistrationUnion> {
                 val name: String? = tag.getString("name")
                 if (name.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'name'")
@@ -275,12 +281,12 @@ internal class WorldInstrumentManager private constructor(
                 val integral = tag.getBoolean("integral")
                 val description: String = tag.getString("description").orEmpty()
                 val unit: String = tag.getString("unit").orEmpty()
-                val attributes: Map<String, BoundDomainAttributeKeyInfo<*>> =
+                val attributes: Map<String, MappedAttributeKeyInfo<*, *>> =
                     if (tag.contains("attributes", Tag.TAG_LIST.toInt())) {
                         buildMap {
                             tag.getList("attributes", Tag.TAG_COMPOUND.toInt()).forEach {
-                                val keyInfo = loadAttributeKeyInfoTag(it as CompoundTag)
-                                this@buildMap.put(keyInfo.attributeKey.key, keyInfo)
+                                val keyInfo = loadAttributeKeyInfoTag(it as CompoundTag, attributeKeyTypeHolderGetter)
+                                this@buildMap.put(keyInfo.baseKey.key, keyInfo)
                             }
                         }
                     } else {
@@ -309,13 +315,21 @@ internal class WorldInstrumentManager private constructor(
             }
 
 
-            private fun loadAttributeKeyInfoTag(tag: CompoundTag): BoundDomainAttributeKeyInfo<*> {
+            private fun loadAttributeKeyInfoTag(
+                tag: CompoundTag,
+                attributeKeyTypeHolderGetter: HolderGetter<IMappedAttributeKeyType<*, *>>,
+            ): MappedAttributeKeyInfo<*, *> {
                 val name = tag.getString("name")
                 if (name.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'name'")
                 val type = tag.getString("type")
                 if (type.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'type'")
-                val enumType = AttributeType.valueOf(type)
-                return BoundDomainAttributeKeyInfo.ofBuiltin(enumType, name)
+                val mappingType: IMappedAttributeKeyType<*, *> = attributeKeyTypeHolderGetter.getOrThrow(
+                    ResourceKey.create(
+                        OTelCoreModAPI.AttributeTypeMappings,
+                        ResourceLocation.parse(type)
+                    )
+                ).value()
+                return mappingType.create(name, tag.get("data"))
             }
 
             internal val Factory = Factory<WorldInstrumentSavedData>(
@@ -325,12 +339,14 @@ internal class WorldInstrumentManager private constructor(
             )
 
             fun load(tag: CompoundTag, lookupProvider: HolderLookup.Provider): WorldInstrumentSavedData {
+                val attributeKeyTypeGetter: HolderGetter<IMappedAttributeKeyType<*, *>> =
+                    lookupProvider.lookupOrThrow(OTelCoreModAPI.AttributeTypeMappings)
                 val data: Map<String, InstrumentManagerBaseRegistrationUnion> =
                     buildMap {
                         val dataTag = tag.getCompound("data") ?: return@buildMap
                         val listTag = dataTag.getList("instruments", ListTag.TAG_COMPOUND.toInt()) ?: return@buildMap
                         listTag.forEach {
-                            val (name, loadedRegistration) = loadEntryTag(it as CompoundTag)
+                            val (name, loadedRegistration) = loadEntryTag(it as CompoundTag, attributeKeyTypeGetter)
                             this@buildMap.put(name, loadedRegistration)
                         }
                     }

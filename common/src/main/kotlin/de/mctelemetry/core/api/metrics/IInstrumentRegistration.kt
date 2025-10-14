@@ -4,7 +4,7 @@ import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.ObservableMeasurement
 
 interface IInstrumentRegistration : IMetricDefinition, AutoCloseable {
-    val attributes: Map<String, BoundDomainAttributeKeyInfo<*>>
+    val attributes: Map<String, MappedAttributeKeyInfo<*,*>>
 
     fun interface Callback<in R : ObservableMeasurement> {
 

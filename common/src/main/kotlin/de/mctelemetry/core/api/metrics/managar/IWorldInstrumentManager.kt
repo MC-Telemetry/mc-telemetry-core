@@ -1,6 +1,5 @@
 package de.mctelemetry.core.api.metrics.managar
 
-import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.builder.IWorldGaugeInstrumentBuilder
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory

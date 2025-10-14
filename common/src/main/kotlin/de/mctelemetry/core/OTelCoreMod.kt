@@ -1,5 +1,9 @@
 package de.mctelemetry.core
 
+import com.mojang.serialization.Lifecycle
+import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
+import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes
+import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.items.OTelCoreModItems
@@ -13,13 +17,17 @@ import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.metrics.Meter
+import net.minecraft.core.RegistrationInfo
+import net.minecraft.core.WritableRegistry
 import java.util.function.Supplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceKey
 import net.minecraft.world.item.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.apache.logging.log4j.message.SimpleMessageFactory
+import java.util.Optional
 
 object OTelCoreMod {
 
@@ -58,6 +66,28 @@ object OTelCoreMod {
         }
         InstrumentMetaManager.register()
         BuiltinInstruments.register()
+    }
+
+    fun registerAttributeTypes(registry: WritableRegistry<IMappedAttributeKeyType<*, *>>?) {
+        val attributeTypes: List<IMappedAttributeKeyType<*, *>> = NativeAttributeKeyTypes.ALL
+        if (registry == null) {
+            DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.AttributeTypeMappings).apply {
+                for (nativeType in attributeTypes) {
+                    register(nativeType.id) { nativeType }
+                }
+            }.register()
+        } else {
+            for (nativeType in attributeTypes) {
+                registry.register(
+                    ResourceKey.create(
+                        OTelCoreModAPI.AttributeTypeMappings,
+                        nativeType.id,
+                    ),
+                    nativeType,
+                    RegistrationInfo(Optional.empty(), Lifecycle.stable())
+                )
+            }
+        }
     }
 
     init {
