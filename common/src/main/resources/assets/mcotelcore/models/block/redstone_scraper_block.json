@@ -1,11 +1,11 @@
 {
 	"format_version": "1.9.0",
 	"credit": "Made with Blockbench",
-	"texture_size": [64, 64],
 	"textures": {
 		"0": "mcotelcore:block/redstone_scraper_block_base",
 		"1": "mcotelcore:block/redstone_scraper_block_frame",
 		"2": "mcotelcore:block/redstone_scraper_block_core",
+		"3": "mcotelcore:block/redstone_scraper_block_status_green",
 		"particle": "mcotelcore:block/redstone_scraper_block_base"
 	},
 	"elements": [
@@ -68,6 +68,18 @@
 				"up": {"uv": [8, 8, 0, 0], "texture": "#0"},
 				"down": {"uv": [8, 8, 0, 16], "texture": "#0"}
 			}
+		},
+		{
+			"from": [7, 14, 7],
+			"to": [9, 15, 9],
+			"faces": {
+				"north": {"uv": [0.25, 0.25, 0.75, 0.75], "texture": "#3"},
+				"east": {"uv": [1.25, 0.25, 1.75, 0.75], "texture": "#3"},
+				"south": {"uv": [2.25, 0.25, 2.75, 0.75], "texture": "#3"},
+				"west": {"uv": [3.25, 0.25, 3.75, 0.75], "texture": "#3"},
+				"up": {"uv": [4.25, 0.25, 4.75, 0.75], "texture": "#3"},
+				"down": {"uv": [5.25, 0.25, 5.75, 0.75], "texture": "#3"}
+			}
 		}
 	],
 	"display": {
@@ -112,6 +124,7 @@
 			"children": [0, 1, 2]
 		},
 		3,
-		4
+		4,
+		5
 	]
 }

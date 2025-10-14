@@ -10,18 +10,16 @@ import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.context.BlockPlaceContext
 import net.minecraft.world.level.Level
-import net.minecraft.world.level.block.BaseEntityBlock
-import net.minecraft.world.level.block.Block
-import net.minecraft.world.level.block.Mirror
-import net.minecraft.world.level.block.RenderShape
-import net.minecraft.world.level.block.Rotation
+import net.minecraft.world.level.block.*
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityTicker
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.StateDefinition
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
+import net.minecraft.world.level.block.state.properties.BooleanProperty
 import net.minecraft.world.level.block.state.properties.EnumProperty
+import net.minecraft.world.level.block.state.properties.Property
 
 
 class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClickBlock, BaseEntityBlock(properties.noOcclusion()) {
@@ -81,11 +79,12 @@ class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClick
     }
 
     protected override fun createBlockStateDefinition(builder: StateDefinition.Builder<Block?, BlockState?>) {
-        builder.add(FACING)
+        builder.add(FACING).add(ERROR)
     }
 
     init {
         registerDefaultState(getStateDefinition().any().setValue(FACING, Direction.NORTH));
+        registerDefaultState(getStateDefinition().any().setValue(ERROR, false));
 
         InteractionEvent.RIGHT_CLICK_BLOCK.register(this);
     }
@@ -93,5 +92,6 @@ class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClick
     companion object {
         val CODEC: MapCodec<RedstoneScraperBlock> = simpleCodec(::RedstoneScraperBlock)
         val FACING: EnumProperty<Direction> = BlockStateProperties.FACING
+        val ERROR: Property<Boolean> = BooleanProperty.create("error")
     }
 }
