@@ -8,15 +8,23 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.context.BlockPlaceContext
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.BaseEntityBlock
+import net.minecraft.world.level.block.Block
+import net.minecraft.world.level.block.Mirror
 import net.minecraft.world.level.block.RenderShape
+import net.minecraft.world.level.block.Rotation
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityTicker
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.block.state.StateDefinition
+import net.minecraft.world.level.block.state.properties.BlockStateProperties
+import net.minecraft.world.level.block.state.properties.EnumProperty
 
-class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClickBlock, BaseEntityBlock(properties) {
+
+class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClickBlock, BaseEntityBlock(properties.noOcclusion()) {
     override fun codec(): MapCodec<out BaseEntityBlock> {
         return CODEC
     }
@@ -34,7 +42,6 @@ class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClick
     ): BlockEntityTicker<T> {
         return RedstoneScraperBlockEntity.Ticker()
     }
-
 
     override fun click(
         player: Player,
@@ -60,11 +67,31 @@ class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClick
         return EventResult.interruptTrue()
     }
 
+
+    override fun getStateForPlacement(context: BlockPlaceContext): BlockState {
+        return defaultBlockState().setValue(FACING, context.horizontalDirection)
+    }
+
+    protected override fun rotate(state: BlockState, rotation: Rotation): BlockState {
+        return state.setValue(FACING, rotation.rotate(state.getValue(FACING)))
+    }
+
+    protected override fun mirror(state: BlockState, mirror: Mirror): BlockState {
+        return state.rotate(mirror.getRotation(state.getValue(FACING)))
+    }
+
+    protected override fun createBlockStateDefinition(builder: StateDefinition.Builder<Block?, BlockState?>) {
+        builder.add(FACING)
+    }
+
     init {
+        registerDefaultState(getStateDefinition().any().setValue(FACING, Direction.NORTH));
+
         InteractionEvent.RIGHT_CLICK_BLOCK.register(this);
     }
 
     companion object {
         val CODEC: MapCodec<RedstoneScraperBlock> = simpleCodec(::RedstoneScraperBlock)
+        val FACING: EnumProperty<Direction> = BlockStateProperties.FACING
     }
 }

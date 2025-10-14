@@ -1,5 +1,19 @@
 {
   "variants": {
-    "": { "model": "mcotelcore:block/redstone_scraper_block" }
+    "facing=east": {
+      "model": "mcotelcore:block/redstone_scraper_block",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "mcotelcore:block/redstone_scraper_block"
+    },
+    "facing=south": {
+      "model": "mcotelcore:block/redstone_scraper_block",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "mcotelcore:block/redstone_scraper_block",
+      "y": 270
+    }
   }
 }
