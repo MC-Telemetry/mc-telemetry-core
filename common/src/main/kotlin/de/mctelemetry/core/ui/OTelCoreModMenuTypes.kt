@@ -2,9 +2,12 @@ package de.mctelemetry.core.ui
 
 import de.mctelemetry.core.OTelCoreMod
 import dev.architectury.event.events.client.ClientLifecycleEvent
+import dev.architectury.platform.Platform
 import dev.architectury.registry.menu.MenuRegistry
 import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
+import dev.architectury.utils.Env
+import net.fabricmc.loader.api.metadata.ModEnvironment
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.flag.FeatureFlagSet
@@ -13,6 +16,7 @@ import java.util.function.Supplier
 
 
 object OTelCoreModMenuTypes {
+
     val MENU_TYPES: DeferredRegister<MenuType<*>> =
         DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.MENU)
 
@@ -28,12 +32,14 @@ object OTelCoreModMenuTypes {
     fun init() {
         MENU_TYPES.register()
 
-        ClientLifecycleEvent.CLIENT_STARTED.register(ClientLifecycleEvent.ClientState { _ ->
-            MenuRegistry.registerScreenFactory(
-                REDSTONE_SCRAPER_BLOCK.get(),
-                MenuRegistry.ScreenFactory(::RedstoneScraperBlockScreen)
-            )
-        })
+        if (Platform.getEnvironment() == Env.CLIENT) {
+            ClientLifecycleEvent.CLIENT_STARTED.register(ClientLifecycleEvent.ClientState { _ ->
+                MenuRegistry.registerScreenFactory(
+                    REDSTONE_SCRAPER_BLOCK.get(),
+                    MenuRegistry.ScreenFactory(::RedstoneScraperBlockScreen)
+                )
+            })
+        }
     }
 
     fun <T : MenuType<*>> registerMenuType(name: String, menuType: Supplier<T>): RegistrySupplier<T> {
