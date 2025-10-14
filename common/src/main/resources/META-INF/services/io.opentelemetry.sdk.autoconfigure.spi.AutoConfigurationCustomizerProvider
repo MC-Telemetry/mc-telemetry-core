@@ -1,1 +1,1 @@
-de.mctelemetry.core.exporters.metrics.ObjectMetricReaderAutoConfigurator
+de.mctelemetry.core.metrics.exporters.agent.ObjectMetricReaderAutoConfigurator

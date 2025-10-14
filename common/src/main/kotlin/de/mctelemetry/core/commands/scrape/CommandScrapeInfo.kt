@@ -3,8 +3,9 @@ package de.mctelemetry.core.commands.scrape
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.exporters.metrics.MetricsAccessor
-import de.mctelemetry.core.exporters.metrics.ObjectMetricReconverter
+import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
+import de.mctelemetry.core.commands.types.get
+import de.mctelemetry.core.metrics.exporters.MetricDefinitionReadback
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -15,7 +16,7 @@ import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.MutableComponent
 
-class CommandScrapeInfo(val metricsAccessor: MetricsAccessor?) {
+class CommandScrapeInfo(private val metricsAccessor: IMetricsAccessor?) {
 
     val command = CommandDSLBuilder.Companion.buildCommand("info") {
         requires { it.hasPermission(2) }
@@ -26,7 +27,7 @@ class CommandScrapeInfo(val metricsAccessor: MetricsAccessor?) {
         }
     }
 
-    private fun infoComponent(definition: ObjectMetricReconverter.MetricDefinitionReadback): MutableComponent {
+    private fun infoComponent(definition: MetricDefinitionReadback): MutableComponent {
         return buildComponent {
             append(definition.name) {
                 style {
@@ -59,7 +60,7 @@ class CommandScrapeInfo(val metricsAccessor: MetricsAccessor?) {
             source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
         }
         val metricNameFilter: String? = MetricNameArgumentType["metric"]
-        val definitions: Map<String, ObjectMetricReconverter.MetricDefinitionReadback> =
+        val definitions: Map<String, MetricDefinitionReadback> =
             if (metricNameFilter == null) {
                 metricsAccessor.collectDefinitions()
             } else {

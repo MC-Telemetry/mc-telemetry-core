@@ -3,10 +3,12 @@ package de.mctelemetry.core.commands.scrape
 import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.commands.types.LabelStringMapArgumentType
+import de.mctelemetry.core.commands.types.LabelStringValueMapArgumentType
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.exporters.metrics.MetricsAccessor
-import de.mctelemetry.core.exporters.metrics.ObjectMetricReconverter
+import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
+import de.mctelemetry.core.commands.types.get
+import de.mctelemetry.core.commands.types.getValue
+import de.mctelemetry.core.metrics.exporters.MetricValueReadback
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
 import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.commands.invoke
@@ -20,7 +22,7 @@ import net.minecraft.network.chat.Component
 import kotlin.collections.component1
 import kotlin.collections.component2
 
-class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
+class CommandScrapeValue(private val metricsAccessor: IMetricsAccessor?) {
 
     val command = CommandDSLBuilder.Companion.buildCommand("value") {
         requires { it.hasPermission(2) }
@@ -28,7 +30,7 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
             argument("metric", MetricNameArgumentType) {
                 requires { it.hasPermission(2) }
                 executes(::commandScrapeValueRaw)
-                argument("attributes", LabelStringMapArgumentType) {
+                argument("attributes", LabelStringValueMapArgumentType) {
                     requires { it.hasPermission(2) }
                     executes(::commandScrapeValueRaw)
                     argument("scale", DoubleArgumentType.doubleArg()) {
@@ -42,7 +44,7 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
             argument("metric", MetricNameArgumentType) {
                 requires { it.hasPermission(2) }
                 executes(::commandScrapeValueExact)
-                argument("attributes", LabelStringMapArgumentType) {
+                argument("attributes", LabelStringValueMapArgumentType) {
                     requires { it.hasPermission(2) }
                     executes(::commandScrapeValueExact)
                 }
@@ -52,7 +54,7 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
             argument("metric", MetricNameArgumentType) {
                 requires { it.hasPermission(2) }
                 executes(::commandScrapeValueMatching)
-                argument("attributes", LabelStringMapArgumentType) {
+                argument("attributes", LabelStringValueMapArgumentType) {
                     requires { it.hasPermission(2) }
                     executes(::commandScrapeValueMatching)
                 }
@@ -65,7 +67,7 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
             source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
         }
         val metricNameFilter = MetricNameArgumentType.getValue("metric")
-        val labelMap = LabelStringMapArgumentType["attributes"] ?: emptyMap()
+        val labelMap = LabelStringValueMapArgumentType["attributes"] ?: emptyMap()
         val scale = try {
             DoubleArgumentType.getDouble(context, "scale")
         } catch (ex: IllegalArgumentException) {
@@ -82,12 +84,12 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
             )
         }
         return when (scrapeResponse) {
-            is ObjectMetricReconverter.MetricValueReadback.MetricDoubleValue -> {
+            is MetricValueReadback.MetricDoubleValue -> {
                 val value = (scrapeResponse.value * scale)
                 source.sendSuccess({ Component.literal(value.toString()) }, false)
                 value.toInt()
             }
-            is ObjectMetricReconverter.MetricValueReadback.MetricLongValue -> {
+            is MetricValueReadback.MetricLongValue -> {
                 val value = (scrapeResponse.value * scale)
                 source.sendSuccess({ Component.literal(value.toString()) }, false)
                 value.toInt()
@@ -111,7 +113,7 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
                 source.sendFailureAndThrow(TranslationKeys.Errors.metricsAccessorMissing())
             }
             val metricNameFilter = MetricNameArgumentType.getValue("metric")
-            val labelMap = LabelStringMapArgumentType["attributes"] ?: emptyMap()
+            val labelMap = LabelStringValueMapArgumentType["attributes"] ?: emptyMap()
             val scale = try {
                 DoubleArgumentType.getDouble(context, "scale")
             } catch (ex: IllegalArgumentException) {
@@ -135,12 +137,13 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
             }
             var totalCount = 0
             val totalSum = scrapeResponse.data.values.sumOf { valueReadback ->
+                @Suppress("AssignedValueIsNeverRead") // actual read in success response not detected?
                 totalCount++
                 when (valueReadback) {
-                    is ObjectMetricReconverter.MetricValueReadback.MetricDoubleValue -> {
+                    is MetricValueReadback.MetricDoubleValue -> {
                         (valueReadback.value * scale)
                     }
-                    is ObjectMetricReconverter.MetricValueReadback.MetricLongValue -> {
+                    is MetricValueReadback.MetricLongValue -> {
                         (valueReadback.value * scale)
                     }
                     else -> {
@@ -180,10 +183,10 @@ class CommandScrapeValue(val metricsAccessor: MetricsAccessor?) {
                                                +": "
                                                append(
                                                    when (valueReadback) {
-                                                       is ObjectMetricReconverter.MetricValueReadback.MetricDoubleValue -> {
+                                                       is MetricValueReadback.MetricDoubleValue -> {
                                                            (valueReadback.value * scale).toString()
                                                        }
-                                                       is ObjectMetricReconverter.MetricValueReadback.MetricLongValue -> {
+                                                       is MetricValueReadback.MetricLongValue -> {
                                                            (valueReadback.value * scale).toString()
                                                        }
                                                        else -> throw IllegalArgumentException("Unexpected value readback, should already have been handled: $valueReadback")
