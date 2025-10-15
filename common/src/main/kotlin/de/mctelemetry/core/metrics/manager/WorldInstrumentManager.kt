@@ -326,12 +326,37 @@ internal class WorldInstrumentManager private constructor(
                 if (name.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'name'")
                 val type = tag.getString("type")
                 if (type.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'type'")
-                val mappingType: IMappedAttributeKeyType<*, *> = attributeKeyTypeHolderGetter.getOrThrow(
-                    ResourceKey.create(
-                        OTelCoreModAPI.AttributeTypeMappings,
-                        ResourceLocation.parse(type)
-                    )
-                ).value()
+                val typeResourceLocation = ResourceLocation.parse(type)
+                val mappingType: IMappedAttributeKeyType<*, *> = try {
+                    attributeKeyTypeHolderGetter.getOrThrow(
+                        ResourceKey.create(
+                            OTelCoreModAPI.AttributeTypeMappings,
+                            ResourceLocation.parse(type)
+                        )
+                    ).value()
+                } catch (ex: Exception) {
+                    val otherResourceLocation: ResourceLocation = when (typeResourceLocation.namespace) {
+                        ResourceLocation.DEFAULT_NAMESPACE -> ResourceLocation.fromNamespaceAndPath(
+                            OTelCoreModAPI.MOD_ID,
+                            typeResourceLocation.path
+                        )
+                        OTelCoreModAPI.MOD_ID -> ResourceLocation.fromNamespaceAndPath(
+                            ResourceLocation.DEFAULT_NAMESPACE,
+                            typeResourceLocation.path
+                        )
+                        else -> throw ex
+                    }
+                    try {
+                        attributeKeyTypeHolderGetter.getOrThrow(
+                            ResourceKey.create(OTelCoreModAPI.AttributeTypeMappings, otherResourceLocation)
+                        ).value().also {
+                            OTelCoreMod.logger.warn("Converted attribute resource location from $typeResourceLocation to $otherResourceLocation during loading")
+                        }
+                    } catch (ex2: Exception) {
+                        ex.addSuppressed(ex2)
+                        throw ex
+                    }
+                }
                 return mappingType.create(name, tag.getCompound("data"))
             }
 
