@@ -12,14 +12,14 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.AttributeType
 import net.minecraft.nbt.CompoundTag
 
-open class MappedAttributeKeyInfo<in T, B>(
+open class MappedAttributeKeyInfo<T : Any, B>(
     val baseKey: AttributeKey<B>,
     val type: IMappedAttributeKeyType<T, B>,
 ) {
 
     companion object {
 
-        fun <T> fromNative(key: AttributeKey<T>): MappedAttributeKeyInfo<T, T> {
+        fun <T : Any> fromNative(key: AttributeKey<T>): MappedAttributeKeyInfo<T, T> {
             return MappedAttributeKeyInfo(key, NativeAttributeKeyTypes(key))
         }
 
