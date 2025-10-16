@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation
 
 object NativeAttributeKeyTypes {
 
-    val ALL: List<IMappedAttributeKeyType<*,*>> = listOf(
+    val ALL: List<IMappedAttributeKeyType<*, *>> = listOf(
         StringType,
         BooleanType,
         LongType,
@@ -56,7 +56,7 @@ object NativeAttributeKeyTypes {
             AttributeType.BOOLEAN_ARRAY -> BooleanArrayType
             AttributeType.LONG_ARRAY -> LongArrayType
             AttributeType.DOUBLE_ARRAY -> DoubleArrayType
-        } as IMappedAttributeKeyType<T,T>
+        } as IMappedAttributeKeyType<T, T>
     }
 
     object StringType : IMappedAttributeKeyType<String, String> {
@@ -68,6 +68,14 @@ object NativeAttributeKeyTypes {
             savedData: CompoundTag?,
         ): MappedAttributeKeyInfo<String, String> {
             return MappedAttributeKeyInfo(AttributeKey.stringKey(name), this)
+        }
+
+        override fun canConvertDirectlyFrom(subtype: IMappedAttributeKeyType<*, *>): Boolean {
+            return true
+        }
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IMappedAttributeKeyType<R, *>, value: R): String {
+            return value.toString()
         }
 
         override fun format(value: String): String = value
