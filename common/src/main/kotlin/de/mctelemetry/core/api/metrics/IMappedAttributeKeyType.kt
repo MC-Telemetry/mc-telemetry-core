@@ -3,7 +3,7 @@ package de.mctelemetry.core.api.metrics
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.resources.ResourceLocation
 
-interface IMappedAttributeKeyType<T, B> {
+interface IMappedAttributeKeyType<T : Any, B> {
 
     val id: ResourceLocation
     fun format(value: T): B
