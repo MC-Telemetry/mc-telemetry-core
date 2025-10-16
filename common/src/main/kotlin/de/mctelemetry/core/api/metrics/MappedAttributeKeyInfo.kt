@@ -12,7 +12,7 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.AttributeType
 import net.minecraft.nbt.CompoundTag
 
-open class MappedAttributeKeyInfo<in T, B>(
+open class MappedAttributeKeyInfo<T, B>(
     val baseKey: AttributeKey<B>,
     val type: IMappedAttributeKeyType<T, B>,
 ) {
