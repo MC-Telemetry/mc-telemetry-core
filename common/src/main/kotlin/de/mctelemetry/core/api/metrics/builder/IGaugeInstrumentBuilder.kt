@@ -5,8 +5,6 @@ import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import io.opentelemetry.api.common.AttributeKey
-import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
-import io.opentelemetry.api.metrics.ObservableLongMeasurement
 import org.jetbrains.annotations.Contract
 
 interface IGaugeInstrumentBuilder<out B : IGaugeInstrumentBuilder<B>> {

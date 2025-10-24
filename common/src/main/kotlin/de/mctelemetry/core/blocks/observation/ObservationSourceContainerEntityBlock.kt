@@ -1,6 +1,6 @@
 package de.mctelemetry.core.blocks.observation
 
-import de.mctelemetry.core.observations.IObservationSource
+import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.observations.ObservationSourceState
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.block.entity.BlockEntity

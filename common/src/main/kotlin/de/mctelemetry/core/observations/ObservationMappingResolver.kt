@@ -1,6 +1,8 @@
 package de.mctelemetry.core.observations
 
+import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.metrics.IObservationObserver
+import de.mctelemetry.core.api.metrics.IObservationSource
 
 class ObservationMappingResolver(
     val resolvedObserver: IObservationObserver.Resolved,

@@ -12,7 +12,7 @@ import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import de.mctelemetry.core.commands.metrics.CommandMetrics
 import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
 import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
-import de.mctelemetry.core.observations.IObservationSource
+import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
 import dev.architectury.event.events.common.CommandRegistrationEvent
@@ -26,7 +26,6 @@ import net.minecraft.core.WritableRegistry
 import java.util.function.Supplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
-import net.minecraft.server.packs.repository.KnownPack
 import net.minecraft.world.item.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger

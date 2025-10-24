@@ -1,7 +1,9 @@
 package de.mctelemetry.core.observations
 
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
+import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.metrics.IObservationObserver
+import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.plus

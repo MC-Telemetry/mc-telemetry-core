@@ -8,15 +8,9 @@ import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMetricDefinition
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
-import de.mctelemetry.core.commands.scrape.CommandScrape
-import de.mctelemetry.core.commands.scrape.CommandScrapeInfo
-import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.commands.types.getValue
 import de.mctelemetry.core.metrics.manager.WorldInstrumentManager
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
-import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.commands.invoke
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import de.mctelemetry.core.utils.dsl.components.append
 import de.mctelemetry.core.utils.dsl.components.onHoverShowText

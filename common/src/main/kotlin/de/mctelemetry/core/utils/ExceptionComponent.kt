@@ -1,9 +1,6 @@
 package de.mctelemetry.core.utils
 
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
-import de.mctelemetry.core.utils.dsl.components.onHoverShowText
-import de.mctelemetry.core.utils.dsl.components.style
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.FormattedText
 import net.minecraft.network.chat.MutableComponent

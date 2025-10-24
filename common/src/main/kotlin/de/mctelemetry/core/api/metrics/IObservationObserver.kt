@@ -1,7 +1,5 @@
 package de.mctelemetry.core.api.metrics
 
-import de.mctelemetry.core.observations.IMappedAttributeValueLookup
-import de.mctelemetry.core.observations.IObservationSource
 import io.opentelemetry.api.common.Attributes
 
 sealed interface IObservationObserver {
