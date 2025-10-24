@@ -1,18 +1,15 @@
 package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.BlockDimPos
-import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
-import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
+import de.mctelemetry.core.api.metrics.IObservationObserver
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.blocks.RedstoneScraperBlock
 import de.mctelemetry.core.ui.RedstoneScraperBlockMenu
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
-import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
-import io.opentelemetry.api.metrics.ObservableLongMeasurement
 import net.minecraft.core.BlockPos
+import net.minecraft.core.GlobalPos
 import net.minecraft.network.chat.Component
 import net.minecraft.world.MenuProvider
 import net.minecraft.world.entity.player.Inventory
@@ -59,43 +56,26 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
         val mutableInstrument =
             instrumentManager.findLocalMutable("minecraft.mod.${OTelCoreMod.MOD_ID}.redstone.signal")
         val facing = blockState.getValue(RedstoneScraperBlock.FACING)
-        val observePos = BlockDimPos(level!!.dimension(), blockPos.relative(facing))
+        val observePos = GlobalPos(level!!.dimension(), blockPos.relative(facing))
         val attributes = Attributes.of(
             positionAttributeKey, "${
                 observePos.dimension.location().path
-            }/(${observePos.position.x},${observePos.position.y},${observePos.position.z})"
+            }/(${observePos.pos.x},${observePos.pos.y},${observePos.pos.z})"
         )
-        registration = when (mutableInstrument) {
-            is ILongInstrumentRegistration.Mutable -> mutableInstrument.addCallback(
-                Attributes.empty(),
-                object : IInstrumentRegistration.Callback<ObservableLongMeasurement> {
-                    override fun observe(recorder: ObservableLongMeasurement) {
-                        val level = level ?: return
-                        if (!(level.isLoaded(observePos.position) && level.shouldTickBlocksAt(observePos.position))) return
-                        val value = level.getBestNeighborSignal(observePos.position)
-                        recorder.record(value.toLong(), attributes)
-                    }
+        registration = mutableInstrument?.addCallback(Attributes.empty(), object : IInstrumentRegistration.Callback<IInstrumentRegistration> {
 
-                    override fun onRemove() {
-                        this@RedstoneScraperBlockEntity.registration = null
-                    }
-                })
-            is IDoubleInstrumentRegistration.Mutable -> mutableInstrument.addCallback(
-                Attributes.empty(),
-                object : IInstrumentRegistration.Callback<ObservableDoubleMeasurement> {
-                    override fun observe(recorder: ObservableDoubleMeasurement) {
-                        val level = level ?: return
-                        if (!(level.isLoaded(observePos.position) && level.shouldTickBlocksAt(observePos.position))) return
-                        val value = level.getBestNeighborSignal(observePos.position)
-                        recorder.record(value.toDouble(), attributes)
-                    }
+            override fun observe(instrument: IInstrumentRegistration, recorder: IObservationObserver.Resolved) {
+                val level = level ?: return
+                if (!(level.isLoaded(observePos.pos) && level.shouldTickBlocksAt(observePos.pos))) return
+                val value = level.getBestNeighborSignal(observePos.pos)
+                recorder.observe(value.toLong(), attributes)
+            }
 
-                    override fun onRemove() {
-                        this@RedstoneScraperBlockEntity.registration = null
-                    }
-                })
-            else -> null
-        }
+            override fun onRemove(instrument: IInstrumentRegistration) {
+                this@RedstoneScraperBlockEntity.registration = null
+                super.onRemove(instrument)
+            }
+        })
     }
 
     init {

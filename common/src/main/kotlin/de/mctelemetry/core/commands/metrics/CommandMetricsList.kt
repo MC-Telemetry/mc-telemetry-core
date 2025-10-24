@@ -60,13 +60,13 @@ class CommandMetricsList internal constructor(
                         onHoverShowText("Mutable")
                     }
                 }
-                if (definition is ILongInstrumentRegistration.Mutable)
+                if (definition is ILongInstrumentRegistration.Mutable<*>)
                     append("L") {
                         style {
                             onHoverShowText("Long")
                         }
                     }
-                if (definition is IDoubleInstrumentRegistration.Mutable)
+                if (definition is IDoubleInstrumentRegistration.Mutable<*>)
                     append("D") {
                         style {
                             onHoverShowText("Double")

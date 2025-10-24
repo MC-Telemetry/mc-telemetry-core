@@ -11,6 +11,11 @@ import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes.StringType
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.AttributeType
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.network.RegistryFriendlyByteBuf
+import net.minecraft.network.codec.ByteBufCodecs
+import net.minecraft.network.codec.StreamCodec
+import java.util.Optional
+import kotlin.jvm.optionals.getOrNull
 
 open class MappedAttributeKeyInfo<T : Any, B>(
     val baseKey: AttributeKey<B>,
@@ -18,6 +23,18 @@ open class MappedAttributeKeyInfo<T : Any, B>(
 ) {
 
     companion object {
+
+
+        val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, MappedAttributeKeyInfo<*, *>> = StreamCodec.composite(
+            ByteBufCodecs.stringUtf8(256),
+            { it.baseKey.key },
+            IMappedAttributeKeyType.STREAM_CODEC,
+            MappedAttributeKeyInfo<*, *>::type,
+            ByteBufCodecs.OPTIONAL_COMPOUND_TAG,
+            { Optional.ofNullable(it.save()) },
+        ) { name, type, data ->
+            type.create(name, data.getOrNull())
+        }
 
         fun <T : Any> fromNative(key: AttributeKey<T>): MappedAttributeKeyInfo<T, T> {
             return MappedAttributeKeyInfo(key, NativeAttributeKeyTypes(key))

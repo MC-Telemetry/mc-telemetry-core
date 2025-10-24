@@ -55,7 +55,7 @@ inline fun <T> runWithExceptionCleanup(cleanup: () -> Unit, block: () -> T): T {
  * ```
  */
 operator fun Exception?.plus(other: Exception): Exception {
-    if(this == null) return other
+    if (this == null) return other
     this.addSuppressed(other)
     return this
 }
