@@ -4,6 +4,8 @@ import com.mojang.datafixers.util.Pair
 import com.mojang.serialization.Codec
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
+import de.mctelemetry.core.api.metrics.IInstrumentSubRegistration
+import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.utils.ExceptionComponent
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import dev.architectury.platform.Platform
@@ -88,30 +90,33 @@ open class ObservationSourceState(
         try {
             if (Platform.getEnvironment() != Env.SERVER)
                 return true
-            setUnregisterCallback(null, silent = true)
+            setInstrumentSubRegistration(null, silent = true)
         } finally {
             if (!silent) triggerOnDirty()
         }
         return true
     }
 
-    protected var unregisterCallback: AutoCloseable?
+    protected var instrumentSubRegistration: IInstrumentSubRegistration<*>?
         set(value) {
-            setUnregisterCallback(value)
+            setInstrumentSubRegistration(value)
         }
-        get() = unregisterCallbackField
-    protected var unregisterCallbackField: AutoCloseable? = null
+        get() = instrumentSubRegistrationField
+    protected var instrumentSubRegistrationField: IInstrumentSubRegistration<*>? = null
 
     override fun close() {
-        unregisterCallback = null
+        instrumentSubRegistration = null
     }
 
-    protected open fun setUnregisterCallback(value: AutoCloseable?, silent: Boolean = false): Boolean {
-        val oldValue = unregisterCallbackField
+    protected open fun setInstrumentSubRegistration(
+        value: IInstrumentSubRegistration<*>?,
+        silent: Boolean = false,
+    ): Boolean {
+        val oldValue = instrumentSubRegistrationField
         if (oldValue === value) {
             return false
         }
-        unregisterCallbackField = null
+        instrumentSubRegistrationField = null
         try {
             try {
                 oldValue?.close()
@@ -124,7 +129,7 @@ open class ObservationSourceState(
             if (value != null) {
                 // only store new callback if old callback could be closed (if it couldn't be closed, this whole method will
                 // throw, signaling to the caller that they have to close the callback themselves
-                unregisterCallbackField = value
+                instrumentSubRegistrationField = value
                 if (Platform.getEnvironment() == Env.SERVER) {
                     errorState = errorState.withoutError(ErrorState.uninitializedError)
                 }
@@ -141,9 +146,9 @@ open class ObservationSourceState(
     ) {
         setInstrument(instrument, silent = true)
         runWithExceptionCleanup(cleanup = { setInstrument(null) }) {
-            val closeCallback = instrument.addCallback(callback = callback)
-            runWithExceptionCleanup(closeCallback::close) {
-                setUnregisterCallback(closeCallback)
+            val subRegistration = instrument.addCallback(callback = callback)
+            runWithExceptionCleanup(cleanup = subRegistration::close) {
+                setInstrumentSubRegistration(subRegistration)
             }
         }
     }

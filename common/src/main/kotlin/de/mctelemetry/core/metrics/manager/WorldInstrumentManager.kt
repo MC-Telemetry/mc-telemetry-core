@@ -13,12 +13,8 @@ import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.persistence.DirtyCallbackMutableMap
 import de.mctelemetry.core.persistence.SavedDataConcurrentMap
 import de.mctelemetry.core.utils.Union2
-import de.mctelemetry.core.utils.Union3
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.metrics.Meter
-import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
-import io.opentelemetry.api.metrics.ObservableLongMeasurement
-import io.opentelemetry.api.metrics.ObservableMeasurement
 import net.minecraft.core.HolderGetter
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag

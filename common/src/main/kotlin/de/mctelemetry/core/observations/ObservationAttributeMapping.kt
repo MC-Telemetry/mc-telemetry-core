@@ -4,6 +4,7 @@ package de.mctelemetry.core.observations
 
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
+import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.canConvertTo
@@ -121,7 +122,10 @@ class ObservationAttributeMapping(
         return validateStatic() ?: validateDynamic(targetAttributes)
     }
 
-    fun findUnusedAttributes(sourceAttributes: Collection<MappedAttributeKeyInfo<*, *>>, output: MutableSet<MappedAttributeKeyInfo<*,*>>){
+    fun findUnusedAttributes(
+        sourceAttributes: Collection<MappedAttributeKeyInfo<*, *>>,
+        output: MutableSet<MappedAttributeKeyInfo<*, *>>,
+    ) {
         output.addAll(sourceAttributes)
         output.removeAll(mapping.values)
     }
@@ -166,7 +170,7 @@ class ObservationAttributeMapping(
             sourceAttribute: MappedAttributeKeyInfo<R, *>,
             valueLookup: IMappedAttributeValueLookup,
         ): T {
-            val value = valueLookup.get(sourceAttribute)
+            val value = valueLookup[sourceAttribute]
                 ?: throw NoSuchElementException("Could not find value for $sourceAttribute")
             return metricAttributeType.convertFrom(sourceAttribute.type, value)
                 ?: throw IllegalArgumentException("Could not convert value from ${sourceAttribute.type} to $metricAttributeType: $value")
@@ -189,7 +193,7 @@ class ObservationAttributeMapping(
                 }.toInt()
                 val mapping: Map<MappedAttributeKeyInfo<*, *>, MappedAttributeKeyInfo<*, *>> =
                     buildMap(mappingSize) {
-                        for (i in 0..<mappingSize) {
+                        repeat(mappingSize) { _ ->
                             val key = MappedAttributeKeyInfo.STREAM_CODEC.decode(bb)
                             val value = MappedAttributeKeyInfo.STREAM_CODEC.decode(bb)
                             val storedValue = putIfAbsent(key, value)

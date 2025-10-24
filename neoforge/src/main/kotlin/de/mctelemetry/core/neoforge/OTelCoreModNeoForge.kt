@@ -5,7 +5,7 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.commands.types.ArgumentTypes
-import de.mctelemetry.core.observations.IObservationSource
+import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.ui.RedstoneScraperBlockScreen
 import net.minecraft.client.gui.screens.MenuScreens

@@ -1,6 +1,4 @@
-package de.mctelemetry.core.observations
-
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
+package de.mctelemetry.core.api.metrics
 
 interface IMappedAttributeValueLookup {
 

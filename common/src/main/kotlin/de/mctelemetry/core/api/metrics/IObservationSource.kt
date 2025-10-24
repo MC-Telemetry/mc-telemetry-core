@@ -1,7 +1,5 @@
-package de.mctelemetry.core.observations
+package de.mctelemetry.core.api.metrics
 
-import de.mctelemetry.core.api.metrics.IObservationObserver
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import net.minecraft.resources.ResourceKey
 
 interface IObservationSource<C, A : IMappedAttributeValueLookup> {

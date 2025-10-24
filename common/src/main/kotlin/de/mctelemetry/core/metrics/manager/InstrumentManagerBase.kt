@@ -5,19 +5,17 @@ package de.mctelemetry.core.metrics.manager
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
+import de.mctelemetry.core.api.metrics.IInstrumentSubRegistration
 import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMetricDefinition
 import de.mctelemetry.core.api.metrics.IObservationObserver
 import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.Union2
-import de.mctelemetry.core.utils.Union3
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.Meter
-import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
-import io.opentelemetry.api.metrics.ObservableLongMeasurement
 import io.opentelemetry.api.metrics.ObservableMeasurement
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
@@ -379,9 +377,15 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         override fun addCallback(
             attributes: Attributes,
             callback: IInstrumentRegistration.Callback<T>,
-        ): AutoCloseable {
-            val closeCallback: AutoCloseable = AutoCloseable {
-                callbacks.remove(callback)
+        ): IInstrumentSubRegistration<T> {
+            val closeCallback: IInstrumentSubRegistration<T> = object : IInstrumentSubRegistration<T> {
+                override val baseInstrument: T =
+                    @Suppress("UNCHECKED_CAST")
+                    (this@MutableGaugeInstrumentRegistration as T)
+
+                override fun close() {
+                    callbacks.remove(callback)
+                }
             }
             callbacks.add(callback)
             return closeCallback

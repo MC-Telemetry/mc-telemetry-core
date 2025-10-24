@@ -1,7 +1,6 @@
 package de.mctelemetry.core.commands.metrics
 
 import com.mojang.brigadier.tree.CommandNode
-import de.mctelemetry.core.metrics.manager.WorldInstrumentManager
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
 import net.minecraft.commands.CommandBuildContext

@@ -1,7 +1,7 @@
 package de.mctelemetry.core.metrics.manager
 
 import de.mctelemetry.core.api.metrics.IObservationObserver
-import de.mctelemetry.core.observations.IObservationSource
+import de.mctelemetry.core.api.metrics.IObservationSource
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
 import io.opentelemetry.api.metrics.ObservableLongMeasurement

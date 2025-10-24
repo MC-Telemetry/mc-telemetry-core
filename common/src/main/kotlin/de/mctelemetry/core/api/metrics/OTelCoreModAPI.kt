@@ -1,7 +1,6 @@
 package de.mctelemetry.core.api.metrics
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.observations.IObservationSource
 import net.minecraft.core.Registry
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation

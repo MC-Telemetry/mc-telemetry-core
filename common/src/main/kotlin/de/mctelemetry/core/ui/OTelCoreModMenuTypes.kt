@@ -7,7 +7,6 @@ import dev.architectury.registry.menu.MenuRegistry
 import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
 import dev.architectury.utils.Env
-import net.fabricmc.loader.api.metadata.ModEnvironment
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.flag.FeatureFlagSet
