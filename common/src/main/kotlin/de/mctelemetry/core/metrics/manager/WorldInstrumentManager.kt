@@ -1,8 +1,10 @@
 package de.mctelemetry.core.metrics.manager
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
+import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.builder.IWorldGaugeInstrumentBuilder
@@ -10,6 +12,7 @@ import de.mctelemetry.core.api.metrics.managar.IGameInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.persistence.DirtyCallbackMutableMap
 import de.mctelemetry.core.persistence.SavedDataConcurrentMap
+import de.mctelemetry.core.utils.Union2
 import de.mctelemetry.core.utils.Union3
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.metrics.Meter
@@ -77,14 +80,13 @@ internal class WorldInstrumentManager private constructor(
                                 builder.setUnit(registrationValue.unit)
                             else builder
                         }.let { builder ->
-                            when (registrationValue) {
-                                is MutableLongGaugeInstrumentRegistration -> {
-                                    builder.ofLongs().buildWithCallback(registrationValue::observe)
-                                }
-                                is MutableDoubleGaugeInstrumentRegistration -> {
-                                    builder.buildWithCallback(registrationValue::observe)
-                                }
-                                else -> throw IllegalArgumentException("Cannot register at OTel with non-mutable persistent instrument $registration during setup")
+                            if (registrationValue !is MutableGaugeInstrumentRegistration<*>) {
+                                throw IllegalArgumentException("Cannot register at OTel with non-mutable persistent instrument $registration during setup")
+                            }
+                            if (registrationValue.preferIntegral) {
+                                builder.ofLongs().buildWithCallback(registrationValue::observe)
+                            } else {
+                                builder.buildWithCallback(registrationValue::observe)
                             }
                         }
                     runWithExceptionCleanup(otelRegistration::close) {
@@ -118,28 +120,28 @@ internal class WorldInstrumentManager private constructor(
 
     override fun createImmutableDoubleRegistration(
         builder: WorldGaugeInstrumentBuilder,
-        callback: IInstrumentRegistration.Callback<ObservableDoubleMeasurement>,
-    ): ImmutableGaugeInstrumentRegistration<ObservableDoubleMeasurement> {
+        callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>,
+    ): ImmutableGaugeInstrumentRegistration {
         if (builder.persistent) throw IllegalArgumentException("Cannot create persistent immutable instrument registrations")
         return super.createImmutableDoubleRegistration(builder, callback)
     }
 
     override fun createImmutableLongRegistration(
         builder: WorldGaugeInstrumentBuilder,
-        callback: IInstrumentRegistration.Callback<ObservableLongMeasurement>,
-    ): ImmutableGaugeInstrumentRegistration<ObservableLongMeasurement> {
+        callback: IInstrumentRegistration.Callback<ILongInstrumentRegistration>,
+    ): ImmutableGaugeInstrumentRegistration {
         if (builder.persistent) throw IllegalArgumentException("Cannot create persistent immutable instrument registrations")
         return super.createImmutableLongRegistration(builder, callback)
     }
 
-    override fun createMutableDoubleRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableDoubleGaugeInstrumentRegistration {
+    override fun createMutableDoubleRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return WorldMutableDoubleGaugeInstrumentRegistration(builder)
+        return WorldMutableGaugeInstrumentRegistration(builder, preferIntegral = false)
     }
 
-    override fun createMutableLongRegistration(builder: WorldGaugeInstrumentBuilder): MutableLongGaugeInstrumentRegistration {
+    override fun createMutableLongRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return WorldMutableLongGaugeInstrumentRegistration(builder)
+        return WorldMutableGaugeInstrumentRegistration(builder, preferIntegral = true)
     }
 
     internal class WorldGaugeInstrumentBuilder(
@@ -154,18 +156,20 @@ internal class WorldInstrumentManager private constructor(
         override var persistent: Boolean = false
     }
 
-    internal sealed interface IWorldMutableInstrumentRegistration<R : ObservableMeasurement> : IInstrumentRegistration.Mutable<R> {
+    internal sealed interface IWorldMutableInstrumentRegistration<out R : IWorldMutableInstrumentRegistration<R>> :
+            IInstrumentRegistration.Mutable<R> {
 
         val persistent: Boolean
     }
 
-    internal class WorldMutableLongGaugeInstrumentRegistration : MutableLongGaugeInstrumentRegistration,
-            IWorldMutableInstrumentRegistration<ObservableLongMeasurement> {
+    internal class WorldMutableGaugeInstrumentRegistration : MutableGaugeInstrumentRegistration<WorldMutableGaugeInstrumentRegistration>,
+            IWorldMutableInstrumentRegistration<WorldMutableGaugeInstrumentRegistration> {
 
         override val persistent: Boolean
 
-        constructor(builder: WorldGaugeInstrumentBuilder) : super(
-            builder
+        constructor(builder: WorldGaugeInstrumentBuilder, preferIntegral: Boolean) : super(
+            builder,
+            preferIntegral,
         ) {
             this.persistent = builder.persistent
         }
@@ -175,30 +179,9 @@ internal class WorldInstrumentManager private constructor(
             description: String,
             unit: String,
             attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+            preferIntegral: Boolean,
             persistent: Boolean,
-        ) : super(name, description, unit, attributes) {
-            this.persistent = persistent
-        }
-    }
-
-    internal class WorldMutableDoubleGaugeInstrumentRegistration : MutableDoubleGaugeInstrumentRegistration,
-            IWorldMutableInstrumentRegistration<ObservableDoubleMeasurement> {
-
-        override val persistent: Boolean
-
-        constructor(builder: WorldGaugeInstrumentBuilder) : super(
-            builder
-        ) {
-            this.persistent = builder.persistent
-        }
-
-        constructor(
-            name: String,
-            description: String,
-            unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-            persistent: Boolean,
-        ) : super(name, description, unit, attributes) {
+        ) : super(name, description, unit, attributes, preferIntegral) {
             this.persistent = persistent
         }
     }
@@ -241,10 +224,7 @@ internal class WorldInstrumentManager private constructor(
                 if (!value.persistent) return null
                 return CompoundTag().apply {
                     putString("name", name)
-                    val integral: Boolean = when (value) {
-                        is WorldMutableLongGaugeInstrumentRegistration -> true
-                        is WorldMutableDoubleGaugeInstrumentRegistration -> false
-                    }
+                    val integral: Boolean = value.preferIntegral
                     putBoolean("integral", integral)
                     if (value.description.isNotEmpty()) {
                         putString("description", value.description)
@@ -265,7 +245,7 @@ internal class WorldInstrumentManager private constructor(
             private fun createAttributeKeyInfoTag(key: MappedAttributeKeyInfo<*, *>): CompoundTag {
                 return CompoundTag().apply {
                     putString("name", key.baseKey.key)
-                    putString("type", key.type.id.toString())
+                    putString("type", key.type.id.location().toString())
                     val data = key.save()
                     if (data != null) {
                         put("data", data)
@@ -295,26 +275,16 @@ internal class WorldInstrumentManager private constructor(
                     } else {
                         emptyMap()
                     }
-                return name to if (integral)
-                    Union3.of2(
-                        WorldMutableLongGaugeInstrumentRegistration(
-                            name = name,
-                            description = description,
-                            unit = unit,
-                            attributes = attributes,
-                            persistent = true,
-                        )
+                return name to Union2.of2(
+                    WorldMutableGaugeInstrumentRegistration(
+                        name = name,
+                        description = description,
+                        unit = unit,
+                        attributes = attributes,
+                        preferIntegral = integral,
+                        persistent = true,
                     )
-                else
-                    Union3.of3(
-                        WorldMutableDoubleGaugeInstrumentRegistration(
-                            name = name,
-                            description = description,
-                            unit = unit,
-                            attributes = attributes,
-                            persistent = true,
-                        )
-                    )
+                )
             }
 
 

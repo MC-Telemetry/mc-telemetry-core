@@ -1,12 +1,31 @@
 package de.mctelemetry.core.api.metrics
 
+import io.netty.buffer.ByteBuf
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.AttributeType
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.Tag
+import net.minecraft.network.codec.ByteBufCodecs
+import net.minecraft.network.codec.StreamCodec
+import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 
 object NativeAttributeKeyTypes {
+
+    val NATIVE_ATTRIBUTE_TYPE_STREAM_CODED: StreamCodec<ByteBuf, AttributeType> = StreamCodec.of(
+        { bb, v ->
+            bb.writeByte(v.ordinal)
+        },
+        { bb ->
+            AttributeType.entries[bb.readByte().toInt()]
+        }
+    )
+    val NATIVE_ATTRIBUTE_KEY_STREAM_CODEC: StreamCodec<ByteBuf, AttributeKey<*>> = StreamCodec.composite(
+        NATIVE_ATTRIBUTE_TYPE_STREAM_CODED,
+        AttributeKey<*>::getType,
+        ByteBufCodecs.stringUtf8(OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_NAME_MAX_LENGTH),
+        AttributeKey<*>::getKey,
+        ::attributeKeyForType,
+    )
 
     val ALL: List<IMappedAttributeKeyType<*, *>> = listOf(
         StringType,
@@ -61,8 +80,12 @@ object NativeAttributeKeyTypes {
 
     object StringType : IMappedAttributeKeyType<String, String> {
 
-        override val id: ResourceLocation =
+        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+            OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "string")
+        )
+
+        override val valueType: Class<String> = String::class.java
 
         override fun create(
             name: String,
@@ -84,8 +107,12 @@ object NativeAttributeKeyTypes {
 
     object BooleanType : IMappedAttributeKeyType<Boolean, Boolean> {
 
-        override val id: ResourceLocation =
+        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+            OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "boolean")
+        )
+
+        override val valueType: Class<Boolean> = Boolean::class.java
 
         override fun create(
             name: String,
@@ -99,8 +126,12 @@ object NativeAttributeKeyTypes {
 
     object LongType : IMappedAttributeKeyType<Long, Long> {
 
-        override val id: ResourceLocation =
+        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+            OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "long")
+        )
+
+        override val valueType: Class<Long> = Long::class.java
 
         override fun create(
             name: String,
@@ -114,8 +145,12 @@ object NativeAttributeKeyTypes {
 
     object DoubleType : IMappedAttributeKeyType<Double, Double> {
 
-        override val id: ResourceLocation =
+        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+            OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "double")
+        )
+
+        override val valueType: Class<Double> = Double::class.java
 
         override fun create(
             name: String,
@@ -129,8 +164,13 @@ object NativeAttributeKeyTypes {
 
     object StringArrayType : IMappedAttributeKeyType<List<String>, List<String>> {
 
-        override val id: ResourceLocation =
+        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+            OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "string_array")
+        )
+
+        @Suppress("UNCHECKED_CAST")
+        override val valueType: Class<List<String>> = List::class.java as Class<List<String>>
 
         override fun create(
             name: String,
@@ -144,8 +184,13 @@ object NativeAttributeKeyTypes {
 
     object BooleanArrayType : IMappedAttributeKeyType<List<Boolean>, List<Boolean>> {
 
-        override val id: ResourceLocation =
+        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+            OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "boolean_array")
+        )
+
+        @Suppress("UNCHECKED_CAST")
+        override val valueType: Class<List<Boolean>> = List::class.java as Class<List<Boolean>>
 
         override fun create(
             name: String,
@@ -159,8 +204,13 @@ object NativeAttributeKeyTypes {
 
     object LongArrayType : IMappedAttributeKeyType<List<Long>, List<Long>> {
 
-        override val id: ResourceLocation =
+        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+            OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "long_array")
+        )
+
+        @Suppress("UNCHECKED_CAST")
+        override val valueType: Class<List<Long>> = List::class.java as Class<List<Long>>
 
         override fun create(
             name: String,
@@ -174,7 +224,13 @@ object NativeAttributeKeyTypes {
 
     object DoubleArrayType : IMappedAttributeKeyType<List<Double>, List<Double>> {
 
-        override val id: ResourceLocation = ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "double_array")
+        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+            OTelCoreModAPI.AttributeTypeMappings,
+            ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "double_array")
+        )
+
+        @Suppress("UNCHECKED_CAST")
+        override val valueType: Class<List<Double>> = List::class.java as Class<List<Double>>
 
         override fun create(
             name: String,

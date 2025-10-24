@@ -1,10 +1,26 @@
+@file:OptIn(ExperimentalContracts::class)
+
 package de.mctelemetry.core.observations
 
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.canConvertTo
+import de.mctelemetry.core.api.metrics.convertFrom
+import de.mctelemetry.core.utils.runWithExceptionCleanup
+import io.opentelemetry.api.common.AttributeKey
+import io.opentelemetry.api.common.Attributes
+import io.opentelemetry.api.common.AttributesBuilder
+import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.chat.MutableComponent
+import net.minecraft.network.codec.StreamCodec
+import org.intellij.lang.annotations.MagicConstant
+import java.util.SortedMap
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 class ObservationAttributeMapping(
     /**
@@ -28,10 +44,44 @@ class ObservationAttributeMapping(
      *  - `X.assignableTo(A)`, which will result in the conversion `it: X -> X.convertTo(A, it) as A`
      *  - `A.assignableFrom(X)`, which will result in the conversion `it: X -> A.convertFrom(X, it) as A`
      **/
-    val mapping: Map<MappedAttributeKeyInfo<*, *>, MappedAttributeKeyInfo<*, *>>,
+    mapping: Map<MappedAttributeKeyInfo<*, *>, MappedAttributeKeyInfo<*, *>>,
 ) {
 
-    fun validateAssignments(): MutableComponent? {
+    // store mapping sorted by base key name to reduce later sorting overhead during OTel-Attributes construction
+    val mapping: Map<MappedAttributeKeyInfo<*, *>, MappedAttributeKeyInfo<*, *>> =
+        if (mapping is SortedMap<*, *> && mapping.comparator() === comparator) mapping
+        else mapping.toSortedMap(comparator)
+
+    private val validationFlags: AtomicInteger = AtomicInteger(0)
+
+    private inline fun cacheableValidation(
+        @MagicConstant(
+            intValues = [
+                VALIDATION_FLAG_TYPES.toLong(),
+                VALIDATION_FLAG_TARGET_ATTRIBUTES.toLong(),
+            ]
+        )
+        flag: Int,
+        force: Boolean,
+        block: () -> MutableComponent?,
+    ): MutableComponent? {
+        contract {
+            callsInPlace(block, InvocationKind.AT_MOST_ONCE)
+        }
+        val previousFlags = validationFlags.get()
+        if ((!force) && ((previousFlags and flag) == flag)) return null
+        val result = runWithExceptionCleanup(cleanup = {
+            validationFlags.compareAndSet(previousFlags, previousFlags and flag.inv())
+        }, block)
+        if (result == null) {
+            validationFlags.compareAndSet(previousFlags, previousFlags or flag)
+        } else {
+            validationFlags.compareAndSet(previousFlags, previousFlags and flag.inv())
+        }
+        return result
+    }
+
+    fun validateTypes(force: Boolean = false): MutableComponent? = cacheableValidation(VALIDATION_FLAG_TYPES, force) {
         for ((target, source) in mapping) {
             if (!(source.type canConvertTo target.type))
                 return TranslationKeys.Errors.attributeTypesIncompatible(source, target)
@@ -39,11 +89,15 @@ class ObservationAttributeMapping(
         return null
     }
 
-    fun validateStatic(): MutableComponent? {
-        return validateAssignments()
+
+    fun validateStatic(force: Boolean = false): MutableComponent? {
+        return validateTypes(force)
     }
 
-    fun validateDynamic(targetAttributes: Set<MappedAttributeKeyInfo<*, *>>): MutableComponent? {
+    fun validateTargets(
+        targetAttributes: Collection<MappedAttributeKeyInfo<*, *>>,
+        force: Boolean = false,
+    ): MutableComponent? = cacheableValidation(VALIDATION_FLAG_TARGET_ATTRIBUTES, force) {
         for (target in targetAttributes) {
             if (target !in mapping) {
                 return TranslationKeys.Errors.attributeMappingMissing(target)
@@ -52,8 +106,98 @@ class ObservationAttributeMapping(
         return null
     }
 
+    fun validateDynamic(
+        targetAttributes: Collection<MappedAttributeKeyInfo<*, *>>,
+        force: Boolean = false,
+    ): MutableComponent? {
+        return validateTargets(targetAttributes, force)
+    }
 
-    fun validate(targetAttributes: Set<MappedAttributeKeyInfo<*, *>>): MutableComponent? {
+    fun validate(
+        targetAttributes: Collection<MappedAttributeKeyInfo<*, *>>,
+        force: Boolean = false,
+    ): MutableComponent? {
+        if ((!force) && ((validationFlags.get() and VALIDATION_COMPLETE) == VALIDATION_COMPLETE)) return null
         return validateStatic() ?: validateDynamic(targetAttributes)
+    }
+
+    fun findUnusedAttributes(sourceAttributes: Collection<MappedAttributeKeyInfo<*, *>>, output: MutableSet<MappedAttributeKeyInfo<*,*>>){
+        output.addAll(sourceAttributes)
+        output.removeAll(mapping.values)
+    }
+
+    fun resolveAttributes(valueLookup: IMappedAttributeValueLookup): Attributes {
+        if (mapping.isEmpty()) {
+            return Attributes.empty()
+        }
+        return mapping.entries.fold(Attributes.builder()) { builder, (metricAttribute, sourceAttribute) ->
+            addConverted(metricAttribute, sourceAttribute, valueLookup, builder)
+        }.build()
+    }
+
+    companion object {
+
+        init {
+            assert(OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT <= UByte.MAX_VALUE.toInt())
+        }
+
+        private const val VALIDATION_FLAG_TYPES = 1 shl 0
+        private const val VALIDATION_FLAG_TARGET_ATTRIBUTES = 1 shl 1
+        private const val VALIDATION_COMPLETE =
+            VALIDATION_FLAG_TYPES or
+                    VALIDATION_FLAG_TARGET_ATTRIBUTES
+
+        private val comparator: Comparator<MappedAttributeKeyInfo<*, *>> = Comparator.comparing { it.baseKey.key }
+
+        private fun <T : Any, B> addConverted(
+            metricAttribute: MappedAttributeKeyInfo<T, B>,
+            sourceAttribute: MappedAttributeKeyInfo<*, *>,
+            valueLookup: IMappedAttributeValueLookup,
+            builder: AttributesBuilder,
+        ): AttributesBuilder {
+            val metricAttributeType: IMappedAttributeKeyType<T, B> = metricAttribute.type
+            val metricAttributeKey: AttributeKey<B> = metricAttribute.baseKey
+            val value: T = lookupConverted(metricAttributeType, sourceAttribute, valueLookup)
+            return builder.put(metricAttributeKey, metricAttributeType.format(value))
+        }
+
+        private fun <T : Any, R : Any, B> lookupConverted(
+            metricAttributeType: IMappedAttributeKeyType<T, B>,
+            sourceAttribute: MappedAttributeKeyInfo<R, *>,
+            valueLookup: IMappedAttributeValueLookup,
+        ): T {
+            val value = valueLookup.get(sourceAttribute)
+                ?: throw NoSuchElementException("Could not find value for $sourceAttribute")
+            return metricAttributeType.convertFrom(sourceAttribute.type, value)
+                ?: throw IllegalArgumentException("Could not convert value from ${sourceAttribute.type} to $metricAttributeType: $value")
+        }
+
+        val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationAttributeMapping> = StreamCodec.of(
+            { bb, v ->
+                val mapping = v.mapping
+                bb.writeByte(mapping.size.also {
+                    require(0 <= it && it < OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT)
+                })
+                mapping.forEach { (key, value) ->
+                    MappedAttributeKeyInfo.STREAM_CODEC.encode(bb, key)
+                    MappedAttributeKeyInfo.STREAM_CODEC.encode(bb, value)
+                }
+            },
+            { bb ->
+                val mappingSize = bb.readUnsignedByte().also {
+                    require(0 <= it && it < OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT)
+                }.toInt()
+                val mapping: Map<MappedAttributeKeyInfo<*, *>, MappedAttributeKeyInfo<*, *>> =
+                    buildMap(mappingSize) {
+                        for (i in 0..<mappingSize) {
+                            val key = MappedAttributeKeyInfo.STREAM_CODEC.decode(bb)
+                            val value = MappedAttributeKeyInfo.STREAM_CODEC.decode(bb)
+                            val storedValue = putIfAbsent(key, value)
+                            require(storedValue == null) { "Duplicate key $key" }
+                        }
+                    }
+                ObservationAttributeMapping(mapping)
+            }
+        )
     }
 }

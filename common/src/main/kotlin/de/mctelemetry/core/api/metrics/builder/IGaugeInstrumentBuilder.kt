@@ -54,8 +54,14 @@ interface IGaugeInstrumentBuilder<out B : IGaugeInstrumentBuilder<B>> {
         return this as B
     }
 
-    fun registerWithCallbackOfLong(callback: IInstrumentRegistration.Callback<ObservableLongMeasurement>): ILongInstrumentRegistration
-    fun registerWithCallbackOfDouble(callback: IInstrumentRegistration.Callback<ObservableDoubleMeasurement>): IDoubleInstrumentRegistration
-    fun registerMutableOfLong(): ILongInstrumentRegistration.Mutable
-    fun registerMutableOfDouble(): IDoubleInstrumentRegistration.Mutable
+    fun registerWithCallbackOfLong(callback: IInstrumentRegistration.Callback<ILongInstrumentRegistration>): ILongInstrumentRegistration
+    fun registerWithCallbackOfLong(callback: IInstrumentRegistration.Callback.Simple): ILongInstrumentRegistration {
+        return registerWithCallbackOfLong(callback as IInstrumentRegistration.Callback<ILongInstrumentRegistration>)
+    }
+    fun registerWithCallbackOfDouble(callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>): IDoubleInstrumentRegistration
+    fun registerWithCallbackOfDouble(callback: IInstrumentRegistration.Callback.Simple): IDoubleInstrumentRegistration {
+        return registerWithCallbackOfDouble(callback as IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>)
+    }
+    fun registerMutableOfLong(): ILongInstrumentRegistration.Mutable<ILongInstrumentRegistration.Mutable<*>>
+    fun registerMutableOfDouble(): IDoubleInstrumentRegistration.Mutable<IDoubleInstrumentRegistration.Mutable<*>>
 }

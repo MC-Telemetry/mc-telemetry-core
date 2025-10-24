@@ -1,17 +1,28 @@
 package de.mctelemetry.core.api.metrics
 
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.resources.ResourceLocation
+import net.minecraft.network.RegistryFriendlyByteBuf
+import net.minecraft.network.codec.ByteBufCodecs
+import net.minecraft.network.codec.StreamCodec
+import net.minecraft.resources.ResourceKey
 
 interface IMappedAttributeKeyType<T : Any, B> {
 
-    val id: ResourceLocation
+    val id: ResourceKey<IMappedAttributeKeyType<*, *>>
+    val valueType: Class<T>
     fun format(value: T): B
     fun create(name: String, savedData: CompoundTag?): MappedAttributeKeyInfo<T, B>
     fun canConvertDirectlyFrom(subtype: IMappedAttributeKeyType<*, *>): Boolean = false
     fun canConvertDirectlyTo(supertype: IMappedAttributeKeyType<*, *>): Boolean = false
     fun <R : Any> convertDirectlyFrom(subtype: IMappedAttributeKeyType<R, *>, value: R): T? = null
     fun <R : Any> convertDirectlyTo(supertype: IMappedAttributeKeyType<R, *>, value: T): R? = null
+
+    companion object {
+
+        val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, IMappedAttributeKeyType<*, *>> = ByteBufCodecs.registry(
+            OTelCoreModAPI.AttributeTypeMappings
+        )
+    }
 }
 
 infix fun IMappedAttributeKeyType<*, *>.canConvertTo(supertype: IMappedAttributeKeyType<*, *>): Boolean {

@@ -1,6 +1,6 @@
 package de.mctelemetry.core
 
-import de.mctelemetry.core.api.metrics.IInstrumentRegistration
+import de.mctelemetry.core.api.metrics.IInstrumentDefinition
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import net.minecraft.network.chat.Component
@@ -19,6 +19,7 @@ object TranslationKeys {
         const val ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING = "errors.mctelemetry.core.world.instrument_manager.missing"
         const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE = "errors.mctelemetry.core.attributes.type.incompatible"
         const val ERRORS_ATTRIBUTES_MAPPING_MISSING = "errors.mctelemetry.core.attributes.mapping.missing"
+        const val ERRORS_OBSERVATIONS_UNINITIALIZED = "errors.mctelemetry.core.observations.uninitialized"
 
         fun metricsAccessorMissing(): MutableComponent =
             Component.translatableWithFallback(
@@ -110,6 +111,12 @@ object TranslationKeys {
                 target.baseKey.key,
                 target.type.id.toString(),
             )
+
+        fun observationsUninitialized(): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_OBSERVATIONS_UNINITIALIZED,
+                "Observations not initialized",
+            )
     }
 
     object Commands {
@@ -173,11 +180,11 @@ object TranslationKeys {
                 sum
             )
 
-        fun metricsDeleteSuccess(registration: IInstrumentRegistration): MutableComponent =
+        fun metricsDeleteSuccess(definition: IInstrumentDefinition): MutableComponent =
             Component.translatableWithFallback(
                 COMMANDS_MCOTEL_METRICS_DELETE_SUCCESS,
                 $$"Successfully deleted metric '%1$s'",
-                registration.name
+                definition.name
             )
 
         fun metricsListSuccess(count: Int, scope: String): MutableComponent =
@@ -188,7 +195,7 @@ object TranslationKeys {
                 scope
             )
 
-        fun metricsCreateSuccess(definition: IInstrumentRegistration): MutableComponent =
+        fun metricsCreateSuccess(definition: IInstrumentDefinition): MutableComponent =
             Component.translatableWithFallback(
                 COMMANDS_MCOTEL_METRICS_CREATE_SUCCESS,
                 $$"Successfully created metric '%1$s'",

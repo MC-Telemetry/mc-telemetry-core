@@ -7,6 +7,7 @@ import de.mctelemetry.core.commands.types.ArgumentTypes
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder
+import net.fabricmc.fabric.api.event.registry.RegistryAttribute
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
 
 object OTelCoreModFabric : ModInitializer {
@@ -25,9 +26,18 @@ object OTelCoreModFabric : ModInitializer {
 
     private fun registerContent() {
         val attributeTypeRegistry =
-            FabricRegistryBuilder.createSimple(OTelCoreModAPI.AttributeTypeMappings).buildAndRegister()
+            FabricRegistryBuilder.createSimple(OTelCoreModAPI.AttributeTypeMappings)
+                .attribute(RegistryAttribute.SYNCED)
+                .attribute(RegistryAttribute.MODDED)
+                .buildAndRegister()
+        val observationSourceRegistry =
+            FabricRegistryBuilder.createSimple(OTelCoreModAPI.ObservationSources)
+                .attribute(RegistryAttribute.SYNCED)
+                .attribute(RegistryAttribute.MODDED)
+                .buildAndRegister()
         OTelCoreModBlockEntityTypesFabric.init()
         OTelCoreMod.registerAttributeTypes(attributeTypeRegistry)
+        OTelCoreMod.registerObservationSources(observationSourceRegistry)
         ArgumentTypes.register {
             it.register()
         }

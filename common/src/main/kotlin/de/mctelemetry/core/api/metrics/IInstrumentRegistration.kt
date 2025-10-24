@@ -3,27 +3,39 @@ package de.mctelemetry.core.api.metrics
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.ObservableMeasurement
 
-interface IInstrumentRegistration : IMetricDefinition, AutoCloseable {
+interface IInstrumentRegistration : IInstrumentDefinition, AutoCloseable {
 
-    val attributes: Map<String, MappedAttributeKeyInfo<*, *>>
-
-    fun interface Callback<in R : ObservableMeasurement> {
+    fun interface Callback<in T : IInstrumentRegistration> {
 
         val invocationSyncHint: InvocationSynchronizationHint
             get() = InvocationSynchronizationHint.DEFAULT
         val tickSynchronizationHint: TickSynchronizationHint
             get() = TickSynchronizationHint.DEFAULT
 
-        fun observe(recorder: R)
+        fun observe(instrument: T, recorder: IObservationObserver.Resolved)
 
-        fun onRemove() {}
+        fun onRemove(instrument: T) {}
+
+        fun interface Simple : Callback<IInstrumentRegistration> {
+
+            override fun observe(instrument: IInstrumentRegistration, recorder: IObservationObserver.Resolved) {
+                observe(recorder)
+            }
+
+            fun observe(recorder: IObservationObserver.Resolved)
+            override fun onRemove(instrument: IInstrumentRegistration) {
+                onRemove()
+            }
+
+            fun onRemove() {}
+        }
     }
 
-    interface Mutable<out R : ObservableMeasurement> : IInstrumentRegistration {
+    interface Mutable<out T : Mutable<T>> : IInstrumentRegistration {
 
         fun addCallback(
             attributes: Attributes = Attributes.empty(),
-            callback: Callback<R>,
+            callback: Callback<T>,
         ): AutoCloseable
     }
 }

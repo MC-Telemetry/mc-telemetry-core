@@ -7,8 +7,10 @@ import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMetricDefinition
+import de.mctelemetry.core.api.metrics.IObservationObserver
 import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
+import de.mctelemetry.core.utils.Union2
 import de.mctelemetry.core.utils.Union3
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
@@ -23,11 +25,10 @@ import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-internal typealias InstrumentManagerBaseRegistrationUnion = Union3<
-        InstrumentManagerBase.ImmutableGaugeInstrumentRegistration<*>,
-        InstrumentManagerBase.MutableLongGaugeInstrumentRegistration,
-        InstrumentManagerBase.MutableDoubleGaugeInstrumentRegistration,
-        InstrumentManagerBase.GaugeInstrumentRegistration<*>>
+internal typealias InstrumentManagerBaseRegistrationUnion = Union2<
+        InstrumentManagerBase.ImmutableGaugeInstrumentRegistration,
+        InstrumentManagerBase.MutableGaugeInstrumentRegistration<*>,
+        InstrumentManagerBase.GaugeInstrumentRegistration>
 
 internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstrumentBuilder<*>> protected constructor(
     val meter: Meter,
@@ -109,30 +110,30 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
 
     protected open fun createImmutableDoubleRegistration(
         builder: GB,
-        callback: IInstrumentRegistration.Callback<ObservableDoubleMeasurement>,
-    ): ImmutableGaugeInstrumentRegistration<ObservableDoubleMeasurement> {
+        callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>,
+    ): ImmutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return ImmutableGaugeInstrumentRegistration(builder, callback)
+        return ImmutableGaugeInstrumentRegistration(builder, preferIntegral = false, callback)
     }
 
     protected open fun createImmutableLongRegistration(
         builder: GB,
-        callback: IInstrumentRegistration.Callback<ObservableLongMeasurement>,
-    ): ImmutableGaugeInstrumentRegistration<ObservableLongMeasurement> {
+        callback: IInstrumentRegistration.Callback<ILongInstrumentRegistration>,
+    ): ImmutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return ImmutableGaugeInstrumentRegistration(builder, callback)
+        return ImmutableGaugeInstrumentRegistration(builder, preferIntegral = true, callback)
     }
 
     protected open fun createMutableDoubleRegistration(builder: GB):
-            MutableDoubleGaugeInstrumentRegistration {
+            MutableGaugeInstrumentRegistration<*> {
         assertAllowsRegistration()
-        return MutableDoubleGaugeInstrumentRegistration(builder)
+        return MutableGaugeInstrumentRegistration(builder, preferIntegral = false)
     }
 
     protected open fun createMutableLongRegistration(builder: GB):
-            MutableLongGaugeInstrumentRegistration {
+            MutableGaugeInstrumentRegistration<*> {
         assertAllowsRegistration()
-        return MutableLongGaugeInstrumentRegistration(builder)
+        return MutableGaugeInstrumentRegistration(builder, preferIntegral = true)
     }
 
     override fun gaugeInstrument(name: String): IGaugeInstrumentBuilder<*> {
@@ -149,7 +150,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         override var description: String = ""
         override var attributes: List<MappedAttributeKeyInfo<*, *>> = emptyList()
 
-        override fun registerWithCallbackOfDouble(callback: IInstrumentRegistration.Callback<ObservableDoubleMeasurement>): IDoubleInstrumentRegistration {
+        override fun registerWithCallbackOfDouble(callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>): IDoubleInstrumentRegistration {
             val result = manager.localInstruments.compute(name) { key, old ->
                 val registration = manager.createImmutableDoubleRegistration(this, callback)
                 runWithExceptionCleanup(registration::close) {
@@ -162,13 +163,13 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                         registration.observe(it)
                     }
                     registration.provideOTelRegistration(otelRegistration)
-                    Union3.of1(registration)
+                    Union2.of1(registration)
                 }
             }
-            return (result as Union3.UnionT1).value
+            return (result as Union2.UnionT1).value
         }
 
-        override fun registerWithCallbackOfLong(callback: IInstrumentRegistration.Callback<ObservableLongMeasurement>): ILongInstrumentRegistration {
+        override fun registerWithCallbackOfLong(callback: IInstrumentRegistration.Callback<ILongInstrumentRegistration>): ILongInstrumentRegistration {
             val result = manager.localInstruments.compute(name) { key, old ->
                 val registration = manager.createImmutableLongRegistration(this, callback)
                 runWithExceptionCleanup(registration::close) {
@@ -181,13 +182,13 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                         registration.observe(it)
                     }
                     registration.provideOTelRegistration(otelRegistration)
-                    Union3.of1(registration)
+                    Union2.of1(registration)
                 }
             }
-            return (result as Union3.UnionT1).value
+            return (result as Union2.UnionT1).value
         }
 
-        override fun registerMutableOfLong(): ILongInstrumentRegistration.Mutable {
+        override fun registerMutableOfLong(): ILongInstrumentRegistration.Mutable<*> {
             val result = manager.localInstruments.compute(name) { key, old ->
                 val registration = manager.createMutableLongRegistration(this)
                 runWithExceptionCleanup(registration::close) {
@@ -200,13 +201,13 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                         registration.observe(it)
                     }
                     registration.provideOTelRegistration(otelRegistration)
-                    Union3.of2(registration)
+                    Union2.of2(registration)
                 }
             }
-            return (result as Union3.UnionT2).value
+            return (result as Union2.UnionT2).value
         }
 
-        override fun registerMutableOfDouble(): IDoubleInstrumentRegistration.Mutable {
+        override fun registerMutableOfDouble(): IDoubleInstrumentRegistration.Mutable<*> {
             val result = manager.localInstruments.compute(name) { key, old ->
                 val registration = manager.createMutableDoubleRegistration(this)
                 runWithExceptionCleanup(registration::close) {
@@ -219,25 +220,27 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                         registration.observe(it)
                     }
                     registration.provideOTelRegistration(otelRegistration)
-                    Union3.of3(registration)
+                    Union2.of2(registration)
                 }
             }
-            return (result as Union3.UnionT3).value
+            return (result as Union2.UnionT2).value
         }
     }
 
-    internal abstract class GaugeInstrumentRegistration<R : ObservableMeasurement>(
+    internal abstract class GaugeInstrumentRegistration(
         override val name: String,
         override val description: String,
         override val unit: String,
         override val attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+        val preferIntegral: Boolean,
     ) : IDoubleInstrumentRegistration, ILongInstrumentRegistration {
 
-        constructor(builder: GaugeInstrumentBuilder<*>) : this(
+        constructor(builder: GaugeInstrumentBuilder<*>, preferIntegral: Boolean) : this(
             builder.name,
             builder.description,
             builder.unit,
             builder.attributes.associateBy { it.baseKey.key.lowercase() },
+            preferIntegral,
         ) {
             untrackCallback.set(builder.manager::untrackRegistration)
         }
@@ -248,16 +251,16 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
 
         private val closed: AtomicBoolean = AtomicBoolean(false)
 
-        fun observe(instrument: R) {
+        open fun observe(instrument: ObservableMeasurement) {
             if (closed.get()) {
                 otelRegistration.get()?.close()
                 untrackCallback.get()?.invoke(name, this)
                 return
             }
-            observeImpl(instrument)
+            observeImpl(ResolvedObservationObserver(instrument, preferIntegral))
         }
 
-        protected abstract fun observeImpl(instrument: R)
+        protected abstract fun observeImpl(recorder: IObservationObserver.Resolved)
 
         fun provideOTelRegistration(otelRegistration: AutoCloseable) {
             val previous = this.otelRegistration.compareAndExchange(null, otelRegistration)
@@ -293,29 +296,31 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         }
     }
 
-    internal open class ImmutableGaugeInstrumentRegistration<R : ObservableMeasurement> :
-            GaugeInstrumentRegistration<R> {
+    internal open class ImmutableGaugeInstrumentRegistration :
+            GaugeInstrumentRegistration {
 
         constructor(
             name: String,
             description: String,
             unit: String,
             attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-            callback: IInstrumentRegistration.Callback<R>,
-        ) : super(name, description, unit, attributes) {
+            preferIntegral: Boolean,
+            callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
+        ) : super(name, description, unit, attributes, preferIntegral) {
             this.callback = callback
         }
 
         constructor(
             builder: GaugeInstrumentBuilder<*>,
-            callback: IInstrumentRegistration.Callback<R>,
-        ) : super(builder) {
+            preferIntegral: Boolean,
+            callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
+        ) : super(builder, preferIntegral) {
             this.callback = callback
         }
 
-        val callback: IInstrumentRegistration.Callback<R>
-        override fun observeImpl(instrument: R) {
-            callback.observe(instrument)
+        val callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>
+        override fun observeImpl(recorder: IObservationObserver.Resolved) {
+            callback.observe(this, recorder)
         }
 
         override fun close() {
@@ -326,7 +331,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                 accumulator = ex
             }
             try {
-                callback.onRemove()
+                callback.onRemove(this)
             } catch (ex: Exception) {
                 accumulator += ex
             }
@@ -334,101 +339,52 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         }
     }
 
-    internal open class MutableLongGaugeInstrumentRegistration :
-            GaugeInstrumentRegistration<ObservableLongMeasurement>,
-            ILongInstrumentRegistration.Mutable {
+    internal open class MutableGaugeInstrumentRegistration<T : MutableGaugeInstrumentRegistration<T>> :
+            GaugeInstrumentRegistration,
+            IDoubleInstrumentRegistration.Mutable<T>,
+            ILongInstrumentRegistration.Mutable<T> {
 
         constructor(
             name: String,
             description: String,
             unit: String,
             attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+            preferIntegral: Boolean,
         ) : super(
             name,
             description,
             unit,
             attributes,
+            preferIntegral,
         )
 
         constructor(
             builder: GaugeInstrumentBuilder<*>,
-        ) : super(builder)
+            preferIntegral: Boolean,
+        ) : super(builder, preferIntegral)
 
-        val callbacks: ConcurrentLinkedDeque<IInstrumentRegistration.Callback<ObservableLongMeasurement>> =
+        val callbacks: ConcurrentLinkedDeque<IInstrumentRegistration.Callback<T>> =
             ConcurrentLinkedDeque()
 
-        override fun observeImpl(instrument: ObservableLongMeasurement) {
+        override fun observeImpl(recorder: IObservationObserver.Resolved) {
             callbacks.forEach {
-                it.observe(instrument)
+                it.observe(
+                    @Suppress("UNCHECKED_CAST")
+                    (this as T),
+                    recorder
+                )
             }
         }
 
         override fun addCallback(
             attributes: Attributes,
-            callback: IInstrumentRegistration.Callback<ObservableLongMeasurement>,
+            callback: IInstrumentRegistration.Callback<T>,
         ): AutoCloseable {
-            callbacks.add(callback)
-            return AutoCloseable {
+            val closeCallback: AutoCloseable = AutoCloseable {
                 callbacks.remove(callback)
             }
-        }
-
-        override fun close() {
-            var accumulator: Exception? = null
-            try {
-                super.close()
-            } catch (ex: Exception) {
-                accumulator = ex
-            }
-            accumulator = callbacks.fold(accumulator) { acc, callback ->
-                try {
-                    callback.onRemove()
-                    acc
-                } catch (ex: Exception) {
-                    acc + ex
-                }
-            }
-            if(accumulator != null) throw accumulator
-        }
-    }
-
-    internal open class MutableDoubleGaugeInstrumentRegistration :
-            GaugeInstrumentRegistration<ObservableDoubleMeasurement>,
-            IDoubleInstrumentRegistration.Mutable {
-
-        constructor(
-            name: String,
-            description: String,
-            unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-        ) : super(
-            name,
-            description,
-            unit,
-            attributes,
-        )
-
-        constructor(
-            builder: GaugeInstrumentBuilder<*>,
-        ) : super(builder)
-
-        val callbacks: ConcurrentLinkedDeque<IInstrumentRegistration.Callback<ObservableDoubleMeasurement>> =
-            ConcurrentLinkedDeque()
-
-        override fun observeImpl(instrument: ObservableDoubleMeasurement) {
-            callbacks.forEach {
-                it.observe(instrument)
-            }
-        }
-
-        override fun addCallback(
-            attributes: Attributes,
-            callback: IInstrumentRegistration.Callback<ObservableDoubleMeasurement>,
-        ): AutoCloseable {
             callbacks.add(callback)
-            return AutoCloseable {
-                callbacks.remove(callback)
-            }
+            return closeCallback
         }
     }
 }

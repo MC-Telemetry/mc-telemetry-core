@@ -5,6 +5,7 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.commands.types.ArgumentTypes
+import de.mctelemetry.core.observations.IObservationSource
 import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.ui.RedstoneScraperBlockScreen
 import net.minecraft.client.gui.screens.MenuScreens
@@ -33,14 +34,23 @@ object OTelCoreModNeoForge {
 
     private fun createRegistries(event: NewRegistryEvent) {
         val attributeKeyRegistry =
-            RegistryBuilder(OTelCoreModAPI.AttributeTypeMappings).create() as WritableRegistry<IMappedAttributeKeyType<*, *>>
+            RegistryBuilder(OTelCoreModAPI.AttributeTypeMappings)
+                .sync(true)
+                .create() as WritableRegistry<IMappedAttributeKeyType<*, *>>
         OTelCoreMod.registerAttributeTypes(attributeKeyRegistry)
         event.register(attributeKeyRegistry)
+
+        val observationSourceRegistry =
+            RegistryBuilder(OTelCoreModAPI.ObservationSources)
+                .sync(true)
+                .create() as WritableRegistry<IObservationSource<*, *>>
+        OTelCoreMod.registerObservationSources(observationSourceRegistry)
+        event.register(observationSourceRegistry)
     }
 
     private fun registerCallbacks() {
         MOD_BUS.addListener(::createRegistries)
-        if(DIST.isClient) {
+        if (DIST.isClient) {
             MOD_BUS.addListener { event: RegisterMenuScreensEvent ->
                 event.register(
                     OTelCoreModMenuTypes.REDSTONE_SCRAPER_BLOCK.get(),
