@@ -14,7 +14,7 @@ abstract class ObservationSourceContainerBlockBase(properties: Properties) : Bas
     abstract override fun newBlockEntity(
         blockPos: BlockPos,
         blockState: BlockState,
-    ): ObservationSourceContainerEntityBlock?
+    ): ObservationSourceContainerBlockEntity?
 
     override fun tick(
         blockState: BlockState,

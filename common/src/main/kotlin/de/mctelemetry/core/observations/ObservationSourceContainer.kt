@@ -13,19 +13,29 @@ import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentSkipListSet
 
-abstract class ObservationSourceContainer<C> {
+abstract class ObservationSourceContainer<C> : AutoCloseable {
 
     abstract val observationStates: Map<IObservationSource<in C, *>, ObservationSourceState>
 
     abstract val context: C
 
-    abstract val registryAccess: RegistryAccess
     abstract val instrumentManager: IInstrumentManager
 
     open fun createAttributeLookup(): IMappedAttributeValueLookup = IMappedAttributeValueLookup.empty()
 
 
     protected val dirtyRunningTracker: ConcurrentSkipListSet<ObservationSourceState> = ConcurrentSkipListSet()
+
+    override fun close() {
+        observationStates.values.fold<ObservationSourceState, Exception?>(null) { acc, state ->
+            try {
+                state.close()
+                acc
+            } catch (ex: Exception) {
+                acc + ex
+            }
+        }?.let { throw it }
+    }
 
     protected open fun setup() {
         val cleanupList: Queue<AutoCloseable> = ConcurrentLinkedDeque()
