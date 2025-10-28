@@ -1,6 +1,7 @@
 package de.mctelemetry.core
 
 import com.mojang.serialization.Lifecycle
+import de.mctelemetry.core.api.metrics.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
@@ -13,6 +14,7 @@ import de.mctelemetry.core.commands.metrics.CommandMetrics
 import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
 import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
 import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.observations.ObservationSources
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
 import dev.architectury.event.events.common.CommandRegistrationEvent
@@ -76,7 +78,7 @@ object OTelCoreMod {
     }
 
     fun registerAttributeTypes(registry: WritableRegistry<IMappedAttributeKeyType<*, *>>?) {
-        val attributeTypes: List<IMappedAttributeKeyType<*, *>> = NativeAttributeKeyTypes.ALL
+        val attributeTypes: List<IMappedAttributeKeyType<*, *>> = NativeAttributeKeyTypes.ALL + BuiltinAttributeKeyTypes.ALL
         if (registry == null) {
             DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.AttributeTypeMappings).apply {
                 for (nativeType in attributeTypes) {
@@ -95,7 +97,7 @@ object OTelCoreMod {
     }
 
     fun registerObservationSources(registry: WritableRegistry<IObservationSource<*, *>>?) {
-        val observationSources: List<IObservationSource<*, *>> = listOf()
+        val observationSources: List<IObservationSource<*, *>> = ObservationSources.ALL
         if (registry == null) {
             DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.ObservationSources).apply {
                 for (observationSource in observationSources) {

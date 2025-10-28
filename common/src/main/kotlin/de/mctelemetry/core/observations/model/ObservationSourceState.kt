@@ -1,4 +1,4 @@
-package de.mctelemetry.core.observations
+package de.mctelemetry.core.observations.model
 
 import com.mojang.datafixers.util.Pair
 import com.mojang.serialization.Codec
@@ -8,8 +8,6 @@ import de.mctelemetry.core.api.metrics.IInstrumentSubRegistration
 import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.utils.ExceptionComponent
 import de.mctelemetry.core.utils.runWithExceptionCleanup
-import dev.architectury.platform.Platform
-import dev.architectury.utils.Env
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.NbtOps
@@ -24,6 +22,47 @@ open class ObservationSourceState(
 
     protected val onDirtyListeners: MutableSet<(ObservationSourceState) -> Unit> = linkedSetOf()
 
+    var cascadeUpdates: Boolean = false
+        set(value) {
+            val previous = field
+            field = value
+            if (previous == value) return
+            if (value) {
+                runUpdateCascade()
+            }
+        }
+
+    protected open fun runUpdateCascade(silent: Boolean = false): Boolean {
+        var modified = false
+        run {
+            val configuration = configuration
+            val oldInstrument = instrument
+            if (oldInstrument != null && oldInstrument != configuration?.instrument) {
+                modified = setInstrument(null, silent = true)
+            }
+        }
+        run {
+            val instrument = instrument
+            val oldSubRegistration = instrumentSubRegistration
+            if (oldSubRegistration != null && oldSubRegistration.baseInstrument != instrument) {
+                modified = setInstrumentSubRegistration(null, silent = true) || modified
+            }
+        }
+        run {
+            val subRegistration = instrumentSubRegistration
+            val oldErrorState = errorState
+            val errorsHasUninitialized = ErrorState.uninitializedError in oldErrorState.errors
+            val errorsShouldHaveUninitialized = subRegistration == null
+            if(errorsHasUninitialized && !errorsShouldHaveUninitialized) {
+                modified = setErrorState(oldErrorState.withoutError(ErrorState.uninitializedError)) || modified
+            }else if(errorsShouldHaveUninitialized && !errorsHasUninitialized){
+                modified = setErrorState(oldErrorState.withError(ErrorState.uninitializedError)) || modified
+            }
+        }
+        if(modified && !silent) triggerOnDirty()
+        return modified
+    }
+
     open var configuration: ObservationSourceConfiguration?
         set(value) {
             setConfiguration(value)
@@ -31,19 +70,21 @@ open class ObservationSourceState(
         get() = configurationField
     protected var configurationField: ObservationSourceConfiguration? = null
 
-    protected open fun setConfiguration(value: ObservationSourceConfiguration?, silent: Boolean = false): Boolean {
+    protected open fun setConfiguration(
+        value: ObservationSourceConfiguration?,
+        silent: Boolean = false,
+    ): Boolean {
         val oldValue = configurationField
         if (oldValue === value) {
             return false
         }
         configurationField = value
         try {
-            if (Platform.getEnvironment() != Env.SERVER) {
-                return true
-            }
-            val instrument = instrument
-            if (instrument != null && instrument != value?.instrument) {
-                setInstrument(value?.instrument as? IInstrumentRegistration, silent = true)
+            if (cascadeUpdates) {
+                val instrument = instrument
+                if (instrument != null && instrument != value?.instrument) {
+                    setInstrument(value?.instrument as? IInstrumentRegistration, silent = true)
+                }
             }
         } finally {
             if (!silent) triggerOnDirty()
@@ -81,16 +122,19 @@ open class ObservationSourceState(
         get() = instrumentField
     protected var instrumentField: IInstrumentRegistration? = null
 
-    protected open fun setInstrument(value: IInstrumentRegistration?, silent: Boolean = false): Boolean {
+    protected open fun setInstrument(
+        value: IInstrumentRegistration?,
+        silent: Boolean = false,
+    ): Boolean {
         val oldValue = instrumentField
         if (oldValue === value) {
             return false
         }
         instrumentField = value
         try {
-            if (Platform.getEnvironment() != Env.SERVER)
-                return true
-            setInstrumentSubRegistration(null, silent = true)
+            if (cascadeUpdates) {
+                setInstrumentSubRegistration(null, silent = true)
+            }
         } finally {
             if (!silent) triggerOnDirty()
         }
@@ -121,8 +165,7 @@ open class ObservationSourceState(
             try {
                 oldValue?.close()
             } finally {
-                // on server, always update errorState to reflect null callback
-                if (Platform.getEnvironment() == Env.SERVER) {
+                if (cascadeUpdates) {
                     setErrorState(errorState.withError(ErrorState.uninitializedError), silent = true)
                 }
             }
@@ -130,8 +173,8 @@ open class ObservationSourceState(
                 // only store new callback if old callback could be closed (if it couldn't be closed, this whole method will
                 // throw, signaling to the caller that they have to close the callback themselves
                 instrumentSubRegistrationField = value
-                if (Platform.getEnvironment() == Env.SERVER) {
-                    errorState = errorState.withoutError(ErrorState.uninitializedError)
+                if (cascadeUpdates) {
+                    setErrorState(errorState.withoutError(ErrorState.uninitializedError), silent = true)
                 }
             }
         } finally {
@@ -167,7 +210,7 @@ open class ObservationSourceState(
         onDirtyListeners.remove(block)
     }
 
-    open fun loadFromByteBuf(bb: RegistryFriendlyByteBuf) {
+    open fun loadFromByteBuf(bb: RegistryFriendlyByteBuf, silent: Boolean = false, cascade: Boolean = false) {
         loadFromTag(bb.readNbt() ?: return)
     }
 
@@ -177,13 +220,13 @@ open class ObservationSourceState(
         bb.writeNbt(tag)
     }
 
-    open fun loadFromTag(tag: CompoundTag) {
+    open fun loadFromTag(tag: CompoundTag, silent: Boolean = false) {
         val errorState = loadErrorState(tag)
         var modified: Boolean
         runWithExceptionCleanup(::triggerOnDirty) {
             modified = setErrorState(errorState, silent = true)
         }
-        if (modified) triggerOnDirty()
+        if (modified && !silent) triggerOnDirty()
     }
 
     protected open fun loadErrorState(tag: CompoundTag): ErrorState {

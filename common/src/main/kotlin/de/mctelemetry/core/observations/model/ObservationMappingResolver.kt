@@ -1,4 +1,4 @@
-package de.mctelemetry.core.observations
+package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.metrics.IObservationObserver

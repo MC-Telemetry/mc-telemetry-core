@@ -5,9 +5,10 @@ import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
+import de.mctelemetry.core.blocks.RedstoneScraperBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
-import de.mctelemetry.core.observations.ObservationSourceContainer
-import de.mctelemetry.core.observations.ObservationSourceState
+import de.mctelemetry.core.observations.model.ObservationSourceContainer
+import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
@@ -18,9 +19,11 @@ import net.minecraft.nbt.Tag
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.LevelEvent
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
+import net.minecraft.world.level.chunk.status.ChunkStatus
 
 class ObservationSourceContainerBlockEntity(
     blockPos: BlockPos,
@@ -37,6 +40,8 @@ class ObservationSourceContainerBlockEntity(
             field = value
         }
 
+    private var setupRun = false
+
     override fun getType(): BlockEntityType<out ObservationSourceContainerBlockEntity> {
         @Suppress("UNCHECKED_CAST") // known value from constructor
         return super.type as BlockEntityType<ObservationSourceContainerBlockEntity>
@@ -51,7 +56,7 @@ class ObservationSourceContainerBlockEntity(
                 .map(Holder<IObservationSource<*, *>>::value)
                 .toList()
         ).also {
-            this.container = container
+            this.container = it
         })
         container.loadStatesFromTag(compoundTag, observationSourceLookup)
     }
@@ -61,14 +66,60 @@ class ObservationSourceContainerBlockEntity(
         container?.saveStatesToTag(compoundTag)
     }
 
+    private fun updateErrorState() {
+        val container = container ?: return
+        var ok = true
+        var error = false
+        for (state in container.observationStates.values) {
+            when (state.errorState) {
+                ObservationSourceState.ErrorState.Ok -> {}
+                is ObservationSourceState.ErrorState.Warnings -> ok = false
+                is ObservationSourceState.ErrorState.Errors -> error = true
+            }
+        }
+        val isError = blockState.getValue(RedstoneScraperBlock.ERROR)
+        if (isError != error) {
+            level!!.setBlock(blockPos, blockState.setValue(RedstoneScraperBlock.ERROR, error), 2)
+        }
+    }
+
+    fun doBlockTick() {
+        OTelCoreMod.logger.debug("Ticking {}@{} in {}", this.javaClass.simpleName, blockPos, level)
+        updateErrorState()
+    }
+
     private fun setup(level: Level) {
-        val container = this.container ?: (BlockEntityObservationSourceContainer(
-            level.registryAccess()
-                .registryOrThrow(OTelCoreModAPI.ObservationSources)
-        ).also {
-            this.container = container
-        })
-        container.setup()
+        if (setupRun) return
+        setupRun = true
+        runWithExceptionCleanup(cleanup = {
+            setupRun = false
+        }) {
+            val container = this.container ?: (BlockEntityObservationSourceContainer(
+                level.registryAccess()
+                    .registryOrThrow(OTelCoreModAPI.ObservationSources),
+            ).also {
+                this.container = it
+            })
+            container.setup()
+            container.setCascadeUpdates(!level.isClientSide)
+            container.observationStates.values.forEach {
+                it.subscribeToDirty(::onDirty)
+            }
+            if (!level.isClientSide) {
+                if(level.isLoaded(blockPos)) {
+                    level.scheduleTick(blockPos, blockState.block, 1)
+                } else {
+                    updateErrorState()
+                }
+            }
+        }
+    }
+
+    private fun onDirty(state: ObservationSourceState) {
+        val level = level!!
+        if (!level.isClientSide) {
+            updateErrorState()
+        }
     }
 
     override fun setLevel(level: Level) {
@@ -79,7 +130,16 @@ class ObservationSourceContainerBlockEntity(
 
     override fun setRemoved() {
         super.setRemoved()
-        container = null
+        val oldContainer = container
+        try {
+            if (oldContainer != null) {
+                for (state in oldContainer.observationStates.values) {
+                    state.unsubscribeFromDirty(::onDirty)
+                }
+            }
+        } finally {
+            container = null
+        }
     }
 
     override fun clearRemoved() {
@@ -100,12 +160,16 @@ class ObservationSourceContainerBlockEntity(
                     return@mapNotNull null
                 @Suppress("UNCHECKED_CAST") // cast indirectly checked by contextType
                 it as IObservationSource<in ObservationSourceContainerBlockEntity, *>
-            }.associateWith(::ObservationSourceState)
+            }.associateWith { ObservationSourceState(it) }
         }
 
         @Suppress("RedundantVisibilityModifier") // not actually redundant because of visibility widening
         public override fun setup() {
             super.setup()
+        }
+
+        fun setCascadeUpdates(value: Boolean = true) {
+            observationStates.values.forEach { it.cascadeUpdates = value }
         }
 
         override val context: ObservationSourceContainerBlockEntity

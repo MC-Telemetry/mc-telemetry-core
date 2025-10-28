@@ -1,4 +1,4 @@
-package de.mctelemetry.core.observations
+package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.api.metrics.IInstrumentDefinition
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
