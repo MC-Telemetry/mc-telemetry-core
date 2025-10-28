@@ -29,6 +29,21 @@ interface IInstrumentManager {
     }
 
     fun gaugeInstrument(name: String): IGaugeInstrumentBuilder<*>
+
+    object ReadonlyEmpty : IInstrumentManager {
+
+        override fun gaugeInstrument(name: String): IGaugeInstrumentBuilder<*> {
+            throw UnsupportedOperationException()
+        }
+
+        override fun findLocal(pattern: Regex): Sequence<IInstrumentRegistration> {
+            return emptySequence()
+        }
+
+        override fun findGlobal(pattern: Regex): Sequence<IMetricDefinition> {
+            return emptySequence()
+        }
+    }
 }
 
 inline fun IInstrumentManager.gaugeInstrument(

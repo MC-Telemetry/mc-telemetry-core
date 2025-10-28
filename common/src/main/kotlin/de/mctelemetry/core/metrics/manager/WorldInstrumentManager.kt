@@ -20,8 +20,6 @@ import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
-import net.minecraft.resources.ResourceKey
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.datafix.DataFixTypes
@@ -231,20 +229,9 @@ internal class WorldInstrumentManager private constructor(
                     if (value.attributes.isNotEmpty()) {
                         put("attributes", ListTag().apply {
                             for (attributeKey in value.attributes.values) {
-                                this.add(createAttributeKeyInfoTag(attributeKey))
+                                this.add(attributeKey.save())
                             }
                         })
-                    }
-                }
-            }
-
-            private fun createAttributeKeyInfoTag(key: MappedAttributeKeyInfo<*, *>): CompoundTag {
-                return CompoundTag().apply {
-                    putString("name", key.baseKey.key)
-                    putString("type", key.type.id.location().toString())
-                    val data = key.save()
-                    if (data != null) {
-                        put("data", data)
                     }
                 }
             }
@@ -264,7 +251,7 @@ internal class WorldInstrumentManager private constructor(
                     if (tag.contains("attributes", Tag.TAG_LIST.toInt())) {
                         buildMap {
                             tag.getList("attributes", Tag.TAG_COMPOUND.toInt()).forEach {
-                                val keyInfo = loadAttributeKeyInfoTag(it as CompoundTag, attributeKeyTypeHolderGetter)
+                                val keyInfo = MappedAttributeKeyInfo.load(it as CompoundTag, attributeKeyTypeHolderGetter)
                                 this@buildMap.put(keyInfo.baseKey.key, keyInfo)
                             }
                         }
@@ -283,48 +270,6 @@ internal class WorldInstrumentManager private constructor(
                 )
             }
 
-
-            private fun loadAttributeKeyInfoTag(
-                tag: CompoundTag,
-                attributeKeyTypeHolderGetter: HolderGetter<IMappedAttributeKeyType<*, *>>,
-            ): MappedAttributeKeyInfo<*, *> {
-                val name = tag.getString("name")
-                if (name.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'name'")
-                val type = tag.getString("type")
-                if (type.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'type'")
-                val typeResourceLocation = ResourceLocation.parse(type)
-                val mappingType: IMappedAttributeKeyType<*, *> = try {
-                    attributeKeyTypeHolderGetter.getOrThrow(
-                        ResourceKey.create(
-                            OTelCoreModAPI.AttributeTypeMappings,
-                            ResourceLocation.parse(type)
-                        )
-                    ).value()
-                } catch (ex: Exception) {
-                    val otherResourceLocation: ResourceLocation = when (typeResourceLocation.namespace) {
-                        ResourceLocation.DEFAULT_NAMESPACE -> ResourceLocation.fromNamespaceAndPath(
-                            OTelCoreModAPI.MOD_ID,
-                            typeResourceLocation.path
-                        )
-                        OTelCoreModAPI.MOD_ID -> ResourceLocation.fromNamespaceAndPath(
-                            ResourceLocation.DEFAULT_NAMESPACE,
-                            typeResourceLocation.path
-                        )
-                        else -> throw ex
-                    }
-                    try {
-                        attributeKeyTypeHolderGetter.getOrThrow(
-                            ResourceKey.create(OTelCoreModAPI.AttributeTypeMappings, otherResourceLocation)
-                        ).value().also {
-                            OTelCoreMod.logger.warn("Converted attribute resource location from $typeResourceLocation to $otherResourceLocation during loading")
-                        }
-                    } catch (ex2: Exception) {
-                        ex.addSuppressed(ex2)
-                        throw ex
-                    }
-                }
-                return mappingType.create(name, tag.getCompound("data"))
-            }
 
             internal val Factory = Factory<WorldInstrumentSavedData>(
                 ::invoke,

@@ -1,5 +1,6 @@
 package de.mctelemetry.core.api.metrics
 
+import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes.BooleanArrayType
 import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes.BooleanType
 import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes.DoubleArrayType
@@ -10,10 +11,13 @@ import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes.StringArrayType
 import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes.StringType
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.AttributeType
+import net.minecraft.core.HolderGetter
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.StreamCodec
+import net.minecraft.resources.ResourceKey
+import net.minecraft.resources.ResourceLocation
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
 
@@ -31,7 +35,7 @@ open class MappedAttributeKeyInfo<T : Any, B: Any>(
             IMappedAttributeKeyType.STREAM_CODEC,
             MappedAttributeKeyInfo<*, *>::type,
             ByteBufCodecs.OPTIONAL_COMPOUND_TAG,
-            { Optional.ofNullable(it.save()) },
+            { Optional.ofNullable(it.saveAdditional()) },
         ) { name, type, data ->
             type.create(name, data.getOrNull())
         }
@@ -109,10 +113,63 @@ open class MappedAttributeKeyInfo<T : Any, B: Any>(
 
         fun forDoubleArray(name: String): MappedAttributeKeyInfo<List<Double>, List<Double>> =
             MappedAttributeKeyInfo(AttributeKey.doubleArrayKey(name))
+
+        fun load(
+            tag: CompoundTag,
+            attributeKeyTypeHolderGetter: HolderGetter<IMappedAttributeKeyType<*, *>>,
+        ): MappedAttributeKeyInfo<*, *> {
+            val name = tag.getString("name")
+            if (name.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'name'")
+            val type = tag.getString("type")
+            if (type.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'type'")
+            val typeResourceLocation = ResourceLocation.parse(type)
+            val mappingType: IMappedAttributeKeyType<*, *> = try {
+                attributeKeyTypeHolderGetter.getOrThrow(
+                    ResourceKey.create(
+                        OTelCoreModAPI.AttributeTypeMappings,
+                        ResourceLocation.parse(type)
+                    )
+                ).value()
+            } catch (ex: Exception) {
+                val otherResourceLocation: ResourceLocation = when (typeResourceLocation.namespace) {
+                    ResourceLocation.DEFAULT_NAMESPACE -> ResourceLocation.fromNamespaceAndPath(
+                        OTelCoreModAPI.MOD_ID,
+                        typeResourceLocation.path
+                    )
+                    OTelCoreModAPI.MOD_ID -> ResourceLocation.fromNamespaceAndPath(
+                        ResourceLocation.DEFAULT_NAMESPACE,
+                        typeResourceLocation.path
+                    )
+                    else -> throw ex
+                }
+                try {
+                    attributeKeyTypeHolderGetter.getOrThrow(
+                        ResourceKey.create(OTelCoreModAPI.AttributeTypeMappings, otherResourceLocation)
+                    ).value().also {
+                        OTelCoreMod.logger.warn("Converted attribute resource location from $typeResourceLocation to $otherResourceLocation during loading")
+                    }
+                } catch (ex2: Exception) {
+                    ex.addSuppressed(ex2)
+                    throw ex
+                }
+            }
+            return mappingType.create(name, tag.getCompound("data"))
+        }
     }
 
     @Suppress("SameReturnValue")
-    open fun save(): CompoundTag? {
+    open fun saveAdditional(): CompoundTag? {
         return null
+    }
+
+    fun save(): CompoundTag {
+        return CompoundTag().also { saveTag ->
+            saveTag.putString("name", baseKey.key)
+            saveTag.putString("type", type.id.location().toString())
+            val data = saveAdditional()
+            if (data != null) {
+                saveTag.put("data", data)
+            }
+        }
     }
 }

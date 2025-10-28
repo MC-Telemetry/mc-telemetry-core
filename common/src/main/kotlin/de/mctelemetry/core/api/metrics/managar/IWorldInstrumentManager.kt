@@ -43,6 +43,9 @@ interface IWorldInstrumentManager : IInstrumentManager {
     companion object {
         val MinecraftServer.instrumentManager: IWorldInstrumentManager?
             get() = InstrumentMetaManager.worldInstrumentManagerForServer(this)
+        fun MinecraftServer.useInstrumentManagerWhenAvailable(callback: (IWorldInstrumentManager)->Unit): AutoCloseable {
+            return InstrumentMetaManager.whenWorldInstrumentManagerAvailable(this, callback)
+        }
     }
 }
 
