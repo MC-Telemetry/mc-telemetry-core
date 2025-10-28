@@ -5,6 +5,7 @@ import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
+import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.useInstrumentManagerWhenAvailable
 import de.mctelemetry.core.blocks.RedstoneScraperBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
@@ -18,12 +19,14 @@ import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
-import net.minecraft.world.level.block.LevelEvent
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
-import net.minecraft.world.level.chunk.status.ChunkStatus
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 class ObservationSourceContainerBlockEntity(
     blockPos: BlockPos,
@@ -41,6 +44,7 @@ class ObservationSourceContainerBlockEntity(
         }
 
     private var setupRun = false
+    private var onLevelCallback: ((Level) -> Unit)? = null
 
     override fun getType(): BlockEntityType<out ObservationSourceContainerBlockEntity> {
         @Suppress("UNCHECKED_CAST") // known value from constructor
@@ -58,7 +62,14 @@ class ObservationSourceContainerBlockEntity(
         ).also {
             this.container = it
         })
-        container.loadStatesFromTag(compoundTag, observationSourceLookup)
+        val callback = container.loadStatesDelayedFromTag(compoundTag, provider)
+        val level = level
+        if (level != null) {
+            callback(level)
+        } else {
+            require(onLevelCallback == null) { "onLevelCallback already set" }
+            onLevelCallback = callback
+        }
     }
 
     override fun saveAdditional(compoundTag: CompoundTag, provider: HolderLookup.Provider) {
@@ -66,7 +77,7 @@ class ObservationSourceContainerBlockEntity(
         container?.saveStatesToTag(compoundTag)
     }
 
-    private fun updateErrorState() {
+    private fun updateState() {
         val container = container ?: return
         var ok = true
         var error = false
@@ -85,7 +96,7 @@ class ObservationSourceContainerBlockEntity(
 
     fun doBlockTick() {
         OTelCoreMod.logger.debug("Ticking {}@{} in {}", this.javaClass.simpleName, blockPos, level)
-        updateErrorState()
+        updateState()
     }
 
     private fun setup(level: Level) {
@@ -102,14 +113,19 @@ class ObservationSourceContainerBlockEntity(
             })
             container.setup()
             container.setCascadeUpdates(!level.isClientSide)
+            val onLevelCallback = this.onLevelCallback
+            if (onLevelCallback != null) {
+                onLevelCallback(level)
+                this.onLevelCallback = null
+            }
             container.observationStates.values.forEach {
                 it.subscribeToDirty(::onDirty)
             }
             if (!level.isClientSide) {
-                if(level.isLoaded(blockPos)) {
+                if (level.isLoaded(blockPos)) {
                     level.scheduleTick(blockPos, blockState.block, 1)
                 } else {
-                    updateErrorState()
+                    updateState()
                 }
             }
         }
@@ -118,7 +134,11 @@ class ObservationSourceContainerBlockEntity(
     private fun onDirty(state: ObservationSourceState) {
         val level = level!!
         if (!level.isClientSide) {
-            updateErrorState()
+            if (level.isLoaded(blockPos)) {
+                level.scheduleTick(blockPos, blockState.block, 1)
+            } else {
+                updateState()
+            }
         }
     }
 
@@ -184,35 +204,80 @@ class ObservationSourceContainerBlockEntity(
                     ?: throw NullPointerException("Instrument manager not available for server: $server")
             }
 
+        @OptIn(ExperimentalContracts::class)
+        private inline fun <T> loadAndApplyToStateTags(
+            compoundTag: CompoundTag,
+            holderLookupProvider: HolderLookup.Provider,
+            block: (ObservationSourceState, CompoundTag) -> T,
+        ): Map<ObservationSourceState, T> {
+            contract {
+                callsInPlace(block, InvocationKind.UNKNOWN)
+            }
+            return buildMap {
+                val observationsTag = compoundTag.getList("observations", Tag.TAG_COMPOUND.toInt())
+                for (tag in observationsTag) {
+                    tag as CompoundTag
+                    val idString = tag.getString("id")
+                    if (idString.isBlank()) {
+                        OTelCoreMod.logger.warn("Empty observation-source-id during loading of nbt for {}", this)
+                        continue
+                    }
+                    val resourceKey =
+                        ResourceKey.create(OTelCoreModAPI.ObservationSources, ResourceLocation.parse(idString))
+                    val source = holderLookupProvider.lookupOrThrow(OTelCoreModAPI.ObservationSources)
+                        .getOrThrow(resourceKey)
+                        .value()
+
+                    val state = observationStates.getOrElse(
+                        @Suppress("UNCHECKED_CAST") // actual generic type does not matter because it is only used as lookup key
+                        (source as IObservationSource<in ObservationSourceContainerBlockEntity, *>)
+                    ) {
+                        OTelCoreMod.logger.warn(
+                            "Could not find state for observation-source-id {} in {}",
+                            resourceKey,
+                            this
+                        )
+                        continue
+                    }
+                    put(state, block(state, tag))
+                }
+            }
+        }
+
         fun loadStatesFromTag(
             compoundTag: CompoundTag,
-            observationSourceLookup: HolderLookup.RegistryLookup<IObservationSource<*, *>>,
+            holderLookupProvider: HolderLookup.Provider,
+            instrumentManager: IInstrumentManager,
         ) {
-            val observationsTag = compoundTag.getList("observations", Tag.TAG_COMPOUND.toInt())
-            for (tag in observationsTag) {
-                tag as CompoundTag
-                val idString = tag.getString("id")
-                if (idString.isBlank()) {
-                    OTelCoreMod.logger.warn("Empty observation-source-id during loading of nbt for {}", this)
-                    continue
-                }
-                val resourceKey =
-                    ResourceKey.create(OTelCoreModAPI.ObservationSources, ResourceLocation.parse(idString))
-                val source = observationSourceLookup.getOrThrow(resourceKey).value()
-
-                val state = observationStates.getOrElse(
-                    @Suppress("UNCHECKED_CAST") // actual generic type does not matter because it is only used as lookup key
-                    (source as IObservationSource<in ObservationSourceContainerBlockEntity, *>)
-                ) {
-                    OTelCoreMod.logger.warn(
-                        "Could not find state for observation-source-id {} in {}",
-                        resourceKey,
-                        this
-                    )
-                    continue
-                }
+            loadAndApplyToStateTags(compoundTag, holderLookupProvider) { state, tag ->
                 val data = tag.getCompound("data")
-                state.loadFromTag(data)
+                state.loadFromTag(data, holderLookupProvider, instrumentManager)
+            }
+        }
+
+
+        fun loadStatesDelayedFromTag(
+            compoundTag: CompoundTag,
+            holderLookupProvider: HolderLookup.Provider,
+        ): (Level) -> Unit {
+            val delayedMap = loadAndApplyToStateTags(compoundTag, holderLookupProvider) { state, tag ->
+                val data = tag.getCompound("data")
+                state.loadDelayedFromTag(data, holderLookupProvider)
+            }
+
+            return { level ->
+                if (level.isClientSide){
+                    for (delayedCallback in delayedMap.values) {
+                        delayedCallback.invoke(IInstrumentManager.ReadonlyEmpty)
+                    }
+                }
+                else{
+                    (level as ServerLevel).server.useInstrumentManagerWhenAvailable { manager ->
+                        for (delayedCallback in delayedMap.values) {
+                            delayedCallback.invoke(manager)
+                        }
+                    }
+                }
             }
         }
 

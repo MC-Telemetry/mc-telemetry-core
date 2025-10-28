@@ -13,6 +13,10 @@ import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.common.AttributesBuilder
+import net.minecraft.core.HolderLookup
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.codec.StreamCodec
@@ -50,9 +54,9 @@ class ObservationAttributeMapping(
 ) {
 
     // store mapping sorted by base key name to reduce later sorting overhead during OTel-Attributes construction
-    val mapping: Map<MappedAttributeKeyInfo<*, *>, MappedAttributeKeyInfo<*, *>> =
-        if (mapping is SortedMap<*, *> && mapping.comparator() === comparator) mapping
-        else mapping.toSortedMap(comparator)
+    val mapping: Map<MappedAttributeKeyInfo<*, *>, MappedAttributeKeyInfo<*, *>> = mapping.toMap()
+        /*if (mapping is SortedMap<*, *> && mapping.comparator() === comparator) mapping
+        else mapping.toSortedMap(comparator)*/
 
     private val validationFlags: AtomicInteger = AtomicInteger(0)
 
@@ -140,11 +144,26 @@ class ObservationAttributeMapping(
         }.build()
     }
 
+    fun saveToTag(): Tag {
+        return ListTag().also { listTag ->
+            for((key,value) in mapping) {
+                listTag.add(CompoundTag().also { entryTag ->
+                    entryTag.put("key", key.save())
+                    entryTag.put("value",value.save())
+                })
+            }
+        }
+    }
+
     companion object {
 
         init {
             assert(OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT <= UByte.MAX_VALUE.toInt())
         }
+
+        private val empty = ObservationAttributeMapping(emptyMap())
+
+        fun empty(): ObservationAttributeMapping = empty
 
         private const val VALIDATION_FLAG_TYPES = 1 shl 0
         private const val VALIDATION_FLAG_TARGET_ATTRIBUTES = 1 shl 1
@@ -152,7 +171,7 @@ class ObservationAttributeMapping(
             VALIDATION_FLAG_TYPES or
                     VALIDATION_FLAG_TARGET_ATTRIBUTES
 
-        private val comparator: Comparator<MappedAttributeKeyInfo<*, *>> = Comparator.comparing { it.baseKey.key }
+        //private val comparator: Comparator<MappedAttributeKeyInfo<*, *>> = Comparator.comparing { it.baseKey.key }
 
         private fun <T : Any, B: Any> addConverted(
             metricAttribute: MappedAttributeKeyInfo<T, B>,
@@ -175,6 +194,26 @@ class ObservationAttributeMapping(
                 ?: throw NoSuchElementException("Could not find value for $sourceAttribute")
             return metricAttributeType.convertFrom(sourceAttribute.type, value)
                 ?: throw IllegalArgumentException("Could not convert value from ${sourceAttribute.type} to $metricAttributeType: $value")
+        }
+
+        fun loadFromTag(tag: Tag, holderLookupProvider: HolderLookup.Provider): ObservationAttributeMapping {
+            tag as ListTag
+            if(tag.isEmpty()) return empty()
+            require(tag.elementType == Tag.TAG_COMPOUND)
+            return ObservationAttributeMapping(
+                buildMap {
+                    for(entryTag in tag){
+                        entryTag as CompoundTag
+                        val keyTag = entryTag.getCompound("key")
+                        val valueTag = entryTag.getCompound("value")
+                        val key = MappedAttributeKeyInfo.load(keyTag, holderLookupProvider.asGetterLookup().lookupOrThrow(
+                            OTelCoreModAPI.AttributeTypeMappings))
+                        val value = MappedAttributeKeyInfo.load(valueTag, holderLookupProvider.asGetterLookup().lookupOrThrow(
+                            OTelCoreModAPI.AttributeTypeMappings))
+                        put(key, value)
+                    }
+                }
+            )
         }
 
         val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationAttributeMapping> = StreamCodec.of(

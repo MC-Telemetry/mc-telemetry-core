@@ -6,8 +6,10 @@ import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentSubRegistration
 import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.ExceptionComponent
 import de.mctelemetry.core.utils.runWithExceptionCleanup
+import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.NbtOps
@@ -53,13 +55,13 @@ open class ObservationSourceState(
             val oldErrorState = errorState
             val errorsHasUninitialized = ErrorState.uninitializedError in oldErrorState.errors
             val errorsShouldHaveUninitialized = subRegistration == null
-            if(errorsHasUninitialized && !errorsShouldHaveUninitialized) {
+            if (errorsHasUninitialized && !errorsShouldHaveUninitialized) {
                 modified = setErrorState(oldErrorState.withoutError(ErrorState.uninitializedError)) || modified
-            }else if(errorsShouldHaveUninitialized && !errorsHasUninitialized){
+            } else if (errorsShouldHaveUninitialized && !errorsHasUninitialized) {
                 modified = setErrorState(oldErrorState.withError(ErrorState.uninitializedError)) || modified
             }
         }
-        if(modified && !silent) triggerOnDirty()
+        if (modified && !silent) triggerOnDirty()
         return modified
     }
 
@@ -210,8 +212,12 @@ open class ObservationSourceState(
         onDirtyListeners.remove(block)
     }
 
-    open fun loadFromByteBuf(bb: RegistryFriendlyByteBuf, silent: Boolean = false, cascade: Boolean = false) {
-        loadFromTag(bb.readNbt() ?: return)
+    open fun loadFromByteBuf(
+        bb: RegistryFriendlyByteBuf,
+        instrumentManager: IInstrumentManager,
+        silent: Boolean = false,
+    ) {
+        loadFromTag(bb.readNbt() ?: return, bb.registryAccess(), instrumentManager, silent = silent)
     }
 
     open fun saveToByteBuf(bb: RegistryFriendlyByteBuf) {
@@ -220,11 +226,40 @@ open class ObservationSourceState(
         bb.writeNbt(tag)
     }
 
-    open fun loadFromTag(tag: CompoundTag, silent: Boolean = false) {
+    open fun loadDelayedFromTag(
+        tag: CompoundTag,
+        holderLookupProvider: HolderLookup.Provider,
+        initialSilent: Boolean = false,
+        callbackSilent: Boolean = false,
+    ): (IInstrumentManager) -> Unit {
         val errorState = loadErrorState(tag)
+        val delayedConfiguration = ObservationSourceConfiguration.loadDelayedFromTag(tag, holderLookupProvider)
         var modified: Boolean
-        runWithExceptionCleanup(::triggerOnDirty) {
+        runWithExceptionCleanup(::triggerOnDirty, runCleanup = !initialSilent) {
             modified = setErrorState(errorState, silent = true)
+        }
+        if (modified && !initialSilent) triggerOnDirty()
+        return {
+            setConfiguration(delayedConfiguration(it), silent=callbackSilent)
+        }
+    }
+
+    open fun loadFromTag(
+        tag: CompoundTag,
+        holderLookupProvider: HolderLookup.Provider,
+        instrumentManager: IInstrumentManager,
+        silent: Boolean = false,
+    ) {
+        val errorState = loadErrorState(tag)
+        val configuration = ObservationSourceConfiguration.loadFromTag(
+            tag.getCompound("configuration"),
+            holderLookupProvider,
+            instrumentManager,
+        )
+        var modified: Boolean
+        runWithExceptionCleanup(::triggerOnDirty, runCleanup = !silent) {
+            modified = setErrorState(errorState, silent = true)
+            modified = setConfiguration(configuration, silent = true) || modified
         }
         if (modified && !silent) triggerOnDirty()
     }
@@ -256,6 +291,10 @@ open class ObservationSourceState(
 
     open fun saveToTag(tag: CompoundTag) {
         saveErrorState(tag)
+        val configurationTag = configuration?.saveToTag()
+        if (configurationTag != null) {
+            tag.put("configuration", configurationTag)
+        }
     }
 
     protected open fun saveErrorState(tag: CompoundTag) {
