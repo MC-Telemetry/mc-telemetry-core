@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalContracts::class)
 
-package de.mctelemetry.core.observations
+package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
@@ -19,6 +19,7 @@ import net.minecraft.network.codec.StreamCodec
 import org.intellij.lang.annotations.MagicConstant
 import java.util.SortedMap
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.collections.iterator
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -153,7 +154,7 @@ class ObservationAttributeMapping(
 
         private val comparator: Comparator<MappedAttributeKeyInfo<*, *>> = Comparator.comparing { it.baseKey.key }
 
-        private fun <T : Any, B> addConverted(
+        private fun <T : Any, B: Any> addConverted(
             metricAttribute: MappedAttributeKeyInfo<T, B>,
             sourceAttribute: MappedAttributeKeyInfo<*, *>,
             valueLookup: IMappedAttributeValueLookup,
@@ -165,7 +166,7 @@ class ObservationAttributeMapping(
             return builder.put(metricAttributeKey, metricAttributeType.format(value))
         }
 
-        private fun <T : Any, R : Any, B> lookupConverted(
+        private fun <T : Any, R : Any, B: Any> lookupConverted(
             metricAttributeType: IMappedAttributeKeyType<T, B>,
             sourceAttribute: MappedAttributeKeyInfo<R, *>,
             valueLookup: IMappedAttributeValueLookup,

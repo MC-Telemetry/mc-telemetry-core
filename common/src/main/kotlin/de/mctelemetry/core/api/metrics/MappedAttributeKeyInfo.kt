@@ -17,7 +17,7 @@ import net.minecraft.network.codec.StreamCodec
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
 
-open class MappedAttributeKeyInfo<T : Any, B>(
+open class MappedAttributeKeyInfo<T : Any, B: Any>(
     val baseKey: AttributeKey<B>,
     val type: IMappedAttributeKeyType<T, B>,
 ) {
@@ -37,7 +37,7 @@ open class MappedAttributeKeyInfo<T : Any, B>(
         }
 
         fun <T : Any> fromNative(key: AttributeKey<T>): MappedAttributeKeyInfo<T, T> {
-            return MappedAttributeKeyInfo(key, NativeAttributeKeyTypes(key))
+            return MappedAttributeKeyInfo(key, NativeAttributeKeyTypes[key])
         }
 
         operator fun invoke(name: String, keyType: AttributeType): MappedAttributeKeyInfo<*, *> {

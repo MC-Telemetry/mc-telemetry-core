@@ -1,4 +1,4 @@
-package de.mctelemetry.core.observations
+package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
@@ -8,10 +8,10 @@ import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
-import net.minecraft.core.RegistryAccess
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentSkipListSet
+import kotlin.collections.iterator
 
 abstract class ObservationSourceContainer<C> : AutoCloseable {
 

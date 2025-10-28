@@ -1,25 +1,27 @@
 package de.mctelemetry.core.blocks
 
 import com.mojang.serialization.MapCodec
+import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.blocks.entities.RedstoneScraperBlockEntity
+import de.mctelemetry.core.blocks.observation.ObservationSourceContainerBlockEntity
 import dev.architectury.event.EventResult
 import dev.architectury.event.events.common.InteractionEvent
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
+import net.minecraft.server.level.ServerLevel
+import net.minecraft.util.RandomSource
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.context.BlockPlaceContext
-import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.*
 import net.minecraft.world.level.block.entity.BlockEntity
-import net.minecraft.world.level.block.entity.BlockEntityTicker
-import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.StateDefinition
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.block.state.properties.BooleanProperty
 import net.minecraft.world.level.block.state.properties.EnumProperty
 import net.minecraft.world.level.block.state.properties.Property
+import kotlin.jvm.optionals.getOrElse
 
 
 class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClickBlock, BaseEntityBlock(properties.noOcclusion()) {
@@ -28,18 +30,31 @@ class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClick
     }
 
     override fun newBlockEntity(pos: BlockPos, state: BlockState): BlockEntity {
-        return RedstoneScraperBlockEntity(pos, state)
+        return ObservationSourceContainerBlockEntity(pos, state)
     }
 
     override fun getRenderShape(blockState: BlockState): RenderShape {
         return RenderShape.MODEL
     }
 
-    override fun <T : BlockEntity> getTicker(
+    override fun tick(
+        blockState: BlockState,
+        serverLevel: ServerLevel,
+        blockPos: BlockPos,
+        randomSource: RandomSource
+    ) {
+        super.tick(blockState, serverLevel, blockPos, randomSource)
+        val blockEntity = serverLevel.getBlockEntity(blockPos, OTelCoreModBlockEntityTypes.OBSERVATION_SOURCE_CONTAINER_BLOCK_ENTITY.get()).getOrElse {
+            return
+        }
+        blockEntity.doBlockTick()
+    }
+
+    /*override fun <T : BlockEntity> getTicker(
         level: Level, state: BlockState, blockEntityType: BlockEntityType<T>
     ): BlockEntityTicker<T> {
         return RedstoneScraperBlockEntity.Ticker()
-    }
+    }*/
 
     override fun click(
         player: Player,
@@ -84,7 +99,7 @@ class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClick
 
     init {
         registerDefaultState(getStateDefinition().any().setValue(FACING, Direction.NORTH));
-        registerDefaultState(getStateDefinition().any().setValue(ERROR, false));
+        registerDefaultState(getStateDefinition().any().setValue(ERROR, true));
 
         InteractionEvent.RIGHT_CLICK_BLOCK.register(this);
     }

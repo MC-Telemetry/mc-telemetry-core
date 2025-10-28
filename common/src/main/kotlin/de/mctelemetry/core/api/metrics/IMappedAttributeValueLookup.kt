@@ -90,7 +90,7 @@ interface IMappedAttributeValueLookup {
             return if (info in data) {
                 @Suppress("UNCHECKED_CAST")
                 data.getValue(info) as T?
-                    ?: throw java.util.NoSuchElementException("Key $info is stored locally but has not been initialized")
+                    ?: throw java.util.NoSuchElementException("Key $info is stored locally but has no value")
             } else {
                 parent[info]
             }
@@ -99,7 +99,7 @@ interface IMappedAttributeValueLookup {
         private fun <T : Any> getValue(info: MappedAttributeKeyInfo<T, *>): T {
             @Suppress("UNCHECKED_CAST")
             return data.getValue(info) as T?
-                ?: throw NoSuchElementException("Key $info is stored locally but has not been initialized")
+                ?: throw NoSuchElementException("Key $info is stored locally but has no value")
         }
 
         override fun <T : Any> prepareLookup(info: MappedAttributeKeyInfo<T, *>): ((MappedAttributeKeyInfo<T, *>) -> T)? {
@@ -107,7 +107,7 @@ interface IMappedAttributeValueLookup {
             else parent.prepareLookup(info)
         }
 
-        fun <T : Any> update(key: MappedAttributeKeyInfo<T, *>, value: T) {
+        fun <T : Any> update(key: MappedAttributeKeyInfo<T, *>, value: T?) {
             require(key in data) {
                 "Cannot add additional values after construction (tried to add $key=$value)"
             }
@@ -115,7 +115,7 @@ interface IMappedAttributeValueLookup {
         }
 
 
-        operator fun <T : Any> set(key: MappedAttributeKeyInfo<T, *>, value: T) {
+        operator fun <T : Any> set(key: MappedAttributeKeyInfo<T, *>, value: T?) {
             update(key, value)
         }
     }
