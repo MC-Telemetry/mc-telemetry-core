@@ -86,11 +86,19 @@ GameTest logs are output to `{platform}/gameTestRun/logs/` directory.
 
 ## CI/CD
 
-The project uses GitHub Actions with the following workflow:
+The project uses GitHub Actions with the following workflows:
+
+### Build Workflow (`gradle.yml`)
 1. Build common module first
 2. Build and test each platform (fabric, neoforge) in parallel
 3. Upload GameTest logs and worlds on failure
 4. Upload build artifacts on release branches
+
+### Copilot Prepare Workflow (`copilot-prepare.yml`)
+- Automatically runs when Copilot starts a session
+- Downloads Gradle dependencies for all modules
+- Pre-downloads OpenTelemetry agent
+- Ensures faster builds during Copilot coding sessions
 
 ## Important Notes
 
