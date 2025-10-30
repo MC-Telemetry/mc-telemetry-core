@@ -1,28 +1,28 @@
 package de.mctelemetry.core.metrics.manager
 
-import de.mctelemetry.core.api.metrics.IObservationObserver
+import de.mctelemetry.core.api.metrics.IObservationRecorder
 import de.mctelemetry.core.api.metrics.IObservationSource
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
 import io.opentelemetry.api.metrics.ObservableLongMeasurement
 import io.opentelemetry.api.metrics.ObservableMeasurement
 
-internal sealed class ResolvedObservationObserver<out T : ObservableMeasurement>(
+internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>(
     val observableMeasurement: T,
-) : IObservationObserver.Resolved {
+) : IObservationRecorder.Resolved {
 
     companion object {
 
         operator fun invoke(
             measurement: ObservableLongMeasurement,
-        ): ResolvedObservationObserver<ObservableLongMeasurement> {
+        ): ResolvedObservationRecorder<ObservableLongMeasurement> {
             return if (measurement is ObservableDoubleMeasurement) OfMixed(measurement, true)
             else OfLong(measurement)
         }
 
         operator fun invoke(
             measurement: ObservableDoubleMeasurement,
-        ): ResolvedObservationObserver<ObservableDoubleMeasurement> {
+        ): ResolvedObservationRecorder<ObservableDoubleMeasurement> {
             return if (measurement is ObservableLongMeasurement) OfMixed(measurement, false)
             else OfDouble(measurement)
         }
@@ -30,7 +30,7 @@ internal sealed class ResolvedObservationObserver<out T : ObservableMeasurement>
         operator fun invoke(
             measurement: ObservableMeasurement,
             preferIntegral: Boolean,
-        ): ResolvedObservationObserver<ObservableMeasurement> {
+        ): ResolvedObservationRecorder<ObservableMeasurement> {
             val isDouble = measurement is ObservableDoubleMeasurement
             val isLong = measurement is ObservableLongMeasurement
             return if (isDouble) {
@@ -50,7 +50,7 @@ internal sealed class ResolvedObservationObserver<out T : ObservableMeasurement>
     }
 
     internal class OfLong(observableMeasurement: ObservableLongMeasurement) :
-            ResolvedObservationObserver<ObservableLongMeasurement>(observableMeasurement) {
+            ResolvedObservationRecorder<ObservableLongMeasurement>(observableMeasurement) {
 
         override fun observe(
             value: Long,
@@ -79,7 +79,7 @@ internal sealed class ResolvedObservationObserver<out T : ObservableMeasurement>
     }
 
     internal class OfDouble(observableMeasurement: ObservableDoubleMeasurement) :
-            ResolvedObservationObserver<ObservableDoubleMeasurement>(observableMeasurement) {
+            ResolvedObservationRecorder<ObservableDoubleMeasurement>(observableMeasurement) {
 
         override fun observe(
             value: Long,
@@ -110,7 +110,7 @@ internal sealed class ResolvedObservationObserver<out T : ObservableMeasurement>
     internal class OfMixed<T>(
         observableMeasurement: T,
         val preferIntegral: Boolean,
-    ) : ResolvedObservationObserver<T>(observableMeasurement)
+    ) : ResolvedObservationRecorder<T>(observableMeasurement)
             where T : ObservableDoubleMeasurement, T : ObservableLongMeasurement {
 
         override fun observe(
