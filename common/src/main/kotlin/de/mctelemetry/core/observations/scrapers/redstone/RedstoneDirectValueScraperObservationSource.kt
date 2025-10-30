@@ -2,7 +2,7 @@ package de.mctelemetry.core.observations.scrapers.redstone
 
 import de.mctelemetry.core.api.metrics.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
-import de.mctelemetry.core.api.metrics.IObservationObserver
+import de.mctelemetry.core.api.metrics.IObservationRecorder
 import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
@@ -40,7 +40,7 @@ object RedstoneDirectValueScraperObservationSource : IObservationSource<BlockEnt
 
     override fun observe(
         context: BlockEntity,
-        observer: IObservationObserver.Unresolved,
+        recorder: IObservationRecorder.Unresolved,
         attributes: IMappedAttributeValueLookup.MapLookup,
         unusedAttributes: Set<MappedAttributeKeyInfo<*, *>>,
     ) {
@@ -53,7 +53,7 @@ object RedstoneDirectValueScraperObservationSource : IObservationSource<BlockEnt
         attributes[POS_KEY] = GlobalPos(level.dimension(), observationPos)
         if (DIR_KEY in unusedAttributes) {
             attributes[DIR_KEY] = null
-            observer.observe(
+            recorder.observe(
                 this,
                 level.getDirectSignalTo(observationPos).toLong(),
                 attributes
@@ -61,7 +61,7 @@ object RedstoneDirectValueScraperObservationSource : IObservationSource<BlockEnt
         } else {
             for (dir in Direction.entries) {
                 attributes[DIR_KEY] = dir
-                observer.observe(
+                recorder.observe(
                     this,
                     level.getDirectSignal(observationPos.relative(dir), dir).toLong(),
                     attributes

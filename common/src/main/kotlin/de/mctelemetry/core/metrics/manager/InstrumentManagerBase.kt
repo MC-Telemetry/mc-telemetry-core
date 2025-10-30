@@ -8,7 +8,7 @@ import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentSubRegistration
 import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMetricDefinition
-import de.mctelemetry.core.api.metrics.IObservationObserver
+import de.mctelemetry.core.api.metrics.IObservationRecorder
 import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.Union2
@@ -255,10 +255,10 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                 untrackCallback.get()?.invoke(name, this)
                 return
             }
-            observeImpl(ResolvedObservationObserver(instrument, preferIntegral))
+            observeImpl(ResolvedObservationRecorder(instrument, preferIntegral))
         }
 
-        protected abstract fun observeImpl(recorder: IObservationObserver.Resolved)
+        protected abstract fun observeImpl(recorder: IObservationRecorder.Resolved)
 
         fun provideOTelRegistration(otelRegistration: AutoCloseable) {
             val previous = this.otelRegistration.compareAndExchange(null, otelRegistration)
@@ -317,7 +317,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         }
 
         val callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>
-        override fun observeImpl(recorder: IObservationObserver.Resolved) {
+        override fun observeImpl(recorder: IObservationRecorder.Resolved) {
             callback.observe(this, recorder)
         }
 
@@ -364,7 +364,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         val callbacks: ConcurrentLinkedDeque<IInstrumentRegistration.Callback<T>> =
             ConcurrentLinkedDeque()
 
-        override fun observeImpl(recorder: IObservationObserver.Resolved) {
+        override fun observeImpl(recorder: IObservationRecorder.Resolved) {
             callbacks.forEach {
                 it.observe(
                     @Suppress("UNCHECKED_CAST")
