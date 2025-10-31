@@ -39,8 +39,14 @@ jobs:
       
       - name: Accept EULA
         run: |
-          mkdir -p ${{matrix.project}}/gameTestRun
-          cat <<EOF > ${{matrix.project}}/gameTestRun/eula.txt
+          mkdir -p neoforge/gameTestRun
+          mkdir -p fabric/gameTestRun
+          cat <<EOF > neoforge/gameTestRun/eula.txt
+          #By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).
+          #Fri Oct 31 15:37:45 CET 2025
+          eula=true
+          EOF
+          cat <<EOF > neoforge/gameTestRun/eula.txt
           #By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).
           #Fri Oct 31 15:37:45 CET 2025
           eula=true
