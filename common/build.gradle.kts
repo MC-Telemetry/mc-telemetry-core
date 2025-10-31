@@ -9,5 +9,11 @@ dependencies {
     // Remove the next line if you don't want to depend on the API
     modApi("dev.architectury:architectury:${rootProject.property("architectury_version")}")
 
+    // owo-lib/oωo-lib
+    // Docs specify modImplementation, but that leads to class-access problems during compilation.
+    // Should be fine to be specified as compileOnly due to implementation in subprojects?
+    modCompileOnly("io.wispforest:owo-lib:${rootProject.property("owo_fabric_version")}")
+
+    // opentelemetry
     compileOnly("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:${rootProject.property("otel_version")}")
 }
