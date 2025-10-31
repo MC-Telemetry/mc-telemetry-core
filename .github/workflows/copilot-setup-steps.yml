@@ -46,7 +46,7 @@ jobs:
           #Fri Oct 31 15:37:45 CET 2025
           eula=true
           EOF
-          cat <<EOF > neoforge/gameTestRun/eula.txt
+          cat <<EOF > fabric/gameTestRun/eula.txt
           #By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).
           #Fri Oct 31 15:37:45 CET 2025
           eula=true
