@@ -5,6 +5,7 @@ import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IObservationRecorder
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.blocks.RedstoneScraperBlock
+import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.ui.RedstoneScraperBlockMenu
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
@@ -30,7 +31,10 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
             var accumulator: Exception? = null
             try {
                 val currentValue = blockState.getValue(RedstoneScraperBlock.ERROR)
-                val targetValue = value == null
+                val targetValue = if (value == null)
+                    ObservationSourceState.ErrorState.Type.Errors
+                else
+                    ObservationSourceState.ErrorState.Type.Ok
 
                 if (targetValue != currentValue) {
                     val newBlockState = blockState.setValue(RedstoneScraperBlock.ERROR, targetValue)
@@ -62,20 +66,22 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
                 observePos.dimension.location().path
             }/(${observePos.pos.x},${observePos.pos.y},${observePos.pos.z})"
         )
-        registration = mutableInstrument?.addCallback(Attributes.empty(), object : IInstrumentRegistration.Callback<IInstrumentRegistration> {
+        registration = mutableInstrument?.addCallback(
+            Attributes.empty(),
+            object : IInstrumentRegistration.Callback<IInstrumentRegistration> {
 
-            override fun observe(instrument: IInstrumentRegistration, recorder: IObservationRecorder.Resolved) {
-                val level = level ?: return
-                if (!(level.isLoaded(observePos.pos) && level.shouldTickBlocksAt(observePos.pos))) return
-                val value = level.getBestNeighborSignal(observePos.pos)
-                recorder.observe(value.toLong(), attributes)
-            }
+                override fun observe(instrument: IInstrumentRegistration, recorder: IObservationRecorder.Resolved) {
+                    val level = level ?: return
+                    if (!(level.isLoaded(observePos.pos) && level.shouldTickBlocksAt(observePos.pos))) return
+                    val value = level.getBestNeighborSignal(observePos.pos)
+                    recorder.observe(value.toLong(), attributes)
+                }
 
-            override fun onRemove(instrument: IInstrumentRegistration) {
-                this@RedstoneScraperBlockEntity.registration = null
-                super.onRemove(instrument)
-            }
-        })
+                override fun onRemove(instrument: IInstrumentRegistration) {
+                    this@RedstoneScraperBlockEntity.registration = null
+                    super.onRemove(instrument)
+                }
+            })
     }
 
     init {

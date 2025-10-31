@@ -17,6 +17,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentSerialization
 import net.minecraft.network.chat.ThrowingComponent
+import net.minecraft.util.StringRepresentable
 
 open class ObservationSourceState(
     val source: IObservationSource<*, *>,
@@ -51,15 +52,7 @@ open class ObservationSourceState(
             }
         }
         run {
-            val subRegistration = instrumentSubRegistration
-            val oldErrorState = errorState
-            val errorsHasUninitialized = ErrorState.uninitializedError in oldErrorState.errors
-            val errorsShouldHaveUninitialized = subRegistration == null
-            if (errorsHasUninitialized && !errorsShouldHaveUninitialized) {
-                modified = setErrorState(oldErrorState.withoutError(ErrorState.uninitializedError)) || modified
-            } else if (errorsShouldHaveUninitialized && !errorsHasUninitialized) {
-                modified = setErrorState(oldErrorState.withError(ErrorState.uninitializedError)) || modified
-            }
+            modified = updateDerivedErrorState(silent = true) || modified
         }
         if (modified && !silent) triggerOnDirty()
         return modified
@@ -94,8 +87,14 @@ open class ObservationSourceState(
     }
 
 
-    fun shouldBeObserved(): Boolean {
-        return errorState === ErrorState.Ok && configuration != null
+    open fun shouldBeObserved(): Boolean {
+        val configuration = configuration ?: return false
+        if (configuration.instrument.name.isEmpty()) return false
+        return when (errorState) {
+            ErrorState.Ok -> true
+            is ErrorState.Warnings -> true
+            is ErrorState.Errors -> false
+        }
     }
 
 
@@ -167,7 +166,7 @@ open class ObservationSourceState(
                 oldValue?.close()
             } finally {
                 if (cascadeUpdates) {
-                    setErrorState(errorState.withError(ErrorState.uninitializedError), silent = true)
+                    updateDerivedErrorState(silent = true)
                 }
             }
             if (value != null) {
@@ -175,7 +174,7 @@ open class ObservationSourceState(
                 // throw, signaling to the caller that they have to close the callback themselves
                 instrumentSubRegistrationField = value
                 if (cascadeUpdates) {
-                    setErrorState(errorState.withoutError(ErrorState.uninitializedError), silent = true)
+                    updateDerivedErrorState(silent = true)
                 }
             }
         } finally {
@@ -195,6 +194,26 @@ open class ObservationSourceState(
                 setInstrumentSubRegistration(subRegistration)
             }
         }
+    }
+
+    @Suppress("SameParameterValue")
+    protected open fun updateDerivedErrorState(silent: Boolean = false): Boolean {
+        if (!cascadeUpdates) return false
+        var errorState = this.errorState
+        val configuration = configuration
+        if (configuration == null || configuration.instrument.name.isEmpty()) {
+            errorState = errorState
+                .withoutError(ErrorState.uninitializedError)
+                .withWarning(ErrorState.notConfiguredWarning)
+        } else {
+            errorState = errorState.withoutWarning(ErrorState.notConfiguredWarning)
+            if (instrumentSubRegistration == null) {
+                errorState = errorState.withError(ErrorState.uninitializedError)
+            } else {
+                errorState = errorState.withoutError(ErrorState.uninitializedError)
+            }
+        }
+        return setErrorState(errorState, silent = silent)
     }
 
     protected fun triggerOnDirty() {
@@ -321,7 +340,16 @@ open class ObservationSourceState(
         }
     }
 
-    sealed class ErrorState {
+    sealed class ErrorState(val type: Type) {
+
+        enum class Type(private val serializedName: String) : StringRepresentable {
+            Ok("ok"),
+            Warnings("warnings"),
+            Errors("errors"),
+            ;
+
+            override fun getSerializedName() = serializedName
+        }
 
         abstract val warnings: List<Component>
         abstract val errors: List<Component>
@@ -389,7 +417,7 @@ open class ObservationSourceState(
         class Errors(
             override val errors: List<Component>,
             override val warnings: List<Component>,
-        ) : ErrorState() {
+        ) : ErrorState(Type.Errors) {
 
             init {
                 require(errors.isNotEmpty()) { "Errors must contain at least one element" }
@@ -400,7 +428,7 @@ open class ObservationSourceState(
 
         class Warnings(
             override val warnings: List<Component>,
-        ) : ErrorState() {
+        ) : ErrorState(Type.Warnings) {
 
             override val errors: List<Component> = emptyList()
 
@@ -409,7 +437,7 @@ open class ObservationSourceState(
             }
         }
 
-        object Ok : ErrorState() {
+        object Ok : ErrorState(Type.Ok) {
 
             override val warnings: List<Component> = emptyList()
             override val errors: List<Component> = emptyList()
@@ -418,6 +446,7 @@ open class ObservationSourceState(
         companion object {
 
             internal val uninitializedError = TranslationKeys.Errors.observationsUninitialized()
+            internal val notConfiguredWarning = TranslationKeys.Errors.observationsNotConfigured()
             val Uninitialized = Errors(listOf(uninitializedError))
             val CODEC: Codec<ErrorState> =
                 Codec.pair(ComponentSerialization.CODEC.listOf(), ComponentSerialization.CODEC.listOf()).xmap(
