@@ -2,9 +2,9 @@ package de.mctelemetry.core.api.metrics
 
 import io.opentelemetry.api.common.Attributes
 
-sealed interface IObservationObserver {
+sealed interface IObservationRecorder {
 
-    interface Unresolved : IObservationObserver {
+    interface Unresolved : IObservationRecorder {
 
         fun observe(source: IObservationSource<*, *>, value: Long, attributes: IMappedAttributeValueLookup)
         fun observe(source: IObservationSource<*, *>, value: Double, attributes: IMappedAttributeValueLookup)
@@ -16,7 +16,7 @@ sealed interface IObservationObserver {
         )
     }
 
-    interface Resolved : IObservationObserver {
+    interface Resolved : IObservationRecorder {
 
         fun observe(value: Long, attributes: Attributes, source: IObservationSource<*, *>? = null)
         fun observe(value: Double, attributes: Attributes, source: IObservationSource<*, *>? = null)

@@ -11,17 +11,17 @@ interface IInstrumentRegistration : IInstrumentDefinition, AutoCloseable {
         val tickSynchronizationHint: TickSynchronizationHint
             get() = TickSynchronizationHint.DEFAULT
 
-        fun observe(instrument: T, recorder: IObservationObserver.Resolved)
+        fun observe(instrument: T, recorder: IObservationRecorder.Resolved)
 
         fun onRemove(instrument: T) {}
 
         fun interface Simple : Callback<IInstrumentRegistration> {
 
-            override fun observe(instrument: IInstrumentRegistration, recorder: IObservationObserver.Resolved) {
+            override fun observe(instrument: IInstrumentRegistration, recorder: IObservationRecorder.Resolved) {
                 observe(recorder)
             }
 
-            fun observe(recorder: IObservationObserver.Resolved)
+            fun observe(recorder: IObservationRecorder.Resolved)
             override fun onRemove(instrument: IInstrumentRegistration) {
                 onRemove()
             }

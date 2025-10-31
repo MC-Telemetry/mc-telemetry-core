@@ -2,7 +2,7 @@ package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
-import de.mctelemetry.core.api.metrics.IObservationObserver
+import de.mctelemetry.core.api.metrics.IObservationRecorder
 import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
@@ -121,7 +121,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
         private val state: ObservationSourceState,
     ) : IInstrumentRegistration.Callback<IInstrumentRegistration> {
 
-        override fun observe(instrument: IInstrumentRegistration, recorder: IObservationObserver.Resolved) {
+        override fun observe(instrument: IInstrumentRegistration, recorder: IObservationRecorder.Resolved) {
             assert(state.instrument === instrument)
             this@ObservationSourceContainer.observe(recorder, source)
         }
@@ -132,7 +132,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
         }
     }
 
-    open fun observe(observer: IObservationObserver.Resolved, source: IObservationSource<in C, *>) {
+    open fun observe(recorder: IObservationRecorder.Resolved, source: IObservationSource<in C, *>) {
         val state = observationStates.getValue(source)
         try {
             if (!state.shouldBeObserved()) return
@@ -144,7 +144,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
                 state.errorState = state.errorState.withError(validationError)
                 return
             }
-            val mappingResolver = ObservationMappingResolver(observer, configuration.mapping)
+            val mappingResolver = ObservationMappingResolver(recorder, configuration.mapping)
             doObservation(
                 source,
                 context,
@@ -157,7 +157,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
         }
     }
 
-    open fun observe(observer: IObservationObserver.Resolved, filter: Set<IObservationSource<in C, *>>? = null) {
+    open fun observe(recorder: IObservationRecorder.Resolved, filter: Set<IObservationSource<in C, *>>? = null) {
         val attributeLookup = createAttributeLookup()
         val context = context
         var mappingResolver: ObservationMappingResolver? = null
@@ -177,7 +177,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
                 if (mappingResolver != null) {
                     mappingResolver.mapping = configuration.mapping
                 } else {
-                    mappingResolver = ObservationMappingResolver(observer, configuration.mapping)
+                    mappingResolver = ObservationMappingResolver(recorder, configuration.mapping)
                 }
                 doObservation(
                     source,

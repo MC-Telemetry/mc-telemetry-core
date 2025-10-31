@@ -12,7 +12,7 @@ interface IObservationSource<C, A : IMappedAttributeValueLookup> {
 
     fun observe(
         context: C,
-        observer: IObservationObserver.Unresolved,
+        recorder: IObservationRecorder.Unresolved,
         attributes: A,
         unusedAttributes: Set<MappedAttributeKeyInfo<*, *>>,
     )

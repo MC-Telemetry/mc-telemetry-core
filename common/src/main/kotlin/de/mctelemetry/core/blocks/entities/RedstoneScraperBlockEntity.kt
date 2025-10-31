@@ -2,7 +2,7 @@ package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
-import de.mctelemetry.core.api.metrics.IObservationObserver
+import de.mctelemetry.core.api.metrics.IObservationRecorder
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.blocks.RedstoneScraperBlock
 import de.mctelemetry.core.ui.RedstoneScraperBlockMenu
@@ -64,7 +64,7 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
         )
         registration = mutableInstrument?.addCallback(Attributes.empty(), object : IInstrumentRegistration.Callback<IInstrumentRegistration> {
 
-            override fun observe(instrument: IInstrumentRegistration, recorder: IObservationObserver.Resolved) {
+            override fun observe(instrument: IInstrumentRegistration, recorder: IObservationRecorder.Resolved) {
                 val level = level ?: return
                 if (!(level.isLoaded(observePos.pos) && level.shouldTickBlocksAt(observePos.pos))) return
                 val value = level.getBestNeighborSignal(observePos.pos)
