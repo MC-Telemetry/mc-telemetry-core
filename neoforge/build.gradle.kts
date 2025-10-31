@@ -176,8 +176,25 @@ tasks.shadowJar {
                     && it.moduleName.startsWith("kotlin-stdlib")
         }
     }
-    for (pattern in listOf("com", "de", "io", "okhttp3", "okio", "org", "zipkin2")) {
-        relocate(pattern, "$relocatePrefix.$pattern") {
+    for (pattern in listOf(
+        "com",
+        "de",
+        "io",
+        "okhttp3",
+        "okio",
+        "org",
+        "zipkin2"
+    )) {
+        relocate("$pattern.", "$relocatePrefix.$pattern.") {
+            this.exclude("org.jetbrains.annotations.**")
+            this.exclude("dev.**")
+            this.exclude("io.wispforest.**")
+            this.exclude("org.sinytra.**")
+            this.exclude("com.mojang.**")
+            this.exclude("com.netty.**")
+            this.exclude("com.google.errorprone.annotations.**")
+            this.exclude("com.google.auto.value.**")
+            this.exclude("org/codehaus/mojo/animal_sniffer/IgnoreJRERequirement")
             this.exclude("kotlin.**")
             this.exclude("de.mctelemetry.core.**")
             this.exclude("io.opentelemetry.**")

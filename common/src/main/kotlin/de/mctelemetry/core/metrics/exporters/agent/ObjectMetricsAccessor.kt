@@ -18,12 +18,13 @@ class ObjectMetricsAccessor(
     private val collectNamed: Function<String, Array<Any>?>,
     private val collectDataPoint: BiFunction<String, Array<Any>, Array<Any>?>,
     private val collectDataPointValue: BiFunction<String, Array<Any>, Any?>,
-): IMetricsAccessor {
+) : IMetricsAccessor {
 
     companion object {
 
 
-        private val isDebug = "true".equals(System.getenv("MCTELEMETRYCORE_DEBUG"), ignoreCase = true)
+        private val isDebug = "true".equals(System.getenv("MCTELEMETRYCORE_DEBUG"), ignoreCase = true) ||
+                "true".equals(System.getProperty("mctelemetrycore.debug"), ignoreCase = true)
 
         // Logger unavailable in Agent-Extension context.
         private fun debugLog(message: String) {
@@ -46,7 +47,12 @@ class ObjectMetricsAccessor(
                 if (::_INSTANCE.isInitialized) {
                     return _INSTANCE
                 }
-                val callbackArray = getSynchronizedCallbacks() ?: return null
+                val callbackArray = try {
+                    getSynchronizedCallbacks()
+                } catch (ex: ClassNotFoundException) {
+                    debugLog("Exception during loading of synchronized callbacks: ${ex.stackTraceToString()}")
+                    return null
+                } ?: return null
                 @Suppress("UNCHECKED_CAST")
                 _INSTANCE = ObjectMetricsAccessor(
                     collectAll = callbackArray[0] as Supplier<Array<Array<Any>>>,
@@ -189,7 +195,7 @@ class ObjectMetricsAccessor(
         attributes: Map<String, String>,
         exact: Boolean,
     ): MetricDataReadback? {
-        val filterArray = arrayOfNulls<Any>(1+attributes.size * 2)
+        val filterArray = arrayOfNulls<Any>(1 + attributes.size * 2)
         filterArray[0] = exact
         var i = 1
         attributes.forEach {
@@ -207,7 +213,7 @@ class ObjectMetricsAccessor(
         attributes: Attributes,
         exact: Boolean,
     ): MetricDataReadback? {
-        val filterArray = arrayOfNulls<Any>(1+attributes.size() * 2)
+        val filterArray = arrayOfNulls<Any>(1 + attributes.size() * 2)
         filterArray[0] = exact
         var i = 1
         attributes.forEach { key, value ->
@@ -225,7 +231,7 @@ class ObjectMetricsAccessor(
         attributes: Map<String, String>,
         exact: Boolean,
     ): MetricValueReadback? {
-        val filterArray = arrayOfNulls<Any>(1+attributes.size * 2)
+        val filterArray = arrayOfNulls<Any>(1 + attributes.size * 2)
         filterArray[0] = exact
         var i = 1
         attributes.forEach {
@@ -243,7 +249,7 @@ class ObjectMetricsAccessor(
         attributes: Attributes,
         exact: Boolean,
     ): MetricValueReadback? {
-        val filterArray = arrayOfNulls<Any>(1+attributes.size() * 2)
+        val filterArray = arrayOfNulls<Any>(1 + attributes.size() * 2)
         filterArray[0] = exact
         var i = 1
         attributes.forEach { key, value ->
