@@ -1,20 +1,20 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
-import de.mctelemetry.core.api.metrics.IObservationObserver
+import de.mctelemetry.core.api.metrics.IObservationRecorder
 import de.mctelemetry.core.api.metrics.IObservationSource
 
 class ObservationMappingResolver(
-    val resolvedObserver: IObservationObserver.Resolved,
+    val resolvedRecorder: IObservationRecorder.Resolved,
     var mapping: ObservationAttributeMapping,
-) : IObservationObserver.Unresolved {
+) : IObservationRecorder.Unresolved {
 
     override fun observe(source: IObservationSource<*, *>, value: Double, attributes: IMappedAttributeValueLookup) {
-        resolvedObserver.observe(value, mapping.resolveAttributes(attributes), source)
+        resolvedRecorder.observe(value, mapping.resolveAttributes(attributes), source)
     }
 
     override fun observe(source: IObservationSource<*, *>, value: Long, attributes: IMappedAttributeValueLookup) {
-        resolvedObserver.observe(value, mapping.resolveAttributes(attributes), source)
+        resolvedRecorder.observe(value, mapping.resolveAttributes(attributes), source)
     }
 
     override fun observePreferred(
@@ -23,6 +23,6 @@ class ObservationMappingResolver(
         long: Long,
         attributes: IMappedAttributeValueLookup,
     ) {
-        resolvedObserver.observePreferred(double, long, mapping.resolveAttributes(attributes), source)
+        resolvedRecorder.observePreferred(double, long, mapping.resolveAttributes(attributes), source)
     }
 }
