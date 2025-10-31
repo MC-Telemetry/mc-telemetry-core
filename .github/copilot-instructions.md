@@ -4,6 +4,8 @@
 
 mc-telemetry-core is a Minecraft mod that integrates OpenTelemetry for telemetry and observability. This project uses Architectury to support multiple mod loaders (Fabric and NeoForge) with a common codebase.
 
+**Key Feature**: Unlike existing telemetry mods for Minecraft, this mod allows players to add world-specific instrumentation during their play sessions. For example, players can place observer blocks that track Redstone signal strength and expose it as configurable metrics. As a consequence, the registered instruments and exported metrics are dynamic and not static during runtime.
+
 ## Tech Stack
 
 - **Language**: Kotlin 2.2.20 with Java 21
@@ -77,7 +79,8 @@ GameTest logs are output to `{platform}/gameTestRun/logs/` directory.
 - Use `modApi` for Architectury API
 - Use `modImplementation` for loader-specific dependencies
 - Keep OpenTelemetry dependencies in `compileOnly` scope where appropriate
-- Dependencies are shadowed/relocated to `de.mctelemetry.core.shadow` prefix
+- Dependencies (except OpenTelemetry API) are shadowed/relocated to `de.mctelemetry.core.shadow` prefix
+- **Important**: The OpenTelemetry API must NOT be relocated to maintain compatibility with SDK injection from the OpenTelemetry Java agent
 
 ### Mod Metadata
 - Mod ID: `mcotelcore`
@@ -94,7 +97,7 @@ The project uses GitHub Actions with the following workflows:
 3. Upload GameTest logs and worlds on failure
 4. Upload build artifacts on release branches
 
-### Copilot Prepare Workflow (`copilot-prepare.yml`)
+### Copilot Setup Steps Workflow (`copilot-setup-steps.yml`)
 - Automatically runs when Copilot starts a session
 - Downloads Gradle dependencies for all modules
 - Pre-downloads OpenTelemetry agent
