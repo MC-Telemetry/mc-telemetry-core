@@ -5,7 +5,8 @@ import io.opentelemetry.sdk.autoconfigure.spi.AutoConfigurationCustomizerProvide
 
 class ObjectMetricReaderAutoConfigurator : AutoConfigurationCustomizerProvider {
 
-    private val isDebug = "true".equals(System.getenv("MCTELEMETRYCORE_DEBUG"), ignoreCase = true)
+    private val isDebug = "true".equals(System.getenv("MCTELEMETRYCORE_DEBUG"), ignoreCase = true) ||
+            "true".equals(System.getProperty("mctelemetrycore.debug"), ignoreCase = true)
 
     // Logger unavailable in Agent-Extension context.
     private fun debugLog(message: String) {

@@ -118,7 +118,7 @@ dependencies {
 
     // owo-lib/oωo-lib
     modImplementation("io.wispforest:owo-lib:${rootProject.property("owo_fabric_version")}")
-    include("io.wispforest:owo-sentinel${rootProject.property("owo_fabric_version")}")
+    include("io.wispforest:owo-sentinel:${rootProject.property("owo_fabric_version")}")
 
     // opentelemetry
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
@@ -157,16 +157,30 @@ tasks.shadowJar {
         }
     }
     for (pattern in listOf(
-        "com.fasterxml",
+        "com",
+        "de",
+        "io",
         "okhttp3",
         "okio",
-        "org.intellij",
-        "org.jetbrains",
-        "org.snakeyaml",
-        "org.yaml",
+        "org",
         "zipkin2"
     )) {
-        relocate(pattern, "$relocatePrefix.$pattern")
+        relocate("$pattern.", "$relocatePrefix.$pattern.") {
+            this.exclude("org.jetbrains.annotations.**")
+            this.exclude("dev.**")
+            this.exclude("io.wispforest.**")
+            this.exclude("org.sinytra.**")
+            this.exclude("com.mojang.**")
+            this.exclude("com.netty.**")
+            this.exclude("com.google.errorprone.annotations.**")
+            this.exclude("com.google.auto.value.**")
+            this.exclude("org/codehaus/mojo/animal_sniffer/IgnoreJRERequirement")
+            this.exclude("kotlin.**")
+            this.exclude("de.mctelemetry.core.**")
+            this.exclude("io.opentelemetry.**")
+            this.exclude("io.prometheus.**")
+            this.exclude("org.apache.**")
+        }
     }
     configurations = listOf(shadowBundle)
     archiveClassifier.set("dev-shadow")
