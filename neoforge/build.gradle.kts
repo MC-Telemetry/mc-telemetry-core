@@ -129,6 +129,15 @@ dependencies {
     // Kotlin For Forge
     implementation("thedarkcolour:kotlinforforge-neoforge:${rootProject.property("kotlin_for_forge_version")}")
 
+    // owo-lib/oωo-lib
+    modImplementation("io.wispforest:owo-lib-neoforge:${rootProject.property("owo_neoforge_version")}")
+    forgeRuntimeLibrary("blue.endless:jankson:1.2.2")
+    forgeRuntimeLibrary("io.wispforest:endec:0.1.5.1")
+    forgeRuntimeLibrary("io.wispforest.endec:netty:0.1.2")
+    forgeRuntimeLibrary("io.wispforest.endec:gson:0.1.3.1")
+    forgeRuntimeLibrary("io.wispforest.endec:jankson:0.1.3.1")
+
+    // opentelemetry
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
     common("io.opentelemetry:opentelemetry-sdk-metrics:$otelVersion")
     shadowBundle("io.opentelemetry:opentelemetry-sdk-metrics:$otelVersion")
@@ -147,7 +156,8 @@ tasks.processResources {
         "minecraft_version" to rootProject.property("minecraft_version"),
         "neoforge_version" to rootProject.property("neoforge_version"),
         "architectury_version" to rootProject.property("architectury_version"),
-        "kotlin_for_forge_version" to rootProject.property("kotlin_for_forge_version")
+        "kotlin_for_forge_version" to rootProject.property("kotlin_for_forge_version"),
+        "owo_neoforge_version" to rootProject.property("owo_neoforge_version"),
     )
     inputs.properties(expansionMap)
 

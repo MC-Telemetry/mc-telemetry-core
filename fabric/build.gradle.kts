@@ -112,9 +112,15 @@ dependencies {
     shadowBundle(project(":common", "transformProductionFabric")) {
         isTransitive = false
     }
+
     // Fabric Kotlin
     modImplementation("net.fabricmc:fabric-language-kotlin:${rootProject.property("fabric_kotlin_version")}")
 
+    // owo-lib/oωo-lib
+    modImplementation("io.wispforest:owo-lib:${rootProject.property("owo_fabric_version")}")
+    include("io.wispforest:owo-sentinel${rootProject.property("owo_fabric_version")}")
+
+    // opentelemetry
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
     common("io.opentelemetry:opentelemetry-sdk-metrics:$otelVersion")
     shadowBundle("io.opentelemetry:opentelemetry-sdk-metrics:$otelVersion")
@@ -132,7 +138,8 @@ tasks.processResources {
         "mod_id" to rootProject.property("mod_id"),
         "minecraft_version" to rootProject.property("minecraft_version"),
         "architectury_version" to rootProject.property("architectury_version"),
-        "fabric_kotlin_version" to rootProject.property("fabric_kotlin_version")
+        "fabric_kotlin_version" to rootProject.property("fabric_kotlin_version"),
+        "owo_fabric_version" to rootProject.property("owo_fabric_version"),
     )
     inputs.properties(expansionMap)
 
