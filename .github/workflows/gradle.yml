@@ -60,6 +60,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
 
+      - name: Accept EULA
+        run: |
+          mkdir -p ${{matrix.project}}/gameTestRun
+          cat <<EOF > ${{matrix.project}}/gameTestRun/eula.txt
+          #By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).
+          #Fri Oct 31 15:37:45 CET 2025
+          eula=true
+          EOF
+
       - name: Check
         id: check
         run: ./gradlew :${{matrix.project}}:check
