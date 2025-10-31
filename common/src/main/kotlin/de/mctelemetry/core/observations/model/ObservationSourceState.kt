@@ -83,9 +83,8 @@ open class ObservationSourceState(
         configurationField = value
         try {
             if (cascadeUpdates) {
-                val instrument = instrument
-                if (instrument != null && instrument != value?.instrument) {
-                    setInstrument(value?.instrument as? IInstrumentRegistration, silent = true)
+                if (instrument != value?.instrument) {
+                    setInstrument(null, silent = true)
                 }
             }
         } finally {
@@ -233,14 +232,17 @@ open class ObservationSourceState(
         callbackSilent: Boolean = false,
     ): (IInstrumentManager) -> Unit {
         val errorState = loadErrorState(tag)
-        val delayedConfiguration = ObservationSourceConfiguration.loadDelayedFromTag(tag, holderLookupProvider)
+        val delayedConfiguration = ObservationSourceConfiguration.loadDelayedFromTag(
+            tag.getCompound("configuration"),
+            holderLookupProvider
+        )
         var modified: Boolean
         runWithExceptionCleanup(::triggerOnDirty, runCleanup = !initialSilent) {
             modified = setErrorState(errorState, silent = true)
         }
         if (modified && !initialSilent) triggerOnDirty()
         return {
-            setConfiguration(delayedConfiguration(it), silent=callbackSilent)
+            setConfiguration(delayedConfiguration(it), silent = callbackSilent)
         }
     }
 

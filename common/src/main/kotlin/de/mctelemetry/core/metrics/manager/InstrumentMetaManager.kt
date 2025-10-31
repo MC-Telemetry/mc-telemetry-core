@@ -39,40 +39,47 @@ object InstrumentMetaManager {
     }
 
     private fun onServerStarting(server: MinecraftServer) {
+        var existingCallbackOnlyEntry: Either<WorldInstrumentManager,Deque<(WorldInstrumentManager) -> Unit>>? = null
         val serverManagerEntry = serverMetricsManagers.compute(server) { server, previous ->
-            val callbacks: Deque<(WorldInstrumentManager) -> Unit>?
             if (previous != null) {
                 if (previous.left().isPresent) return@compute previous
-                callbacks = previous.right().get()
+                existingCallbackOnlyEntry = previous
             } else {
-                callbacks = null
+                existingCallbackOnlyEntry = null
             }
             Either.left(WorldInstrumentManager.withPersistentStorage(
                 gameInstrumentManager.meter,
                 gameInstrumentManager,
                 server,
-            ).also { manager ->
-                if(callbacks != null) {
-                    do {
-                        val element = callbacks.pollFirst() ?: break
-                        try {
-                            element(manager)
-                        } catch (ex: RuntimeException) {
-                            OTelCoreMod.logger.error("Exception during WorldInstrumentManager-Callback", ex)
-                        }
-                    }
-                    while (true)
-                }
-            })
+            ))
         }!!
         val serverManager = serverManagerEntry.left().get()
-        runWithExceptionCleanup(cleanup = { serverMetricsManagers.remove(server, serverManagerEntry) })
+        runWithExceptionCleanup(cleanup = {
+            val entry = existingCallbackOnlyEntry
+            if(entry == null){
+                serverMetricsManagers.remove(server, serverManagerEntry)
+            } else {
+                serverMetricsManagers.replace(server, serverManagerEntry, entry)
+            }
+        })
         {
             serverManager.start()
             runWithExceptionCleanup(cleanup = { serverManager.stop() })
             {
                 IWorldInstrumentManager.Events.LOADING.invoker().worldInstrumentManagerLoading(serverManager, server)
             }
+        }
+        val callbacks = existingCallbackOnlyEntry?.right()?.getOrNull()
+        if(callbacks != null) {
+            do {
+                val element = callbacks.pollFirst() ?: break
+                try {
+                    element(serverManager)
+                } catch (ex: RuntimeException) {
+                    OTelCoreMod.logger.error("Exception during WorldInstrumentManager-Callback", ex)
+                }
+            }
+            while (true)
         }
     }
 

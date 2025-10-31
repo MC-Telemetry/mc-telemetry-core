@@ -24,7 +24,9 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
     open fun createAttributeLookup(): IMappedAttributeValueLookup = IMappedAttributeValueLookup.empty()
 
 
-    protected val dirtyRunningTracker: ConcurrentSkipListSet<ObservationSourceState> = ConcurrentSkipListSet()
+    protected val dirtyRunningTracker: ConcurrentSkipListSet<IObservationSource<*,*>> = ConcurrentSkipListSet(
+        compareBy { it.id.location() }
+    )
 
     override fun close() {
         observationStates.values.fold<ObservationSourceState, Exception?>(null) { acc, state ->
@@ -45,17 +47,17 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
                 cleanup = AutoCloseable {
                     cleanupList.remove(cleanup)
                     try {
-                        dirtyRunningTracker.remove(state)
+                        dirtyRunningTracker.remove(state.source)
                         state.unsubscribeFromDirty(::onDirty)
                     } finally {
                         state.close()
                     }
                 }
-                dirtyRunningTracker.add(state)
+                dirtyRunningTracker.add(state.source)
                 cleanupList.add(cleanup)
                 state.subscribeToDirty(::onDirty)
                 doOnDirty(source, state)
-                dirtyRunningTracker.remove(state)
+                dirtyRunningTracker.remove(state.source)
             }
             cleanupList.clear()
         } catch (ex: Exception) {
@@ -68,11 +70,12 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
                     exAcc += e
                 }
             }
+            throw ex
         }
     }
 
     protected fun onDirty(sourceState: ObservationSourceState) {
-        if (!dirtyRunningTracker.add(sourceState)) return
+        if (!dirtyRunningTracker.add(sourceState.source)) return
         try {
             val source = sourceState.source
             assert(
@@ -83,7 +86,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
             )
             doOnDirty(source, sourceState)
         } finally {
-            dirtyRunningTracker.remove(sourceState)
+            dirtyRunningTracker.remove(sourceState.source)
         }
     }
 
