@@ -3,8 +3,22 @@ name: Gradle build
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - '.github/**'
+      - '!.github/workflows/gradle.yml'
+      - 'images/**'
+      - 'LICENSE'
+      - 'README.md'
+      - 'dev.otel.properties'
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - '.github/**'
+      - '!.github/workflows/gradle.yml'
+      - 'images/**'
+      - 'LICENSE'
+      - 'README.md'
+      - 'dev.otel.properties'
 
 jobs:
   build-common:
@@ -20,7 +34,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
 
       - name: Build
         run: ./gradlew :common:build
@@ -44,7 +58,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
 
       - name: Check
         id: check
