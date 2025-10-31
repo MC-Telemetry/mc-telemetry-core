@@ -79,18 +79,36 @@ class ObservationSourceContainerBlockEntity(
 
     private fun updateState() {
         val container = container ?: return
-        var ok = true
-        var error = false
+        var targetState: ObservationSourceState.ErrorState.Type? = null
         for (state in container.observationStates.values) {
-            when (state.errorState) {
-                ObservationSourceState.ErrorState.Ok -> {}
-                is ObservationSourceState.ErrorState.Warnings -> ok = false
-                is ObservationSourceState.ErrorState.Errors -> error = true
+            targetState = when (state.errorState) {
+                ObservationSourceState.ErrorState.Ok -> {
+                    ObservationSourceState.ErrorState.Type.Ok
+                }
+                is ObservationSourceState.ErrorState.Warnings -> {
+                    if (state.errorState.warnings.singleOrNull() === ObservationSourceState.ErrorState.notConfiguredWarning)
+                        continue
+                    if (targetState == ObservationSourceState.ErrorState.Type.Errors || targetState == null)
+                        continue
+                    ObservationSourceState.ErrorState.Type.Warnings
+                }
+                is ObservationSourceState.ErrorState.Errors -> {
+                    targetState = ObservationSourceState.ErrorState.Type.Errors
+                    break
+                }
             }
         }
-        val isError = blockState.getValue(RedstoneScraperBlock.ERROR)
-        if (isError != error) {
-            level!!.setBlock(blockPos, blockState.setValue(RedstoneScraperBlock.ERROR, error), 2)
+        targetState = targetState ?: ObservationSourceState.ErrorState.Type.Warnings
+        val currentState = blockState.getValue(RedstoneScraperBlock.ERROR)
+        if (currentState != targetState) {
+            level!!.setBlock(
+                blockPos,
+                blockState.setValue(
+                    RedstoneScraperBlock.ERROR,
+                    targetState
+                ),
+                2
+            )
         }
     }
 
@@ -266,12 +284,11 @@ class ObservationSourceContainerBlockEntity(
             }
 
             return { level ->
-                if (level.isClientSide){
+                if (level.isClientSide) {
                     for (delayedCallback in delayedMap.values) {
                         delayedCallback.invoke(IInstrumentManager.ReadonlyEmpty)
                     }
-                }
-                else{
+                } else {
                     (level as ServerLevel).server.useInstrumentManagerWhenAvailable { manager ->
                         for (delayedCallback in delayedMap.values) {
                             delayedCallback.invoke(manager)

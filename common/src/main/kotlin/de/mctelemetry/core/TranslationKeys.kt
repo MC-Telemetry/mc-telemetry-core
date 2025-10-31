@@ -20,6 +20,7 @@ object TranslationKeys {
         const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE = "errors.mctelemetry.core.attributes.type.incompatible"
         const val ERRORS_ATTRIBUTES_MAPPING_MISSING = "errors.mctelemetry.core.attributes.mapping.missing"
         const val ERRORS_OBSERVATIONS_UNINITIALIZED = "errors.mctelemetry.core.observations.uninitialized"
+        const val ERRORS_OBSERVATIONS_NOT_CONFIGURED = "errors.mctelemetry.core.observations.not_configured"
 
         fun metricsAccessorMissing(): MutableComponent =
             Component.translatableWithFallback(
@@ -116,6 +117,11 @@ object TranslationKeys {
             Component.translatableWithFallback(
                 ERRORS_OBSERVATIONS_UNINITIALIZED,
                 "Observations not initialized",
+            )
+        fun observationsNotConfigured(): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_OBSERVATIONS_NOT_CONFIGURED,
+                "Observations not configured",
             )
     }
 
