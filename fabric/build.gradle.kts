@@ -21,6 +21,7 @@ architectury {
 }
 
 loom {
+    accessWidenerPath.set(project(":common").loom.accessWidenerPath)
     runs {
         named("server") {
             vmArg(
@@ -171,7 +172,7 @@ tasks.shadowJar {
             this.exclude("io.wispforest.**")
             this.exclude("org.sinytra.**")
             this.exclude("com.mojang.**")
-            this.exclude("com.netty.**")
+            this.exclude("io.netty.**")
             this.exclude("com.google.errorprone.annotations.**")
             this.exclude("com.google.auto.value.**")
             this.exclude("org/codehaus/mojo/animal_sniffer/IgnoreJRERequirement")
@@ -187,6 +188,7 @@ tasks.shadowJar {
 }
 
 tasks.remapJar {
+    injectAccessWidener.set(true)
     inputFile.set(tasks.shadowJar.get().archiveFile)
     dependsOn(tasks.shadowJar)
     archiveClassifier.set(null as String?)
