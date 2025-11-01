@@ -46,6 +46,9 @@ class ObservationSourceContainerBlockEntity(
     private var setupRun = false
     private var onLevelCallback: ((Level) -> Unit)? = null
 
+    internal val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>?
+        get() = container?.observationStates
+
     override fun getType(): BlockEntityType<out ObservationSourceContainerBlockEntity> {
         @Suppress("UNCHECKED_CAST") // known value from constructor
         return super.type as BlockEntityType<ObservationSourceContainerBlockEntity>

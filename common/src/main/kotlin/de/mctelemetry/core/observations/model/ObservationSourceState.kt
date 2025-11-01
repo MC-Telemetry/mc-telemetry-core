@@ -414,6 +414,27 @@ open class ObservationSourceState(
             } else this
         }
 
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as ErrorState
+
+            if (type != other.type) return false
+            if (warnings != other.warnings) return false
+            if (errors != other.errors) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = type.hashCode()
+            result = 31 * result + warnings.hashCode()
+            result = 31 * result + errors.hashCode()
+            return result
+        }
+
+
         class Errors(
             override val errors: List<Component>,
             override val warnings: List<Component>,
@@ -424,6 +445,10 @@ open class ObservationSourceState(
             }
 
             constructor(errors: List<Component>) : this(errors, emptyList())
+
+            override fun toString(): String {
+                return "ErrorState.Errors(errors=$errors, warnings=$warnings)"
+            }
         }
 
         class Warnings(
@@ -435,12 +460,20 @@ open class ObservationSourceState(
             init {
                 require(warnings.isNotEmpty()) { "Warnings must contain at least one element" }
             }
+
+            override fun toString(): String {
+                return "ErrorState.Warnings($warnings)"
+            }
         }
 
         object Ok : ErrorState(Type.Ok) {
 
             override val warnings: List<Component> = emptyList()
             override val errors: List<Component> = emptyList()
+
+            override fun toString(): String {
+                return "ErrorState.Ok"
+            }
         }
 
         companion object {
@@ -448,6 +481,7 @@ open class ObservationSourceState(
             internal val uninitializedError = TranslationKeys.Errors.observationsUninitialized()
             internal val notConfiguredWarning = TranslationKeys.Errors.observationsNotConfigured()
             val Uninitialized = Errors(listOf(uninitializedError))
+            val NotConfigured = Warnings(listOf(notConfiguredWarning))
             val CODEC: Codec<ErrorState> =
                 Codec.pair(ComponentSerialization.CODEC.listOf(), ComponentSerialization.CODEC.listOf()).xmap(
                     {

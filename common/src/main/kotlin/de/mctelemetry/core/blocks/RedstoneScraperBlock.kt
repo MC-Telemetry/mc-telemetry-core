@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.blocks.entities.RedstoneScraperBlockEntity
 import de.mctelemetry.core.blocks.observation.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import dev.architectury.event.EventResult
 import dev.architectury.event.events.common.InteractionEvent
@@ -13,6 +14,8 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.RandomSource
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.Item
+import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.context.BlockPlaceContext
 import net.minecraft.world.level.block.*
 import net.minecraft.world.level.block.entity.BlockEntity
@@ -22,6 +25,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties
 import net.minecraft.world.level.block.state.properties.BooleanProperty
 import net.minecraft.world.level.block.state.properties.EnumProperty
 import net.minecraft.world.level.block.state.properties.Property
+import net.minecraft.world.level.storage.loot.LootParams
 import kotlin.jvm.optionals.getOrElse
 
 
@@ -38,6 +42,14 @@ class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClick
 
     override fun getRenderShape(blockState: BlockState): RenderShape {
         return RenderShape.MODEL
+    }
+
+    override fun getDrops(blockState: BlockState, builder: LootParams.Builder): List<ItemStack?>? {
+        val item = blockState.block.asItem()
+        return if(item == null)
+            listOf(ItemStack(OTelCoreModItems.REDSTONE_SCRAPER_BLOCK))
+        else
+            listOf(ItemStack(item))
     }
 
     override fun tick(

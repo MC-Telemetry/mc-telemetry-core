@@ -5,6 +5,8 @@ package de.mctelemetry.core.utils
 
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
+import net.minecraft.gametest.framework.GameTestAssertException
+import net.minecraft.gametest.framework.GameTestAssertPosException
 import net.minecraft.gametest.framework.GameTestHelper
 import net.minecraft.world.entity.Entity
 import net.minecraft.world.entity.EntityType
@@ -16,14 +18,18 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-inline fun GameTestHelper.assertBlockC(blockPos: BlockPos, message: String, noinline test: (Block)->Boolean) {
+inline fun GameTestHelper.assertBlockC(blockPos: BlockPos, message: String, noinline test: (Block) -> Boolean) {
     contract {
         callsInPlace(test, InvocationKind.EXACTLY_ONCE)
     }
     assertBlock(blockPos, test, message)
 }
 
-inline fun GameTestHelper.assertBlockC(blockPos: BlockPos, noinline message: ()->String, noinline test: (Block)->Boolean) {
+inline fun GameTestHelper.assertBlockC(
+    blockPos: BlockPos,
+    noinline message: () -> String,
+    noinline test: (Block) -> Boolean,
+) {
     contract {
         callsInPlace(test, InvocationKind.EXACTLY_ONCE)
         callsInPlace(message, InvocationKind.AT_MOST_ONCE)
@@ -66,27 +72,43 @@ inline fun GameTestHelper.assertBlockStateC(
     assertBlockState(blockPos, test) { message }
 }
 
-inline fun <T : BlockEntity> GameTestHelper.assertBlockEntityDataC(
+@Suppress(
+    "LEAKED_IN_PLACE_LAMBDA", // lambda is known to not leak based on backing call
+    "USELESS_IS_CHECK", // is-check is needed because backing call makes unchecked cast.
+)
+inline fun <reified T : BlockEntity> GameTestHelper.assertBlockEntityDataC(
     blockPos: BlockPos,
     noinline message: () -> String,
-    noinline test: (T) -> Boolean,
+    crossinline test: (T) -> Boolean,
 ) {
     contract {
         callsInPlace(test, InvocationKind.EXACTLY_ONCE)
         callsInPlace(message, InvocationKind.AT_MOST_ONCE)
     }
-    assertBlockEntityData(blockPos, test, message)
+    assertBlockEntityData<T>(blockPos, {
+        assertTrue(it is T, "Expected $it to be a ${T::class.java} but was ${it::class.java}")
+        try {
+            test(it)
+        } catch (ex: GameTestAssertException) {
+            if (ex is GameTestAssertPosException) throw ex
+            throw GameTestAssertPosException(ex.message!!, absolutePos(blockPos), blockPos, tick).initCause(ex)
+        }
+    }, message)
 }
 
-inline fun <T : BlockEntity> GameTestHelper.assertBlockEntityDataC(
+@Suppress(
+    "LEAKED_IN_PLACE_LAMBDA", // lambda is known to not leak based on backing call
+    "USELESS_IS_CHECK", // is-check is needed because backing call makes unchecked cast.
+)
+inline fun <reified T : BlockEntity> GameTestHelper.assertBlockEntityDataC(
     blockPos: BlockPos,
     message: String,
-    noinline test: (T) -> Boolean,
+    crossinline test: (T) -> Boolean,
 ) {
     contract {
         callsInPlace(test, InvocationKind.EXACTLY_ONCE)
     }
-    assertBlockEntityData(blockPos, test) { message }
+    assertBlockEntityDataC<T>(blockPos, {message}, test)
 }
 
 inline fun GameTestHelper.assertRedstoneSignalC(
@@ -171,6 +193,38 @@ inline fun <N : Any> GameTestHelper.assertValueEqualC(expected: N, actual: N?, n
         actual,
         name
     )
+}
+
+@JvmName("assertNotNullCReceiver")
+context(helper: GameTestHelper)
+inline fun <T> T?.assertNotNullC(name: String): T {
+    contract {
+        returns() implies (this@assertNotNullC != null)
+    }
+    helper.assertTrueC(this != null, "Expected $name to not be null")
+    return this
+}
+
+inline fun <T> GameTestHelper.assertNotNullC(value: T?, name: String): T {
+    contract {
+        returns() implies (value != null)
+    }
+    assertTrueC(value != null, "Expected $name to not be null")
+    return value
+}
+
+inline fun <T> GameTestHelper.assertNullC(value: T?, name: String) {
+    contract {
+        returns() implies (value == null)
+    }
+    assertTrueC(value == null, "Expected $name to not be null")
+}
+
+inline fun GameTestHelper.assertTrueC(value: Boolean, text: String) {
+    contract {
+        returns() implies value
+    }
+    return assertTrue(value, text)
 }
 
 inline fun GameTestHelper.assertFalseC(value: Boolean, text: String) {
