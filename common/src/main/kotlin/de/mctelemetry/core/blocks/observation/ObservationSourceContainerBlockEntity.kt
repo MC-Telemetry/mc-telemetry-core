@@ -14,6 +14,7 @@ import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.core.HolderLookup
+import net.minecraft.core.SectionPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
@@ -116,7 +117,7 @@ class ObservationSourceContainerBlockEntity(
     }
 
     fun doBlockTick() {
-        OTelCoreMod.logger.debug("Ticking {}@{} in {}", this.javaClass.simpleName, blockPos, level)
+        OTelCoreMod.logger.trace("Ticking {}@{} in {}", this.javaClass.simpleName, blockPos, level)
         updateState()
     }
 
@@ -143,10 +144,19 @@ class ObservationSourceContainerBlockEntity(
                 it.subscribeToDirty(::onDirty)
             }
             if (!level.isClientSide) {
+                level as ServerLevel
                 if (level.isLoaded(blockPos)) {
-                    level.scheduleTick(blockPos, blockState.block, 1)
-                } else {
-                    updateState()
+                    val chunkX = SectionPos.blockToSectionCoord(blockPos.x)
+                    val chunkZ = SectionPos.blockToSectionCoord(blockPos.z)
+                    val chunk = level.chunkSource.getChunkNow(chunkX, chunkZ)
+                    if (chunk == null) {
+                        OTelCoreMod.logger.trace("Chunk is not available right now, skipping setup: {}", blockPos)
+                    } else if (!chunk.loaded) {
+                        OTelCoreMod.logger.trace("Chunk is unloaded, awaiting platform-dependant loading: {}", blockPos)
+                    } else {
+                        OTelCoreMod.logger.trace("Chunk is loaded, scheduling tick now: {}", blockPos)
+                        level.scheduleTick(blockPos, blockState.block, 1)
+                    }
                 }
             }
         }
