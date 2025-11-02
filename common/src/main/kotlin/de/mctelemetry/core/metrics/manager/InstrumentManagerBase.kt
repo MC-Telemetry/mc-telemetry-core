@@ -114,7 +114,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>,
     ): ImmutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return ImmutableGaugeInstrumentRegistration(builder, preferIntegral = false, callback)
+        return ImmutableGaugeInstrumentRegistration(builder, supportsFloating = true, callback)
     }
 
     protected open fun createImmutableLongRegistration(
@@ -122,19 +122,19 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         callback: IInstrumentRegistration.Callback<ILongInstrumentRegistration>,
     ): ImmutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return ImmutableGaugeInstrumentRegistration(builder, preferIntegral = true, callback)
+        return ImmutableGaugeInstrumentRegistration(builder, supportsFloating = false, callback)
     }
 
     protected open fun createMutableDoubleRegistration(builder: GB):
             MutableGaugeInstrumentRegistration<*> {
         assertAllowsRegistration()
-        return MutableGaugeInstrumentRegistration(builder, preferIntegral = false)
+        return MutableGaugeInstrumentRegistration(builder, supportsFloating = true)
     }
 
     protected open fun createMutableLongRegistration(builder: GB):
             MutableGaugeInstrumentRegistration<*> {
         assertAllowsRegistration()
-        return MutableGaugeInstrumentRegistration(builder, preferIntegral = true)
+        return MutableGaugeInstrumentRegistration(builder, supportsFloating = false)
     }
 
     override fun gaugeInstrument(name: String): IGaugeInstrumentBuilder<*> {
@@ -241,15 +241,15 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         override val description: String,
         override val unit: String,
         override val attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-        val preferIntegral: Boolean,
+        val supportsFloating: Boolean,
     ) : IDoubleInstrumentRegistration, ILongInstrumentRegistration {
 
-        constructor(builder: GaugeInstrumentBuilder<*>, preferIntegral: Boolean) : this(
+        constructor(builder: GaugeInstrumentBuilder<*>, supportsFloating: Boolean) : this(
             builder.name,
             builder.description,
             builder.unit,
             builder.attributes.associateBy { it.baseKey.key.lowercase() },
-            preferIntegral,
+            supportsFloating,
         ) {
             untrackCallback.set(builder.manager::untrackRegistration)
         }
@@ -266,7 +266,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                 untrackCallback.get()?.invoke(name, this)
                 return
             }
-            observe(ResolvedObservationRecorder(instrument, preferIntegral))
+            observe(ResolvedObservationRecorder(instrument, supportsFloating = supportsFloating))
         }
 
         abstract override fun observe(recorder: IObservationRecorder.Resolved)
@@ -313,17 +313,17 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             description: String,
             unit: String,
             attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-            preferIntegral: Boolean,
+            supportsFloating: Boolean,
             callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
-        ) : super(name, description, unit, attributes, preferIntegral) {
+        ) : super(name, description, unit, attributes, supportsFloating) {
             this.callback = callback
         }
 
         constructor(
             builder: GaugeInstrumentBuilder<*>,
-            preferIntegral: Boolean,
+            supportsFloating: Boolean,
             callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
-        ) : super(builder, preferIntegral) {
+        ) : super(builder, supportsFloating) {
             this.callback = callback
         }
 
@@ -358,19 +358,19 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             description: String,
             unit: String,
             attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-            preferIntegral: Boolean,
+            supportsFloating: Boolean,
         ) : super(
             name,
             description,
             unit,
             attributes,
-            preferIntegral,
+            supportsFloating,
         )
 
         constructor(
             builder: GaugeInstrumentBuilder<*>,
-            preferIntegral: Boolean,
-        ) : super(builder, preferIntegral)
+            supportsFloating: Boolean,
+        ) : super(builder, supportsFloating)
 
         val callbacks: ConcurrentLinkedDeque<IInstrumentRegistration.Callback<T>> =
             ConcurrentLinkedDeque()

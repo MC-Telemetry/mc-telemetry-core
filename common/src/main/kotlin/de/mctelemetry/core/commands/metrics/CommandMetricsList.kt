@@ -106,7 +106,7 @@ class CommandMetricsList internal constructor(
     private fun attributeInfoComponent(info: MappedAttributeKeyInfo<*, *>): MutableComponent {
         return buildComponent(info.baseKey.key) {
             style {
-                onHoverShowText(info.type.id.toString())
+                onHoverShowText(info.type.id.location().toString())
             }
         }
     }

@@ -6,18 +6,22 @@ sealed interface IObservationRecorder {
 
     interface Unresolved : IObservationRecorder {
 
-        fun observe(source: IObservationSource<*, *>, value: Long, attributes: IMappedAttributeValueLookup)
-        fun observe(source: IObservationSource<*, *>, value: Double, attributes: IMappedAttributeValueLookup)
+        val supportsFloating: Boolean
+
+        fun observe(value: Long, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>)
+        fun observe(value: Double, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>)
         fun observePreferred(
-            source: IObservationSource<*, *>,
             double: Double,
             long: Long,
             attributes: IMappedAttributeValueLookup,
-        )
+            source: IObservationSource<*, *>,
+        ) = if (supportsFloating) observe(double, attributes, source)
+        else observe(long, attributes, source)
     }
 
     interface Resolved : IObservationRecorder {
 
+        val supportsFloating: Boolean
         fun observe(value: Long, attributes: Attributes, source: IObservationSource<*, *>? = null)
         fun observe(value: Double, attributes: Attributes, source: IObservationSource<*, *>? = null)
         fun observePreferred(
@@ -25,6 +29,7 @@ sealed interface IObservationRecorder {
             long: Long,
             attributes: Attributes,
             source: IObservationSource<*, *>? = null,
-        )
+        ) = if (supportsFloating) observe(double, attributes, source)
+        else observe(long, attributes, source)
     }
 }

@@ -14,11 +14,11 @@ import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.level.block.entity.BlockEntity
 
-object RedstoneIndirectValueScraperObservationSource : IObservationSource<BlockEntity, IMappedAttributeValueLookup.MapLookup> {
+object RedstoneScraperDirectPowerObservationSource : IObservationSource<BlockEntity, IMappedAttributeValueLookup.MapLookup> {
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
-        ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.indirect")
+        ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.direct_power")
     )
 
     override val contextType: Class<BlockEntity> = BlockEntity::class.java
@@ -54,17 +54,17 @@ object RedstoneIndirectValueScraperObservationSource : IObservationSource<BlockE
         if (DIR_KEY in unusedAttributes) {
             attributes[DIR_KEY] = null
             recorder.observe(
-                this,
-                level.getBestNeighborSignal(observationPos).toLong(),
-                attributes
+                level.getDirectSignal(observationPos, facing).toLong(),
+                attributes,
+                this
             )
         } else {
             for (dir in Direction.entries) {
                 attributes[DIR_KEY] = dir
                 recorder.observe(
-                    this,
-                    level.getSignal(observationPos.relative(dir), dir).toLong(),
-                    attributes
+                    level.getDirectSignal(observationPos, dir.opposite).toLong(),
+                    attributes,
+                    this
                 )
             }
         }

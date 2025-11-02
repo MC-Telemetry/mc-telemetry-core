@@ -29,13 +29,13 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
 
         operator fun invoke(
             measurement: ObservableMeasurement,
-            preferIntegral: Boolean,
+            supportsFloating: Boolean,
         ): ResolvedObservationRecorder<ObservableMeasurement> {
             val isDouble = measurement is ObservableDoubleMeasurement
             val isLong = measurement is ObservableLongMeasurement
             return if (isDouble) {
                 if (isLong) {
-                    OfMixed(measurement, preferIntegral)
+                    OfMixed(measurement, supportsFloating)
                 } else {
                     OfDouble(measurement)
                 }
@@ -51,6 +51,8 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
 
     internal class OfLong(observableMeasurement: ObservableLongMeasurement) :
             ResolvedObservationRecorder<ObservableLongMeasurement>(observableMeasurement) {
+
+        override val supportsFloating: Boolean = false
 
         override fun observe(
             value: Long,
@@ -81,6 +83,8 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
     internal class OfDouble(observableMeasurement: ObservableDoubleMeasurement) :
             ResolvedObservationRecorder<ObservableDoubleMeasurement>(observableMeasurement) {
 
+        override val supportsFloating: Boolean = true
+
         override fun observe(
             value: Long,
             attributes: Attributes,
@@ -109,7 +113,7 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
 
     internal class OfMixed<T>(
         observableMeasurement: T,
-        val preferIntegral: Boolean,
+        override val supportsFloating: Boolean,
     ) : ResolvedObservationRecorder<T>(observableMeasurement)
             where T : ObservableDoubleMeasurement, T : ObservableLongMeasurement {
 
@@ -127,19 +131,6 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
             source: IObservationSource<*, *>?,
         ) {
             observableMeasurement.record(value, attributes)
-        }
-
-        override fun observePreferred(
-            double: Double,
-            long: Long,
-            attributes: Attributes,
-            source: IObservationSource<*, *>?,
-        ) {
-            if (preferIntegral) {
-                observe(long, attributes, source)
-            } else {
-                observe(double, attributes, source)
-            }
         }
     }
 }

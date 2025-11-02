@@ -77,10 +77,10 @@ internal class WorldInstrumentManager private constructor(
                             if (registrationValue !is MutableGaugeInstrumentRegistration<*>) {
                                 throw IllegalArgumentException("Cannot register at OTel with non-mutable persistent instrument $registration during setup")
                             }
-                            if (registrationValue.preferIntegral) {
-                                builder.ofLongs().buildWithCallback(registrationValue::observe)
-                            } else {
+                            if (registrationValue.supportsFloating) {
                                 builder.buildWithCallback(registrationValue::observe)
+                            } else {
+                                builder.ofLongs().buildWithCallback(registrationValue::observe)
                             }
                         }
                     runWithExceptionCleanup(otelRegistration::close) {
@@ -130,12 +130,12 @@ internal class WorldInstrumentManager private constructor(
 
     override fun createMutableDoubleRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return WorldMutableGaugeInstrumentRegistration(builder, preferIntegral = false)
+        return WorldMutableGaugeInstrumentRegistration(builder, supportsFloating = true)
     }
 
     override fun createMutableLongRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return WorldMutableGaugeInstrumentRegistration(builder, preferIntegral = true)
+        return WorldMutableGaugeInstrumentRegistration(builder, supportsFloating = false)
     }
 
     internal class WorldGaugeInstrumentBuilder(
@@ -161,9 +161,9 @@ internal class WorldInstrumentManager private constructor(
 
         override val persistent: Boolean
 
-        constructor(builder: WorldGaugeInstrumentBuilder, preferIntegral: Boolean) : super(
+        constructor(builder: WorldGaugeInstrumentBuilder, supportsFloating: Boolean) : super(
             builder,
-            preferIntegral,
+            supportsFloating,
         ) {
             this.persistent = builder.persistent
         }
@@ -173,9 +173,9 @@ internal class WorldInstrumentManager private constructor(
             description: String,
             unit: String,
             attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-            preferIntegral: Boolean,
+            supportsFloating: Boolean,
             persistent: Boolean,
-        ) : super(name, description, unit, attributes, preferIntegral) {
+        ) : super(name, description, unit, attributes, supportsFloating) {
             this.persistent = persistent
         }
     }
@@ -218,7 +218,7 @@ internal class WorldInstrumentManager private constructor(
                 if (!value.persistent) return null
                 return CompoundTag().apply {
                     putString("name", name)
-                    val integral: Boolean = value.preferIntegral
+                    val integral: Boolean = !value.supportsFloating
                     putBoolean("integral", integral)
                     if (value.description.isNotEmpty()) {
                         putString("description", value.description)
@@ -264,7 +264,7 @@ internal class WorldInstrumentManager private constructor(
                         description = description,
                         unit = unit,
                         attributes = attributes,
-                        preferIntegral = integral,
+                        supportsFloating = !integral,
                         persistent = true,
                     )
                 )
