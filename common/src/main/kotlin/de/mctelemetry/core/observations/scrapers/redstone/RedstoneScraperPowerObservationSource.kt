@@ -12,13 +12,15 @@ import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.world.level.block.Blocks
+import net.minecraft.world.level.block.RedStoneWireBlock
 import net.minecraft.world.level.block.entity.BlockEntity
 
-object RedstoneDirectValueScraperObservationSource : IObservationSource<BlockEntity, IMappedAttributeValueLookup.MapLookup> {
+object RedstoneScraperPowerObservationSource : IObservationSource<BlockEntity, IMappedAttributeValueLookup.MapLookup> {
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
-        ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.direct")
+        ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.power")
     )
 
     override val contextType: Class<BlockEntity> = BlockEntity::class.java
@@ -53,18 +55,24 @@ object RedstoneDirectValueScraperObservationSource : IObservationSource<BlockEnt
         attributes[POS_KEY] = GlobalPos(level.dimension(), observationPos)
         if (DIR_KEY in unusedAttributes) {
             attributes[DIR_KEY] = null
+            val signal = level.getSignal(observationPos, facing)
             recorder.observe(
-                this,
-                level.getDirectSignalTo(observationPos).toLong(),
-                attributes
+                if (signal != 0) signal.toLong()
+                else level.getBlockState(observationPos).let {
+                    if (it.block === Blocks.REDSTONE_WIRE)
+                        it.getValue(RedStoneWireBlock.POWER)
+                    else 0
+                }.toLong(),
+                attributes,
+                this
             )
         } else {
             for (dir in Direction.entries) {
                 attributes[DIR_KEY] = dir
                 recorder.observe(
-                    this,
-                    level.getDirectSignal(observationPos.relative(dir), dir).toLong(),
-                    attributes
+                    level.getSignal(observationPos, dir.opposite).toLong(),
+                    attributes,
+                    this
                 )
             }
         }

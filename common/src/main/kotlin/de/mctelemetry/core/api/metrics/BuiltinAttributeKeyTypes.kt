@@ -15,6 +15,7 @@ object BuiltinAttributeKeyTypes {
         BlockPosType,
         GlobalPosType,
         ItemType,
+        DirectionType,
         UUIDType,
     )
 
@@ -102,7 +103,7 @@ object BuiltinAttributeKeyTypes {
 
         override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
-            ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "global_position")
+            ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "direction")
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING

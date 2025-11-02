@@ -32,6 +32,7 @@ abstract class AssertionObservationRecorder(
         val allowRecordPreferred: Boolean = true,
         val source: IObservationSource<*, *>? = null,
         val requireSourceMatch: Boolean = source != null,
+        override val supportsFloating: Boolean = doubleValue != null,
     ) : AssertionObservationRecorder(gameTestHelper) {
 
         var sawValue: Boolean = false
@@ -49,6 +50,12 @@ abstract class AssertionObservationRecorder(
             }
             if (allowRecordPreferred) require(longValue != null || doubleValue != null) {
                 "At least one of longValue and doubleValue must be non-null if allowRecordPreferred is true"
+            }
+            if (supportsFloating) require(doubleValue != null) {
+                "doubleValue must be non-null if supportsFloating is true"
+            }
+            if (supportsFloating) require(allowRecordDouble || allowRecordPreferred) {
+                "At least one of allowRecordDouble and allowRecordPreferred must be true if supportsFloating is true"
             }
         }
 
