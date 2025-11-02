@@ -4,6 +4,8 @@ import io.opentelemetry.api.common.Attributes
 
 interface IInstrumentRegistration : IInstrumentDefinition, AutoCloseable {
 
+    fun observe(recorder: IObservationRecorder.Resolved)
+
     fun interface Callback<in T : IInstrumentRegistration> {
 
         val invocationSyncHint: InvocationSynchronizationHint

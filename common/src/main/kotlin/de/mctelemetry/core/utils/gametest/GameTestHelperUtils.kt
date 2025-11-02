@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalContracts::class)
 
-package de.mctelemetry.core.utils
+package de.mctelemetry.core.utils.gametest
 
 import com.mojang.brigadier.context.ContextChain
 import com.mojang.brigadier.exceptions.CommandSyntaxException
@@ -138,25 +138,6 @@ fun GameTestHelper.assertCommandCannotParse(
         return
     }
     failC("Command did not fail to parse")
-}
-
-inline fun CommandSourceStack.sendFailureAndThrow(
-    component: Component,
-    exceptionFactory: (String) -> Exception = ::RuntimeException,
-): Nothing {
-    contract {
-        callsInPlace(exceptionFactory, InvocationKind.EXACTLY_ONCE)
-    }
-    val sendException = try {
-        sendFailure(component)
-        null
-    } catch (ex2: Exception) {
-        ex2
-    }
-    throw exceptionFactory(component.string).apply {
-        if (sendException != null)
-            addSuppressed(sendException)
-    }
 }
 
 inline fun GameTestHelper.assertThrows(block: () -> Unit): Exception {

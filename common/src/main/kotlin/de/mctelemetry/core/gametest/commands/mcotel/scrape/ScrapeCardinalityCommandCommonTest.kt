@@ -1,8 +1,8 @@
 package de.mctelemetry.core.gametest.commands.mcotel.scrape
 
-import de.mctelemetry.core.utils.assertCommandCannotParse
-import de.mctelemetry.core.utils.assertThrows
-import de.mctelemetry.core.utils.runCommand
+import de.mctelemetry.core.utils.gametest.assertCommandCannotParse
+import de.mctelemetry.core.utils.gametest.assertThrows
+import de.mctelemetry.core.utils.gametest.runCommand
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestHelper
 
