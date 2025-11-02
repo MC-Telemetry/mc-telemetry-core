@@ -261,7 +261,14 @@ open class ObservationSourceState(
         }
         if (modified && !initialSilent) triggerOnDirty()
         return {
-            setConfiguration(delayedConfiguration(it), silent = callbackSilent)
+            var delayedHasModified: Boolean
+            runWithExceptionCleanup(::triggerOnDirty, runCleanup = !callbackSilent) {
+                delayedHasModified = setConfiguration(delayedConfiguration(it), silent = true)
+                if (cascadeUpdates) {
+                    delayedHasModified = runUpdateCascade(silent = true) || delayedHasModified
+                }
+            }
+            if (delayedHasModified && !callbackSilent) triggerOnDirty()
         }
     }
 
@@ -281,6 +288,9 @@ open class ObservationSourceState(
         runWithExceptionCleanup(::triggerOnDirty, runCleanup = !silent) {
             modified = setErrorState(errorState, silent = true)
             modified = setConfiguration(configuration, silent = true) || modified
+            if (cascadeUpdates) {
+                modified = runUpdateCascade(silent = true) || modified
+            }
         }
         if (modified && !silent) triggerOnDirty()
     }
