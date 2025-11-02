@@ -279,7 +279,7 @@ class ObservationSourceContainerBlockEntity(
         fun loadStatesFromTag(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
-            instrumentManager: IInstrumentManager,
+            instrumentManager: IInstrumentManager
         ) {
             loadAndApplyToStateTags(compoundTag, holderLookupProvider) { state, tag ->
                 val data = tag.getCompound("data")

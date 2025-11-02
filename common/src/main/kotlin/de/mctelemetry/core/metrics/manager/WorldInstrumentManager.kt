@@ -8,7 +8,7 @@ import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.builder.IWorldGaugeInstrumentBuilder
-import de.mctelemetry.core.api.metrics.managar.IGameInstrumentManager
+import de.mctelemetry.core.api.metrics.managar.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.persistence.DirtyCallbackMutableMap
 import de.mctelemetry.core.persistence.SavedDataConcurrentMap
@@ -31,16 +31,16 @@ import java.util.concurrent.ConcurrentMap
 
 internal class WorldInstrumentManager private constructor(
     meter: Meter,
-    override val gameInstruments: IGameInstrumentManager,
+    override val gameInstruments: GameInstrumentManager,
     server: MinecraftServer,
     localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion>,
-) : InstrumentManagerBase<WorldInstrumentManager.WorldGaugeInstrumentBuilder>(
+) : InstrumentManagerBase.Child<WorldInstrumentManager.WorldGaugeInstrumentBuilder>(
     meter,
     gameInstruments,
     localInstruments,
 ), IWorldInstrumentManager, AutoCloseable {
 
-    constructor(meter: Meter, gameInstruments: IGameInstrumentManager, server: MinecraftServer) : this(
+    constructor(meter: Meter, gameInstruments: GameInstrumentManager, server: MinecraftServer) : this(
         meter,
         gameInstruments,
         server,
@@ -55,7 +55,7 @@ internal class WorldInstrumentManager private constructor(
 
         fun withPersistentStorage(
             meter: Meter,
-            gameInstruments: IGameInstrumentManager,
+            gameInstruments: GameInstrumentManager,
             server: MinecraftServer,
             dataStorage: DimensionDataStorage = server.getLevel(ServerLevel.OVERWORLD)!!.dataStorage,
         ): WorldInstrumentManager {
@@ -64,6 +64,7 @@ internal class WorldInstrumentManager private constructor(
             runWithExceptionCleanup(manager::close) {
                 for (registration in manager.localInstruments.values) {
                     val registrationValue = registration.value
+                    manager.triggerOwnInstrumentAdded(registrationValue, IInstrumentAvailabilityCallback.Phase.PRE)
                     val otelRegistration = meter.gaugeBuilder(registrationValue.name)
                         .let { builder ->
                             if (registrationValue.description.isNotBlank())
@@ -85,15 +86,13 @@ internal class WorldInstrumentManager private constructor(
                         }
                     runWithExceptionCleanup(otelRegistration::close) {
                         registrationValue.provideOTelRegistration(otelRegistration)
+                        manager.triggerOwnInstrumentAdded(registrationValue, IInstrumentAvailabilityCallback.Phase.POST)
                     }
                 }
             }
             return manager
         }
     }
-
-    override val localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion>
-        get() = super.localInstruments
 
     fun start() {
         allowRegistration.set(true)
@@ -150,14 +149,9 @@ internal class WorldInstrumentManager private constructor(
         override var persistent: Boolean = false
     }
 
-    internal sealed interface IWorldMutableInstrumentRegistration<out R : IWorldMutableInstrumentRegistration<R>> :
-            IInstrumentRegistration.Mutable<R> {
-
-        val persistent: Boolean
-    }
-
-    internal class WorldMutableGaugeInstrumentRegistration : MutableGaugeInstrumentRegistration<WorldMutableGaugeInstrumentRegistration>,
-            IWorldMutableInstrumentRegistration<WorldMutableGaugeInstrumentRegistration> {
+    internal class WorldMutableGaugeInstrumentRegistration :
+            MutableGaugeInstrumentRegistration<WorldMutableGaugeInstrumentRegistration>,
+            IWorldInstrumentManager.IWorldMutableInstrumentRegistration<WorldMutableGaugeInstrumentRegistration> {
 
         override val persistent: Boolean
 
@@ -214,7 +208,7 @@ internal class WorldInstrumentManager private constructor(
                 registration: InstrumentManagerBaseRegistrationUnion,
             ): CompoundTag? {
                 val value = registration.value
-                if (value !is IWorldMutableInstrumentRegistration<*>) return null
+                if (value !is IWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) return null
                 if (!value.persistent) return null
                 return CompoundTag().apply {
                     putString("name", name)
@@ -251,7 +245,8 @@ internal class WorldInstrumentManager private constructor(
                     if (tag.contains("attributes", Tag.TAG_LIST.toInt())) {
                         buildMap {
                             tag.getList("attributes", Tag.TAG_COMPOUND.toInt()).forEach {
-                                val keyInfo = MappedAttributeKeyInfo.load(it as CompoundTag, attributeKeyTypeHolderGetter)
+                                val keyInfo =
+                                    MappedAttributeKeyInfo.load(it as CompoundTag, attributeKeyTypeHolderGetter)
                                 this@buildMap.put(keyInfo.baseKey.key, keyInfo)
                             }
                         }
