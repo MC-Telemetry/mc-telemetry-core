@@ -87,7 +87,7 @@ class ObservationSourceContainerBlockEntity(
         for (state in container.observationStates.values) {
             targetState = when (state.errorState) {
                 ObservationSourceState.ErrorState.Ok -> {
-                    ObservationSourceState.ErrorState.Type.Ok
+                    targetState ?: ObservationSourceState.ErrorState.Type.Ok
                 }
                 is ObservationSourceState.ErrorState.Warnings -> {
                     if (state.errorState.warnings.singleOrNull() === ObservationSourceState.ErrorState.notConfiguredWarning)

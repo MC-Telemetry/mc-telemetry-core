@@ -258,7 +258,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         private val untrackCallback: AtomicReference<((name: String, value: IInstrumentRegistration) -> Unit)?> =
             AtomicReference(null)
 
-        private val closed: AtomicBoolean = AtomicBoolean(false)
+        protected val closed: AtomicBoolean = AtomicBoolean(false)
 
         open fun observe(instrument: ObservableMeasurement) {
             if (closed.get()) {
@@ -400,6 +400,27 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
             }
             callbacks.add(callback)
             return closeCallback
+        }
+
+        override fun close() {
+            var accumulator: Exception? = null
+            try {
+                super.close()
+            } catch (ex: Exception) {
+                accumulator = ex
+            }
+            do {
+                val callback = callbacks.pollFirst() ?: break
+                try {
+                    callback.onRemove(
+                        @Suppress("UNCHECKED_CAST")
+                        (this@MutableGaugeInstrumentRegistration as T)
+                    )
+                } catch (ex: Exception) {
+                    accumulator += ex
+                }
+            } while (true)
+            if (accumulator != null) throw accumulator
         }
     }
 }
