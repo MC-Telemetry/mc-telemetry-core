@@ -1,17 +1,16 @@
 package de.mctelemetry.core.gametest.observation.scraper.redstone
 
-import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.blocks.RedstoneScraperBlock
 import de.mctelemetry.core.blocks.observation.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.observations.model.ObservationSourceState
-import de.mctelemetry.core.utils.assertBlockEntityDataC
-import de.mctelemetry.core.utils.assertBlockStateC
-import de.mctelemetry.core.utils.assertFalseC
-import de.mctelemetry.core.utils.assertNotNullC
-import de.mctelemetry.core.utils.assertNullC
-import de.mctelemetry.core.utils.assertValueEqualC
+import de.mctelemetry.core.utils.gametest.assertBlockEntityDataC
+import de.mctelemetry.core.utils.gametest.assertBlockStateC
+import de.mctelemetry.core.utils.gametest.assertFalseC
+import de.mctelemetry.core.utils.gametest.assertNotNullC
+import de.mctelemetry.core.utils.gametest.assertNullC
+import de.mctelemetry.core.utils.gametest.assertValueEqualC
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction

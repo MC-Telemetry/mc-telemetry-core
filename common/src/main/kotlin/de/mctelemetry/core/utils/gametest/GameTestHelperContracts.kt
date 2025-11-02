@@ -1,7 +1,7 @@
 @file:Suppress("NOTHING_TO_INLINE", "WRONG_INVOCATION_KIND", "unused")
 @file:OptIn(ExperimentalContracts::class)
 
-package de.mctelemetry.core.utils
+package de.mctelemetry.core.utils.gametest
 
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -108,7 +108,7 @@ inline fun <reified T : BlockEntity> GameTestHelper.assertBlockEntityDataC(
     contract {
         callsInPlace(test, InvocationKind.EXACTLY_ONCE)
     }
-    assertBlockEntityDataC<T>(blockPos, {message}, test)
+    assertBlockEntityDataC<T>(blockPos, { message }, test)
 }
 
 inline fun GameTestHelper.assertRedstoneSignalC(
@@ -232,4 +232,10 @@ inline fun GameTestHelper.assertFalseC(value: Boolean, text: String) {
         returns() implies !value
     }
     return assertFalse(value, text)
+}
+
+inline fun <reified T: BlockEntity> GameTestHelper.getBlockEntityC(blockPos: BlockPos): T {
+    val entity = getBlockEntity<T>(blockPos)
+    assertTrue(entity is T, "Expected $entity to be a ${T::class.java} but was ${entity::class.java}")
+    return entity
 }

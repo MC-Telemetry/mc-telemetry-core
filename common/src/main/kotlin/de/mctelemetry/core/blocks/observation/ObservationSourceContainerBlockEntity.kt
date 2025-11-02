@@ -163,6 +163,7 @@ class ObservationSourceContainerBlockEntity(
     }
 
     private fun onDirty(state: ObservationSourceState) {
+        setChanged()
         val level = level!!
         if (!level.isClientSide) {
             if (level.isLoaded(blockPos)) {

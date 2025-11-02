@@ -2,6 +2,8 @@
 
 package de.mctelemetry.core.metrics.manager
 
+import com.mojang.brigadier.exceptions.CommandSyntaxException
+import de.mctelemetry.core.api.metrics.DuplicateInstrumentException
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
@@ -12,6 +14,7 @@ import de.mctelemetry.core.api.metrics.IObservationRecorder
 import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.Union2
+import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.Attributes
@@ -144,15 +147,23 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         val manager: InstrumentManagerBase<GaugeInstrumentBuilder<GB>>,
     ) : IGaugeInstrumentBuilder<GB> {
 
+        init {
+            try {
+                Validators.parseOTelName(name, stopAtInvalid = false)
+            } catch (ex: CommandSyntaxException) {
+                throw IllegalArgumentException("Invalid metric name: $name", ex)
+            }
+        }
+
         override var unit: String = ""
         override var description: String = ""
         override var attributes: List<MappedAttributeKeyInfo<*, *>> = emptyList()
 
         override fun registerWithCallbackOfDouble(callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>): IDoubleInstrumentRegistration {
             val result = manager.localInstruments.compute(name) { key, old ->
+                if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
                 val registration = manager.createImmutableDoubleRegistration(this, callback)
                 runWithExceptionCleanup(registration::close) {
-                    if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
                     val otelRegistration = manager.meter.gaugeBuilder(name).let {
                         if (unit.isNotEmpty()) it.setUnit(unit) else it
                     }.let {
@@ -169,9 +180,9 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
 
         override fun registerWithCallbackOfLong(callback: IInstrumentRegistration.Callback<ILongInstrumentRegistration>): ILongInstrumentRegistration {
             val result = manager.localInstruments.compute(name) { key, old ->
+                if (old != null) throw DuplicateInstrumentException(name, old.value)
                 val registration = manager.createImmutableLongRegistration(this, callback)
                 runWithExceptionCleanup(registration::close) {
-                    if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
                     val otelRegistration = manager.meter.gaugeBuilder(name).let {
                         if (unit.isNotEmpty()) it.setUnit(unit) else it
                     }.let {
@@ -188,9 +199,9 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
 
         override fun registerMutableOfLong(): ILongInstrumentRegistration.Mutable<*> {
             val result = manager.localInstruments.compute(name) { key, old ->
+                if (old != null) throw DuplicateInstrumentException(name, old.value)
                 val registration = manager.createMutableLongRegistration(this)
                 runWithExceptionCleanup(registration::close) {
-                    if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
                     val otelRegistration = manager.meter.gaugeBuilder(name).let {
                         if (unit.isNotEmpty()) it.setUnit(unit) else it
                     }.let {
@@ -207,9 +218,9 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
 
         override fun registerMutableOfDouble(): IDoubleInstrumentRegistration.Mutable<*> {
             val result = manager.localInstruments.compute(name) { key, old ->
+                if (old != null) throw DuplicateInstrumentException(name, old.value)
                 val registration = manager.createMutableDoubleRegistration(this)
                 runWithExceptionCleanup(registration::close) {
-                    if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
                     val otelRegistration = manager.meter.gaugeBuilder(name).let {
                         if (unit.isNotEmpty()) it.setUnit(unit) else it
                     }.let {
@@ -255,10 +266,10 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
                 untrackCallback.get()?.invoke(name, this)
                 return
             }
-            observeImpl(ResolvedObservationRecorder(instrument, preferIntegral))
+            observe(ResolvedObservationRecorder(instrument, preferIntegral))
         }
 
-        protected abstract fun observeImpl(recorder: IObservationRecorder.Resolved)
+        abstract override fun observe(recorder: IObservationRecorder.Resolved)
 
         fun provideOTelRegistration(otelRegistration: AutoCloseable) {
             val previous = this.otelRegistration.compareAndExchange(null, otelRegistration)
@@ -317,7 +328,7 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         }
 
         val callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>
-        override fun observeImpl(recorder: IObservationRecorder.Resolved) {
+        override fun observe(recorder: IObservationRecorder.Resolved) {
             callback.observe(this, recorder)
         }
 
@@ -364,11 +375,11 @@ internal open class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstru
         val callbacks: ConcurrentLinkedDeque<IInstrumentRegistration.Callback<T>> =
             ConcurrentLinkedDeque()
 
-        override fun observeImpl(recorder: IObservationRecorder.Resolved) {
+        override fun observe(recorder: IObservationRecorder.Resolved) {
             callbacks.forEach {
                 it.observe(
                     @Suppress("UNCHECKED_CAST")
-                    (this as T),
+                    (this@MutableGaugeInstrumentRegistration as T),
                     recorder
                 )
             }

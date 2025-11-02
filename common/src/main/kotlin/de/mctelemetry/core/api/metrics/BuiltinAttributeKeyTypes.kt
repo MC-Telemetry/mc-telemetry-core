@@ -6,6 +6,7 @@ import net.minecraft.core.GlobalPos
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.Item
+import net.minecraft.world.level.Level
 import java.util.UUID
 
 object BuiltinAttributeKeyTypes {
@@ -29,6 +30,10 @@ object BuiltinAttributeKeyTypes {
 
         override fun format(value: BlockPos): List<Long> {
             return listOf(value.x.toLong(), value.y.toLong(), value.z.toLong())
+        }
+
+        fun format(x: Long, y: Long, z: Long): List<Long> {
+            return listOf(x, y, z)
         }
 
         override fun canConvertDirectlyTo(supertype: IMappedAttributeKeyType<*, *>): Boolean {
@@ -67,6 +72,14 @@ object BuiltinAttributeKeyTypes {
             return listOf(value.dimension.location().toString(), pos.x.toString(), pos.y.toString(), pos.z.toString())
         }
 
+        fun format(dimension: ResourceKey<Level>, pos: BlockPos): List<String> {
+            return listOf(dimension.location().toString(), pos.x.toString(), pos.y.toString(), pos.z.toString())
+        }
+
+        fun format(dimension: ResourceKey<Level>, x: Long, y: Long, z: Long): List<String> {
+            return listOf(dimension.location().toString(), x.toString(), y.toString(), z.toString())
+        }
+
         override fun canConvertDirectlyTo(supertype: IMappedAttributeKeyType<*, *>): Boolean {
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> true
@@ -86,6 +99,7 @@ object BuiltinAttributeKeyTypes {
     }
 
     object DirectionType : IMappedAttributeKeyType<Direction, String> {
+
         override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "global_position")

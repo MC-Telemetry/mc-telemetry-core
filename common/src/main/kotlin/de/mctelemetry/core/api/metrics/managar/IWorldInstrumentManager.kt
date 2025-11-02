@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalContracts::class)
+
 package de.mctelemetry.core.api.metrics.managar
 
 import de.mctelemetry.core.api.metrics.builder.IWorldGaugeInstrumentBuilder
@@ -5,6 +7,9 @@ import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
 import net.minecraft.server.MinecraftServer
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 interface IWorldInstrumentManager : IInstrumentManager {
 
@@ -41,9 +46,11 @@ interface IWorldInstrumentManager : IInstrumentManager {
     }
 
     companion object {
+
         val MinecraftServer.instrumentManager: IWorldInstrumentManager?
             get() = InstrumentMetaManager.worldInstrumentManagerForServer(this)
-        fun MinecraftServer.useInstrumentManagerWhenAvailable(callback: (IWorldInstrumentManager)->Unit): AutoCloseable {
+
+        fun MinecraftServer.useInstrumentManagerWhenAvailable(callback: (IWorldInstrumentManager) -> Unit): AutoCloseable {
             return InstrumentMetaManager.whenWorldInstrumentManagerAvailable(this, callback)
         }
     }
@@ -52,4 +59,9 @@ interface IWorldInstrumentManager : IInstrumentManager {
 inline fun IWorldInstrumentManager.gaugeWorldInstrument(
     name: String,
     block: IWorldGaugeInstrumentBuilder<*>.() -> Unit,
-): IWorldGaugeInstrumentBuilder<*> = gaugeInstrument(name).apply(block)
+): IWorldGaugeInstrumentBuilder<*> {
+    contract {
+        callsInPlace(block, InvocationKind.AT_MOST_ONCE)
+    }
+    return gaugeInstrument(name).apply(block)
+}
