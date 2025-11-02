@@ -188,6 +188,7 @@ class ObservationSourceContainerBlockEntity(
                 for (state in oldContainer.observationStates.values) {
                     state.unsubscribeFromDirty(::onDirty)
                 }
+                oldContainer.close()
             }
         } finally {
             container = null

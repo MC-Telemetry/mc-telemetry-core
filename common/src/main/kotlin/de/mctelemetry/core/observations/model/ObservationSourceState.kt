@@ -6,6 +6,7 @@ import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentSubRegistration
 import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.api.metrics.managar.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.ExceptionComponent
 import de.mctelemetry.core.utils.runWithExceptionCleanup
@@ -21,7 +22,7 @@ import net.minecraft.util.StringRepresentable
 
 open class ObservationSourceState(
     val source: IObservationSource<*, *>,
-) : AutoCloseable {
+) : AutoCloseable, IInstrumentAvailabilityCallback<IInstrumentRegistration.Mutable<*>> {
 
     protected val onDirtyListeners: MutableSet<(ObservationSourceState) -> Unit> = linkedSetOf()
 
@@ -148,8 +149,15 @@ open class ObservationSourceState(
         get() = instrumentSubRegistrationField
     protected var instrumentSubRegistrationField: IInstrumentSubRegistration<*>? = null
 
+    val hasSubRegistration: Boolean
+        get() = instrumentSubRegistrationField != null
+
     override fun close() {
-        instrumentSubRegistration = null
+        try {
+            instrumentSubRegistration = null
+        } finally {
+            availabilityCallbackCloser = null
+        }
     }
 
     protected open fun setInstrumentSubRegistration(
@@ -183,6 +191,41 @@ open class ObservationSourceState(
         return true
     }
 
+    protected var availabilityCallbackCloser: AutoCloseable? = null
+        set(value) {
+            val oldValue = field
+            field = value
+            oldValue?.close()
+        }
+
+    open fun updateRegistration(
+        manager: IInstrumentManager,
+        instrumentSubRegistrationFactory: InstrumentSubRegistrationFactory,
+    ) {
+        val configuration = configuration ?: return
+        val configurationInstrument = configuration.instrument
+        val currentInstrument = instrument
+        if (hasSubRegistration) {
+            if (currentInstrument === configurationInstrument || currentInstrument?.name == configurationInstrument.name)
+                return
+        }
+        val storedInstrument = manager.findLocalMutable(configurationInstrument.name)
+        if (storedInstrument == null) {
+            if (currentInstrument != null || hasSubRegistration) {
+                this.instrument = null
+            }
+            if (availabilityCallbackCloser == null) {
+                availabilityCallbackCloser = manager.addLocalMutableCallback(this)
+            }
+        } else {
+            this.bindMutableInstrument(
+                storedInstrument, instrumentSubRegistrationFactory.createInstrumentCallback(
+                    source, this, configuration, storedInstrument
+                )
+            )
+        }
+    }
+
     open fun <T : IInstrumentRegistration.Mutable<T>> bindMutableInstrument(
         instrument: T,
         callback: IInstrumentRegistration.Callback<T>,
@@ -192,8 +235,30 @@ open class ObservationSourceState(
             val subRegistration = instrument.addCallback(callback = callback)
             runWithExceptionCleanup(cleanup = subRegistration::close) {
                 setInstrumentSubRegistration(subRegistration)
+                availabilityCallbackCloser = null
             }
         }
+    }
+
+    override fun instrumentAdded(
+        manager: IInstrumentManager,
+        instrument: IInstrumentRegistration.Mutable<*>,
+        phase: IInstrumentAvailabilityCallback.Phase,
+    ) {
+        if (phase != IInstrumentAvailabilityCallback.Phase.POST) return
+        if (this.instrument != null) return
+        val configuration = this.configuration ?: return
+        if (configuration.instrument.name.equals(instrument.name, ignoreCase = true)) {
+            setInstrument(instrument, silent = false)
+        }
+    }
+
+    override fun instrumentRemoved(
+        manager: IInstrumentManager,
+        instrument: IInstrumentRegistration.Mutable<*>,
+        phase: IInstrumentAvailabilityCallback.Phase,
+    ) {
+        // unbinding of instruments is handled via the instrument-subregistrations.
     }
 
     @Suppress("SameParameterValue")
@@ -508,5 +573,15 @@ open class ObservationSourceState(
                     }
                 )
         }
+    }
+
+    interface InstrumentSubRegistrationFactory {
+
+        fun <T : IInstrumentRegistration.Mutable<T>> createInstrumentCallback(
+            source: IObservationSource<*, *>,
+            state: ObservationSourceState,
+            configuration: ObservationSourceConfiguration,
+            instrument: IInstrumentRegistration.Mutable<*>,
+        ): IInstrumentRegistration.Callback<T>
     }
 }
