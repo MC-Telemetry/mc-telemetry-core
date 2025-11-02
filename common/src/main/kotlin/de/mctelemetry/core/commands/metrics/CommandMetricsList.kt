@@ -7,8 +7,8 @@ import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMetricDefinition
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
-import de.mctelemetry.core.metrics.manager.WorldInstrumentManager
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.invoke
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -27,6 +27,7 @@ class CommandMetricsList internal constructor(
 
     val command = buildCommand("list") {
         requires { it.hasPermission(2) }
+        executes(::commandMetricsListAll)
         "all" {
             executes(::commandMetricsListAll)
         }
@@ -80,7 +81,7 @@ class CommandMetricsList internal constructor(
                         }
                     }
             }
-            if (definition is WorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) {
+            if (definition is IWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) {
                 if (definition.persistent) {
                     append("P") {
                         style {
@@ -158,7 +159,7 @@ class CommandMetricsList internal constructor(
         return sendList(
             context,
             instrumentManager.findLocal(Regex(".+")).filterNot {
-                (it is WorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
+                (it is IWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
             },
             "world"
         )
@@ -172,7 +173,7 @@ class CommandMetricsList internal constructor(
         return sendList(
             context,
             instrumentManager.findLocal(Regex(".+")).filter {
-                (it is WorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
+                (it is IWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
             },
             "custom"
         )

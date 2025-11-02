@@ -24,7 +24,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
     open fun createAttributeLookup(): IMappedAttributeValueLookup = IMappedAttributeValueLookup.empty()
 
 
-    protected val dirtyRunningTracker: ConcurrentSkipListSet<IObservationSource<*,*>> = ConcurrentSkipListSet(
+    protected val dirtyRunningTracker: ConcurrentSkipListSet<IObservationSource<*, *>> = ConcurrentSkipListSet(
         compareBy { it.id.location() }
     )
 

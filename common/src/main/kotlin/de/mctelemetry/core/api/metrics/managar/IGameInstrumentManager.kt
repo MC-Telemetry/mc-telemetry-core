@@ -3,7 +3,7 @@ package de.mctelemetry.core.api.metrics.managar
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
 
-interface IGameInstrumentManager: IInstrumentManager {
+interface IGameInstrumentManager : IInstrumentManager {
 
     object Events {
 

@@ -5,7 +5,6 @@ import io.opentelemetry.api.metrics.Meter
 
 internal class GameInstrumentManager(
     meter: Meter,
-): InstrumentManagerBase<InstrumentManagerBase.GaugeInstrumentBuilder<*>>(
+): InstrumentManagerBase.Root<InstrumentManagerBase.GaugeInstrumentBuilder<*>>(
     meter,
-    null,
 ), IGameInstrumentManager
