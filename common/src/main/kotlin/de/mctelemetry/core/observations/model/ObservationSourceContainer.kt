@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentSkipListSet
 import kotlin.collections.iterator
 
-abstract class ObservationSourceContainer<C> : AutoCloseable {
+abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceState.InstrumentSubRegistrationFactory {
 
     abstract val observationStates: Map<IObservationSource<in C, *>, ObservationSourceState>
 
@@ -91,32 +91,21 @@ abstract class ObservationSourceContainer<C> : AutoCloseable {
     }
 
     protected open fun doOnDirty(source: IObservationSource<in C, *>, state: ObservationSourceState) {
-        runWithExceptionCleanup(cleanup = { state.instrument = null }) {
-            updateRegistration(source, state)
+        if (state.cascadeUpdates) {
+            runWithExceptionCleanup(cleanup = { state.instrument = null }) {
+                state.updateRegistration(instrumentManager, this)
+            }
         }
     }
 
-    protected open fun updateRegistration(source: IObservationSource<in C, *>, state: ObservationSourceState) {
-        val configuration = state.configuration ?: return
-        val configurationInstrument = configuration.instrument
-        val stateInstrument = state.instrument
-        if (stateInstrument === configurationInstrument || stateInstrument?.name == configurationInstrument.name)
-            return
-        val storedInstrument = instrumentManager.findLocalMutable(configurationInstrument.name)
-        if (storedInstrument == null) {
-            state.instrument = null
-        } else {
-            state.bindMutableInstrument(storedInstrument, getCallback(source, state, configuration, storedInstrument))
-        }
-    }
-
-    protected open fun getCallback(
-        source: IObservationSource<in C, *>,
+    override fun <T : IInstrumentRegistration.Mutable<T>> createInstrumentCallback(
+        source: IObservationSource<*, *>,
         state: ObservationSourceState,
         configuration: ObservationSourceConfiguration,
         instrument: IInstrumentRegistration.Mutable<*>,
-    ): IInstrumentRegistration.Callback<IInstrumentRegistration.Mutable<*>> {
-        return DefaultCallback(source, state)
+    ): IInstrumentRegistration.Callback<T> {
+        @Suppress("UNCHECKED_CAST")
+        return DefaultCallback(source as IObservationSource<C, *>, state)
     }
 
     protected inner class DefaultCallback(
