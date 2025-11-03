@@ -11,6 +11,8 @@ import de.mctelemetry.core.utils.gametest.assertFalseC
 import de.mctelemetry.core.utils.gametest.assertNotNullC
 import de.mctelemetry.core.utils.gametest.assertNullC
 import de.mctelemetry.core.utils.gametest.assertValueEqualC
+import de.mctelemetry.core.utils.gametest.thenExecuteForC
+import de.mctelemetry.core.utils.gametest.thenWaitUntilC
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -173,8 +175,8 @@ object RedstoneScraperBlockTest {
             }
         }
         helper.startSequence()
-            .thenWaitUntil(::validation) // wait until validation succeeds
-            .thenExecuteFor(5, ::validation) // assert validation continues to succeed for 5 ticks
+            .thenWaitUntilC(::validation) // wait until validation succeeds
+            .thenExecuteForC(5, ::validation) // assert validation continues to succeed for 5 ticks
             .thenSucceed() // succeed
         helper.runAfterDelay(2, ::validation) // assert validation succeeds within 2 ticks
     }

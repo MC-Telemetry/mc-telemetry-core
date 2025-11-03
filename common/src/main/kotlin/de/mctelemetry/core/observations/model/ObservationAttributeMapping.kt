@@ -21,7 +21,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.codec.StreamCodec
 import org.intellij.lang.annotations.MagicConstant
-import java.util.SortedMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.iterator
 import kotlin.contracts.ExperimentalContracts
@@ -55,8 +54,11 @@ class ObservationAttributeMapping(
 
     // store mapping sorted by base key name to reduce later sorting overhead during OTel-Attributes construction
     val mapping: Map<MappedAttributeKeyInfo<*, *>, MappedAttributeKeyInfo<*, *>> = mapping.toMap()
-        /*if (mapping is SortedMap<*, *> && mapping.comparator() === comparator) mapping
-        else mapping.toSortedMap(comparator)*/
+
+    val observationSourceAttributes: Collection<MappedAttributeKeyInfo<*, *>>
+        get() = mapping.values
+    val instrumentAttributes: Set<MappedAttributeKeyInfo<*, *>>
+        get() = mapping.keys
 
     private val validationFlags: AtomicInteger = AtomicInteger(0)
 
@@ -132,7 +134,7 @@ class ObservationAttributeMapping(
         output: MutableSet<MappedAttributeKeyInfo<*, *>>,
     ) {
         output.addAll(sourceAttributes)
-        output.removeAll(mapping.values)
+        output.removeAll(this.observationSourceAttributes)
     }
 
     fun resolveAttributes(valueLookup: IMappedAttributeValueLookup): Attributes {
@@ -146,10 +148,10 @@ class ObservationAttributeMapping(
 
     fun saveToTag(): Tag {
         return ListTag().also { listTag ->
-            for((key,value) in mapping) {
+            for ((key, value) in mapping) {
                 listTag.add(CompoundTag().also { entryTag ->
                     entryTag.put("key", key.save())
-                    entryTag.put("value",value.save())
+                    entryTag.put("value", value.save())
                 })
             }
         }
@@ -173,7 +175,7 @@ class ObservationAttributeMapping(
 
         //private val comparator: Comparator<MappedAttributeKeyInfo<*, *>> = Comparator.comparing { it.baseKey.key }
 
-        private fun <T : Any, B: Any> addConverted(
+        private fun <T : Any, B : Any> addConverted(
             metricAttribute: MappedAttributeKeyInfo<T, B>,
             sourceAttribute: MappedAttributeKeyInfo<*, *>,
             valueLookup: IMappedAttributeValueLookup,
@@ -185,7 +187,7 @@ class ObservationAttributeMapping(
             return builder.put(metricAttributeKey, metricAttributeType.format(value))
         }
 
-        private fun <T : Any, R : Any, B: Any> lookupConverted(
+        private fun <T : Any, R : Any, B : Any> lookupConverted(
             metricAttributeType: IMappedAttributeKeyType<T, B>,
             sourceAttribute: MappedAttributeKeyInfo<R, *>,
             valueLookup: IMappedAttributeValueLookup,
@@ -198,18 +200,24 @@ class ObservationAttributeMapping(
 
         fun loadFromTag(tag: Tag, holderLookupProvider: HolderLookup.Provider): ObservationAttributeMapping {
             tag as ListTag
-            if(tag.isEmpty()) return empty()
+            if (tag.isEmpty()) return empty()
             require(tag.elementType == Tag.TAG_COMPOUND)
             return ObservationAttributeMapping(
                 buildMap {
-                    for(entryTag in tag){
+                    for (entryTag in tag) {
                         entryTag as CompoundTag
                         val keyTag = entryTag.getCompound("key")
                         val valueTag = entryTag.getCompound("value")
-                        val key = MappedAttributeKeyInfo.load(keyTag, holderLookupProvider.asGetterLookup().lookupOrThrow(
-                            OTelCoreModAPI.AttributeTypeMappings))
-                        val value = MappedAttributeKeyInfo.load(valueTag, holderLookupProvider.asGetterLookup().lookupOrThrow(
-                            OTelCoreModAPI.AttributeTypeMappings))
+                        val key = MappedAttributeKeyInfo.load(
+                            keyTag, holderLookupProvider.asGetterLookup().lookupOrThrow(
+                                OTelCoreModAPI.AttributeTypeMappings
+                            )
+                        )
+                        val value = MappedAttributeKeyInfo.load(
+                            valueTag, holderLookupProvider.asGetterLookup().lookupOrThrow(
+                                OTelCoreModAPI.AttributeTypeMappings
+                            )
+                        )
                         put(key, value)
                     }
                 }

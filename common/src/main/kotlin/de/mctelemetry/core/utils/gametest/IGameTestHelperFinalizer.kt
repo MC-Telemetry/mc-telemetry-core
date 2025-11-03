@@ -11,11 +11,25 @@ import kotlin.jvm.optionals.getOrNull
 
 interface IGameTestHelperFinalizer : MutableCollection<IGameTestHelperFinalizer.Callback> {
 
+    enum class FinalizerRegistration {
+        NONE,
+        TEST_END,
+        ;
+    }
+
     fun interface Callback {
 
         fun onComplete(result: Throwable?)
     }
 
+    operator fun invoke(callback: Callback) = add(callback)
+
+    operator fun invoke(registrationType: FinalizerRegistration, block: () -> Unit) {
+        when (registrationType) {
+            FinalizerRegistration.NONE -> {}
+            FinalizerRegistration.TEST_END -> add { block() }
+        }
+    }
 
     @Deprecated("This declaration is redundant in Kotlin and might be removed soon")
     override fun <T : Any?> toArray(generator: IntFunction<Array<out T?>?>): Array<out T?>? {
@@ -46,18 +60,25 @@ interface IGameTestHelperFinalizer : MutableCollection<IGameTestHelperFinalizer.
 
         constructor() : this(ConcurrentLinkedQueue())
 
+        companion object {
+
+            private inline fun <T> consumeQueue(queue: ConcurrentLinkedQueue<T>, block: (T) -> Unit) {
+                var completionInvocationException: Exception? = null
+                do {
+                    val element = queue.poll()
+                    if (element == null) break
+                    try {
+                        block(element)
+                    } catch (ex: Exception) {
+                        completionInvocationException += ex
+                    }
+                } while (true)
+                if (completionInvocationException != null) throw completionInvocationException
+            }
+        }
+
         private fun callOnComplete(result: Throwable?) {
-            var completionInvocationException: Exception? = null
-            do {
-                val element = callbacks.poll()
-                if (element == null) break
-                try {
-                    element.onComplete(result)
-                } catch (ex: Exception) {
-                    completionInvocationException += ex
-                }
-            } while (true)
-            if (completionInvocationException != null) throw completionInvocationException
+            consumeQueue(callbacks) { it.onComplete(result) }
         }
 
         override fun testStructureLoaded(gameTestInfo: GameTestInfo) {}
@@ -94,5 +115,4 @@ interface IGameTestHelperFinalizer : MutableCollection<IGameTestHelperFinalizer.
         ) {
         }
     }
-
 }

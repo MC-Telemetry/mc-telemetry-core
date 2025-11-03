@@ -21,6 +21,50 @@ abstract class AssertionObservationRecorder(
 
     abstract override fun observe(value: Double, attributes: Attributes, source: IObservationSource<*, *>?)
 
+    class None(
+        gameTestHelper: GameTestHelper,
+        val name: String,
+        override val supportsFloating: Boolean,
+    ) : AssertionObservationRecorder(gameTestHelper) {
+
+        override fun observePreferred(
+            double: Double,
+            long: Long,
+            attributes: Attributes,
+            source: IObservationSource<*, *>?,
+        ) {
+            if(source == null){
+                gameTestHelper.failC("Expected no observations, but received preferred of $double and $long at $attributes")
+            } else {
+                gameTestHelper.failC("Expected no observations, but received preferred of $double and $long at $attributes from $source")
+            }
+        }
+
+        override fun observe(
+            value: Long,
+            attributes: Attributes,
+            source: IObservationSource<*, *>?,
+        ) {
+            if(source == null){
+                gameTestHelper.failC("Expected no observations, but received long $value at $attributes")
+            } else {
+                gameTestHelper.failC("Expected no observations, but received long of $value at $attributes from $source")
+            }
+        }
+
+        override fun observe(
+            value: Double,
+            attributes: Attributes,
+            source: IObservationSource<*, *>?,
+        ) {
+            if(source == null){
+                gameTestHelper.failC("Expected no observations, but received double $value at $attributes")
+            } else {
+                gameTestHelper.failC("Expected no observations, but received double of $value at $attributes from $source")
+            }
+        }
+    }
+
     class Single(
         gameTestHelper: GameTestHelper,
         val name: String,
