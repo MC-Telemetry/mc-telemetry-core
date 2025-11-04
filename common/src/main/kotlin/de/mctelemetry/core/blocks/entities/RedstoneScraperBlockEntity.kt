@@ -7,7 +7,6 @@ import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.blocks.RedstoneScraperBlock
-import de.mctelemetry.core.ui.RedstoneScraperBlockMenu
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
@@ -26,7 +25,7 @@ import net.minecraft.world.level.block.state.BlockState
 
 
 class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
-        MenuProvider, BlockEntity(OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get(), pos, state) {
+        BlockEntity(OTelCoreModBlockEntityTypes.REDSTONE_SCRAPER_BLOCK_ENTITY.get(), pos, state) {
 
     private var registration: AutoCloseable? = null
         set(value) {
@@ -102,37 +101,13 @@ class RedstoneScraperBlockEntity(pos: BlockPos, state: BlockState) :
         tryRegister()
     }
 
-    private var data: ContainerData = object : ContainerData {
-        override fun get(index: Int): Int {
-            if (index == 0) return signalValue
-            else return -1
-        }
-
-        override fun set(index: Int, value: Int) {
-            if (index == 0) signalValue = value
-        }
-
-        override fun getCount(): Int {
-            return 1
-        }
-    }
-
     var signalValue: Int = 0
 
     override fun setRemoved() {
         registration?.close()
     }
 
-    override fun getDisplayName(): Component {
-        return Component.translatable("container.mcotelcore.redstone_scraper_block")
-    }
-
-    override fun createMenu(containerId: Int, inventory: Inventory, player: Player): AbstractContainerMenu {
-        return RedstoneScraperBlockMenu(containerId, inventory, this.data)
-    }
-
     companion object {
-
         private val positionAttributeKey: AttributeKey<String> = AttributeKey.stringKey("pos")
     }
 

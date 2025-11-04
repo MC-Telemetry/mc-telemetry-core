@@ -5,7 +5,6 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.commands.types.ArgumentTypes
-import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.ui.RedstoneScraperBlockScreen
 import net.minecraft.client.gui.screens.MenuScreens
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
@@ -40,14 +39,6 @@ object OTelCoreModNeoForge {
 
     private fun registerCallbacks() {
         MOD_BUS.addListener(::createRegistries)
-        if(DIST.isClient) {
-            MOD_BUS.addListener { event: RegisterMenuScreensEvent ->
-                event.register(
-                    OTelCoreModMenuTypes.REDSTONE_SCRAPER_BLOCK.get(),
-                    MenuScreens.ScreenConstructor(::RedstoneScraperBlockScreen)
-                )
-            }
-        }
     }
 
     private fun registerContent() {
