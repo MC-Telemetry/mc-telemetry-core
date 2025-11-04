@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package de.mctelemetry.core.utils.gametest
+package de.mctelemetry.core.gametest.utils
 
 import net.minecraft.gametest.framework.GameTestAssertException
 import net.minecraft.gametest.framework.GameTestSequence

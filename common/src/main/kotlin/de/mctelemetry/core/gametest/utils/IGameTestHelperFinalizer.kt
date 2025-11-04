@@ -1,4 +1,4 @@
-package de.mctelemetry.core.utils.gametest
+package de.mctelemetry.core.gametest.utils
 
 import de.mctelemetry.core.utils.plus
 import net.minecraft.gametest.framework.GameTestHelper

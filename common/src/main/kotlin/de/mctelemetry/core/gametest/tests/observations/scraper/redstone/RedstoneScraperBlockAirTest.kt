@@ -1,8 +1,8 @@
-package de.mctelemetry.core.gametest.observation.scraper.redstone
+package de.mctelemetry.core.gametest.tests.observations.scraper.redstone
 
 import de.mctelemetry.core.utils.doubleInstrument
-import de.mctelemetry.core.utils.gametest.observation.InstrumentGameTestHelper.Companion.instruments
-import de.mctelemetry.core.utils.gametest.observation.withConfiguredStartupSequence
+import de.mctelemetry.core.gametest.utils.observation.InstrumentGameTestHelper.Companion.instruments
+import de.mctelemetry.core.gametest.utils.observation.withConfiguredStartupSequence
 import de.mctelemetry.core.utils.longInstrument
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes

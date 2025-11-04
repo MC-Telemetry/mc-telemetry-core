@@ -1,11 +1,11 @@
-package de.mctelemetry.core.utils.gametest.observation
+package de.mctelemetry.core.gametest.utils.observation
 
 import de.mctelemetry.core.api.metrics.IObservationRecorder
 import de.mctelemetry.core.api.metrics.IObservationSource
-import de.mctelemetry.core.utils.gametest.assertFalseC
-import de.mctelemetry.core.utils.gametest.assertTrueC
-import de.mctelemetry.core.utils.gametest.assertValueEqualC
-import de.mctelemetry.core.utils.gametest.failC
+import de.mctelemetry.core.gametest.utils.assertFalseC
+import de.mctelemetry.core.gametest.utils.assertTrueC
+import de.mctelemetry.core.gametest.utils.assertValueEqualC
+import de.mctelemetry.core.gametest.utils.failC
 import io.opentelemetry.api.common.Attributes
 import net.minecraft.gametest.framework.GameTestHelper
 import java.util.concurrent.atomic.AtomicBoolean

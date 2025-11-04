@@ -1,10 +1,12 @@
 package de.mctelemetry.core.gametest
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.gametest.commands.mcotel.scrape.ScrapeCardinalityCommandCommonTest
-import de.mctelemetry.core.gametest.commands.mcotel.scrape.ScrapeInfoCommandCommonTest
-import de.mctelemetry.core.gametest.observation.scraper.redstone.RedstoneScraperBlockAirTest
-import de.mctelemetry.core.gametest.observation.scraper.redstone.RedstoneScraperBlockTest
+import de.mctelemetry.core.gametest.tests.GameLoadsCommonTest
+import de.mctelemetry.core.gametest.tests.MetricScrapeCommonTest
+import de.mctelemetry.core.gametest.tests.commands.mcotel.scrape.ScrapeCardinalityCommandCommonTest
+import de.mctelemetry.core.gametest.tests.commands.mcotel.scrape.ScrapeInfoCommandCommonTest
+import de.mctelemetry.core.gametest.tests.observations.scraper.redstone.RedstoneScraperBlockAirTest
+import de.mctelemetry.core.gametest.tests.observations.scraper.redstone.RedstoneScraperBlockTest
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestGenerator
 import net.minecraft.gametest.framework.StructureUtils

@@ -1,4 +1,4 @@
-package de.mctelemetry.core.utils.gametest.observation
+package de.mctelemetry.core.gametest.utils.observation
 
 import de.mctelemetry.core.api.metrics.IObservationSource
 import io.opentelemetry.api.common.Attributes
