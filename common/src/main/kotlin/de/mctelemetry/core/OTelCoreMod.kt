@@ -7,7 +7,6 @@ import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.items.OTelCoreModItems
-import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import de.mctelemetry.core.commands.metrics.CommandMetrics
 import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
@@ -26,7 +25,6 @@ import java.util.function.Supplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceKey
-import net.minecraft.server.MinecraftServer
 import net.minecraft.world.item.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -63,7 +61,6 @@ object OTelCoreMod {
 
         OTelCoreModBlocks.init()
         OTelCoreModItems.init()
-        OTelCoreModMenuTypes.init()
 
         debugMetrics()
         CommandRegistrationEvent.EVENT.register { evt, ctx, _ ->

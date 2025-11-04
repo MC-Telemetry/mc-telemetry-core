@@ -2,8 +2,12 @@ package de.mctelemetry.core.blocks
 
 import com.mojang.serialization.MapCodec
 import de.mctelemetry.core.blocks.entities.RedstoneScraperBlockEntity
+import de.mctelemetry.core.ui.RedstoneScraperBlockScreen
 import dev.architectury.event.EventResult
 import dev.architectury.event.events.common.InteractionEvent
+import dev.architectury.platform.Platform
+import dev.architectury.utils.Env
+import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.world.InteractionHand
@@ -60,7 +64,11 @@ class RedstoneScraperBlock(properties: Properties) : InteractionEvent.RightClick
             return EventResult.pass()
         }
 
-        player.openMenu(blockEntity)
+        if (Platform.getEnvironment() == Env.CLIENT) {
+            Minecraft.getInstance().execute {
+                Minecraft.getInstance().setScreen(RedstoneScraperBlockScreen())
+            }
+        }
 
         return EventResult.interruptTrue()
     }
