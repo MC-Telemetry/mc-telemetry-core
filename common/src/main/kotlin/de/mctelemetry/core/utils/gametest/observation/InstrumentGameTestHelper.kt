@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalContracts::class)
 
-package de.mctelemetry.core.utils.gametest
+package de.mctelemetry.core.utils.gametest.observation
 
 import com.mojang.datafixers.util.Either
 import de.mctelemetry.core.api.metrics.BuiltinAttributeKeyTypes
@@ -14,11 +14,21 @@ import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.api.metrics.managar.gaugeWorldInstrument
+import de.mctelemetry.core.blocks.RedstoneScraperBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.blocks.observation.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.utils.Validators
+import de.mctelemetry.core.utils.gametest.IGameTestHelperFinalizer
 import de.mctelemetry.core.utils.gametest.IGameTestHelperFinalizer.Companion.finalizer
+import de.mctelemetry.core.utils.gametest.assertNotNullC
+import de.mctelemetry.core.utils.gametest.failC
+import de.mctelemetry.core.utils.gametest.getBlockEntityC
+import de.mctelemetry.core.utils.gametest.observation.InstrumentGameTestHelper.Companion.instruments
+import de.mctelemetry.core.utils.gametest.server
+import de.mctelemetry.core.utils.gametest.thenExecuteAfterC
+import de.mctelemetry.core.utils.gametest.thenExecuteC
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.Attributes
@@ -27,9 +37,13 @@ import net.minecraft.core.Direction
 import net.minecraft.gametest.framework.GameTestAssertException
 import net.minecraft.gametest.framework.GameTestAssertPosException
 import net.minecraft.gametest.framework.GameTestHelper
+import net.minecraft.gametest.framework.GameTestSequence
+import net.minecraft.world.level.block.entity.BlockEntity
 import java.lang.ref.WeakReference
 import java.util.Collections
 import java.util.WeakHashMap
+import kotlin.collections.get
+import kotlin.collections.iterator
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -194,8 +208,29 @@ class InstrumentGameTestHelper(
         }
         // two passes through observationSourceMap to first check all, then instantiate all
         val completedInstruments = ArrayDeque<AutoCloseable>(observationSourceMap.size)
+        val originalConfigurations = ArrayDeque<Pair<ObservationSourceState, ObservationSourceConfiguration?>>()
+        gameTestHelper.finalizer(registerFinalizer) {
+            var exceptionAccumulator: Exception? = null
+            do {
+                val (state, config) = originalConfigurations.removeFirstOrNull() ?: break
+                try {
+                    state.configuration = config
+                } catch (ex: Exception) {
+                    exceptionAccumulator += ex
+                }
+            } while (true)
+            if (exceptionAccumulator != null) throw exceptionAccumulator
+        }
         return runWithExceptionCleanup(cleanup = {
             var exceptionAccumulator: Exception? = null
+            do {
+                val (state, config) = originalConfigurations.removeFirstOrNull() ?: break
+                try {
+                    state.configuration = config
+                } catch (ex: Exception) {
+                    exceptionAccumulator += ex
+                }
+            } while (true)
             do {
                 val instrument = completedInstruments.removeFirstOrNull() ?: break
                 try {
@@ -239,9 +274,11 @@ class InstrumentGameTestHelper(
                 val instrument: IInstrumentRegistration.Mutable<*> = Either.unwrap(result)
                 completedInstruments.add(instrument)
                 for ((_, state) in statePairs) {
-                    state.configuration = state.configuration!!.copy(
+                    val oldConfig = state.configuration!!
+                    state.configuration = oldConfig.copy(
                         instrument = instrument
                     )
+                    originalConfigurations.add(state to oldConfig)
                 }
                 result
             }
@@ -261,7 +298,7 @@ class InstrumentGameTestHelper(
             allowPreferred = allowPreferred,
             source = null,
             requireSourceMatch = false
-        ).also(this::observe).assertSawValue()
+        ).also(this::observe).assertSawAll()
     }
 
 
@@ -278,11 +315,55 @@ class InstrumentGameTestHelper(
             allowPreferred = allowPreferred,
             source = null,
             requireSourceMatch = false
-        ).also(this::observe).assertSawValue()
+        ).also(this::observe).assertSawAll()
     }
 
     fun IInstrumentRegistration.assertRecordsNone(supportsFloating: Boolean) {
         AssertionObservationRecorder.None(gameTestHelper, this.name, supportsFloating).also(this::observe)
+    }
+
+    fun ILongInstrumentRegistration.assertRecordsNone() {
+        assertRecordsNone(supportsFloating = false)
+    }
+
+    fun IDoubleInstrumentRegistration.assertRecordsNone() {
+        assertRecordsNone(supportsFloating = true)
+    }
+
+    fun IInstrumentRegistration.assertRecords(
+        supportsFloating: Boolean,
+        requireAll: Boolean = true,
+        block: IAssertionObservationRecorderBuilder.() -> Unit,
+    ) {
+        val asserter =
+            AssertionObservationRecorder.buildAssertionRecorder(gameTestHelper, this.name, supportsFloating, block)
+        observe(asserter)
+        if (requireAll) {
+            asserter.assertSawAll()
+        }
+    }
+
+    fun ILongInstrumentRegistration.assertRecords(
+        requireAll: Boolean = true,
+        block: IAssertionObservationRecorderBuilder.ForLong.() -> Unit,
+    ) {
+        val asserter = AssertionObservationRecorder.buildAssertionRecorderLong(gameTestHelper, this.name, block)
+        observe(asserter)
+        if (requireAll) {
+            asserter.assertSawAll()
+        }
+    }
+
+
+    fun IDoubleInstrumentRegistration.assertRecords(
+        requireAll: Boolean = true,
+        block: IAssertionObservationRecorderBuilder.ForDouble.() -> Unit,
+    ) {
+        val asserter = AssertionObservationRecorder.buildAssertionRecorderDouble(gameTestHelper, this.name, block)
+        observe(asserter)
+        if (requireAll) {
+            asserter.assertSawAll()
+        }
     }
 
     fun formatGlobalBlockPos(blockPos: BlockPos): List<String> = BuiltinAttributeKeyTypes.GlobalPosType.format(
@@ -387,4 +468,59 @@ class InstrumentGameTestHelper(
 
         val GameTestHelper.instruments: InstrumentGameTestHelper by ArgLazy(::InstrumentGameTestHelper)
     }
+}
+
+internal fun GameTestHelper.withConfiguredStartupSequence(
+    useDouble: (originalName: String) -> Boolean = { false },
+    suffixLimit: Int = 1024,
+    overrideExisting: Boolean = true,
+    customizer: IGaugeInstrumentBuilder<*>.(originalName: String, isDouble: Boolean) -> Unit = { _, _ -> },
+    block: (GameTestSequence, Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>>) -> Unit,
+) {
+    var result: Map<String,
+            Either<ILongInstrumentRegistration.Mutable<*>,
+                    IDoubleInstrumentRegistration.Mutable<*>>>? = null
+    var sequence: GameTestSequence? = null
+    @Suppress("AssignedValueIsNeverRead")
+    // assigned value is actually being read in callback after construction of its value
+    sequence = startSequence()
+        .thenExecuteAfterC(2) {
+            BlockPos.betweenClosedStream(bounds.contract(1.0, 1.0, 1.0)).forEachOrdered { blockPos ->
+                val state = getBlockState(blockPos)
+                if ((!state.hasBlockEntity()) ||
+                    getBlockEntity<BlockEntity>(blockPos) !is ObservationSourceContainerBlockEntity
+                ) return@forEachOrdered
+                val errorStateValue = state.getValue(RedstoneScraperBlock.ERROR)
+                if (errorStateValue != ObservationSourceState.ErrorState.Type.Errors) {
+                    failC(
+                        "Unexpected error state: Expected ${ObservationSourceState.ErrorState.Type.Errors}, got $errorStateValue",
+                        blockPos
+                    )
+                }
+            }
+            result = instruments.configureObservationContainers(
+                useDouble = useDouble,
+                suffixLimit = suffixLimit,
+                overrideExisting = overrideExisting,
+                customizer = customizer,
+            )
+        }.thenExecuteAfterC(2) {
+            BlockPos.betweenClosedStream(bounds.contract(1.0, 1.0, 1.0)).forEachOrdered { blockPos ->
+                val state = getBlockState(blockPos)
+                if ((!state.hasBlockEntity()) ||
+                    getBlockEntity<BlockEntity>(blockPos) !is ObservationSourceContainerBlockEntity
+                ) return@forEachOrdered
+                val errorStateValue = state.getValue(RedstoneScraperBlock.ERROR)
+                if (errorStateValue != ObservationSourceState.ErrorState.Type.Ok) {
+                    failC(
+                        "Unexpected error state: Expected ${ObservationSourceState.ErrorState.Type.Ok}, got $errorStateValue",
+                        blockPos
+                    )
+                }
+            }
+            @Suppress("KotlinConstantConditions")
+            // Suppress reported that sequence is always null, which is simply not true because this block is only
+            // executed after the whole containing method already returns.
+            block(sequence!!, result!!)
+        }.thenExecuteC { } // filler node so that iterator of sequence does not report empty before block is done
 }

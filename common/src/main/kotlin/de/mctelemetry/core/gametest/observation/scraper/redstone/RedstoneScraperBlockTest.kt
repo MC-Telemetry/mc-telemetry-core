@@ -165,8 +165,8 @@ object RedstoneScraperBlockTest {
                 helper.assertFalseC(states.isEmpty(), "Expected observationStates to not be empty")
                 states.forEach { (source, state) ->
                     helper.assertValueEqualC(
-                        ObservationSourceState.ErrorState.NotConfigured,
                         state.errorState,
+                        ObservationSourceState.ErrorState.NotConfigured,
                         "errorState of $source"
                     )
                     helper.assertNullC(state.configuration, "configuration of $source")
