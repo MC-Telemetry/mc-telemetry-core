@@ -5,8 +5,76 @@
             <children>
                 <flow-layout direction="vertical">
                     <children>
-                        <button id="the-button">
+                        <label>
                             <text translate="true">container.mcotelcore.redstone_scraper_block</text>
+                            <color>black</color>
+                            <margins>
+                                <bottom>5</bottom>
+                            </margins>
+                        </label>
+
+                        <scroll direction="vertical">
+                            <flow-layout direction="vertical">
+                                <children>
+                                    <label>
+                                        <text>A</text>
+                                        <margins>
+                                            <vertical>10</vertical>
+                                        </margins>
+                                    </label>
+                                    <label>
+                                        <text>B</text>
+                                        <margins>
+                                            <vertical>10</vertical>
+                                        </margins>
+                                    </label>
+                                    <label>
+                                        <text>A</text>
+                                        <margins>
+                                            <vertical>10</vertical>
+                                        </margins>
+                                    </label>
+                                    <label>
+                                        <text>B</text>
+                                        <margins>
+                                            <vertical>10</vertical>
+                                        </margins>
+                                    </label>
+                                    <label>
+                                        <text>A</text>
+                                        <margins>
+                                            <vertical>10</vertical>
+                                        </margins>
+                                    </label>
+                                    <label>
+                                        <text>B</text>
+                                        <margins>
+                                            <vertical>10</vertical>
+                                        </margins>
+                                    </label>
+                                </children>
+
+                                <padding>
+                                    <all>5</all>
+                                </padding>
+                            </flow-layout>
+
+                            <sizing>
+                                <vertical method="fill">70</vertical>
+                                <horizontal method="fill">60</horizontal>
+                            </sizing>
+
+                            <surface>
+                                <panel-inset/>
+                            </surface>
+                        </scroll>
+
+
+                        <button id="the-button">
+                            <text>Confirm</text>
+                            <margins>
+                                <top>5</top>
+                            </margins>
                         </button>
                     </children>
 
