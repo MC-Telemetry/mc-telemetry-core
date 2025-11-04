@@ -17,7 +17,7 @@ object PlayersOnlineByUUID: IWorldInstrumentManager.Events.Loading {
         }.registerWithCallbackOfLong { measurement ->
             for(player in server.playerList.players){
                 if(!player.allowsListing()) continue
-                measurement.record(1, Attributes.of(playerUUIDAttributeKey, player.uuid.toString()))
+                measurement.observe(1, Attributes.of(playerUUIDAttributeKey, player.uuid.toString()))
             }
         }
     }

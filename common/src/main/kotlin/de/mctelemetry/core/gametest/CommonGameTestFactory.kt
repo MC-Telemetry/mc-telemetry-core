@@ -1,8 +1,13 @@
 package de.mctelemetry.core.gametest
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.gametest.commands.mcotel.scrape.ScrapeCardinalityCommandCommonTest
-import de.mctelemetry.core.gametest.commands.mcotel.scrape.ScrapeInfoCommandCommonTest
+import de.mctelemetry.core.gametest.tests.GameLoadsCommonTest
+import de.mctelemetry.core.gametest.tests.MetricScrapeCommonTest
+import de.mctelemetry.core.gametest.tests.commands.mcotel.scrape.ScrapeCardinalityCommandCommonTest
+import de.mctelemetry.core.gametest.tests.commands.mcotel.scrape.ScrapeInfoCommandCommonTest
+import de.mctelemetry.core.gametest.tests.observations.scraper.redstone.RedstoneScraperBlockAirTest
+import de.mctelemetry.core.gametest.tests.observations.scraper.redstone.RedstoneScraperBlockChestTest
+import de.mctelemetry.core.gametest.tests.observations.scraper.redstone.RedstoneScraperBlockTest
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestGenerator
 import net.minecraft.gametest.framework.StructureUtils
@@ -18,6 +23,13 @@ class CommonGameTestFactory {
             MetricScrapeCommonTest::class.java,
             ScrapeInfoCommandCommonTest::class.java,
             ScrapeCardinalityCommandCommonTest::class.java,
+            RedstoneScraperBlockTest::class.java,
+            RedstoneScraperBlockAirTest.Undirected::class.java,
+            RedstoneScraperBlockAirTest.Directed::class.java,
+            RedstoneScraperBlockChestTest.Free.Undirected::class.java,
+            RedstoneScraperBlockChestTest.Free.Directed::class.java,
+            RedstoneScraperBlockChestTest.Blocked.Undirected::class.java,
+            RedstoneScraperBlockChestTest.Blocked.Directed::class.java,
         )
 
         @GameTestGenerator
@@ -51,7 +63,11 @@ class CommonGameTestFactory {
                             null
                         else
                             instance
-                        val testBaseName = "${clazz.simpleName}.${met.name}"
+
+                        val testBaseName = generateSequence(clazz, Class<*>::getDeclaringClass)
+                            .toList()
+                            .asReversed()
+                            .joinToString(separator = ".", postfix = ".${met.name}") { it.simpleName }
                         val isMultiple = testAnnotations.size > 1
                         return@mapNotNull testAnnotations.mapIndexed { idx, annotation ->
                             val testName = if (isMultiple) "${testBaseName}.$idx" else testBaseName

@@ -21,7 +21,7 @@ object PlayersOnlineByName : IWorldInstrumentManager.Events.Loading {
                 .groupingBy { it.name.string }
                 .eachCount()
             ) {
-                measurement.record(count.toLong(), Attributes.of(playerNameAttributeKey, name))
+                measurement.observe(count.toLong(), Attributes.of(playerNameAttributeKey, name))
             }
         }
     }

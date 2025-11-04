@@ -1,28 +1,25 @@
 package de.mctelemetry.core.metrics.manager
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
+import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.builder.IWorldGaugeInstrumentBuilder
-import de.mctelemetry.core.api.metrics.managar.IGameInstrumentManager
+import de.mctelemetry.core.api.metrics.managar.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.persistence.DirtyCallbackMutableMap
 import de.mctelemetry.core.persistence.SavedDataConcurrentMap
-import de.mctelemetry.core.utils.Union3
+import de.mctelemetry.core.utils.Union2
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.metrics.Meter
-import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
-import io.opentelemetry.api.metrics.ObservableLongMeasurement
-import io.opentelemetry.api.metrics.ObservableMeasurement
 import net.minecraft.core.HolderGetter
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
-import net.minecraft.resources.ResourceKey
-import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.datafix.DataFixTypes
@@ -34,16 +31,16 @@ import java.util.concurrent.ConcurrentMap
 
 internal class WorldInstrumentManager private constructor(
     meter: Meter,
-    override val gameInstruments: IGameInstrumentManager,
+    override val gameInstruments: GameInstrumentManager,
     server: MinecraftServer,
     localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion>,
-) : InstrumentManagerBase<WorldInstrumentManager.WorldGaugeInstrumentBuilder>(
+) : InstrumentManagerBase.Child<WorldInstrumentManager.WorldGaugeInstrumentBuilder>(
     meter,
     gameInstruments,
     localInstruments,
 ), IWorldInstrumentManager, AutoCloseable {
 
-    constructor(meter: Meter, gameInstruments: IGameInstrumentManager, server: MinecraftServer) : this(
+    constructor(meter: Meter, gameInstruments: GameInstrumentManager, server: MinecraftServer) : this(
         meter,
         gameInstruments,
         server,
@@ -58,7 +55,7 @@ internal class WorldInstrumentManager private constructor(
 
         fun withPersistentStorage(
             meter: Meter,
-            gameInstruments: IGameInstrumentManager,
+            gameInstruments: GameInstrumentManager,
             server: MinecraftServer,
             dataStorage: DimensionDataStorage = server.getLevel(ServerLevel.OVERWORLD)!!.dataStorage,
         ): WorldInstrumentManager {
@@ -67,6 +64,7 @@ internal class WorldInstrumentManager private constructor(
             runWithExceptionCleanup(manager::close) {
                 for (registration in manager.localInstruments.values) {
                     val registrationValue = registration.value
+                    manager.triggerOwnInstrumentAdded(registrationValue, IInstrumentAvailabilityCallback.Phase.PRE)
                     val otelRegistration = meter.gaugeBuilder(registrationValue.name)
                         .let { builder ->
                             if (registrationValue.description.isNotBlank())
@@ -77,27 +75,24 @@ internal class WorldInstrumentManager private constructor(
                                 builder.setUnit(registrationValue.unit)
                             else builder
                         }.let { builder ->
-                            when (registrationValue) {
-                                is MutableLongGaugeInstrumentRegistration -> {
-                                    builder.ofLongs().buildWithCallback(registrationValue::observe)
-                                }
-                                is MutableDoubleGaugeInstrumentRegistration -> {
-                                    builder.buildWithCallback(registrationValue::observe)
-                                }
-                                else -> throw IllegalArgumentException("Cannot register at OTel with non-mutable persistent instrument $registration during setup")
+                            if (registrationValue !is MutableGaugeInstrumentRegistration<*>) {
+                                throw IllegalArgumentException("Cannot register at OTel with non-mutable persistent instrument $registration during setup")
+                            }
+                            if (registrationValue.supportsFloating) {
+                                builder.buildWithCallback(registrationValue::observe)
+                            } else {
+                                builder.ofLongs().buildWithCallback(registrationValue::observe)
                             }
                         }
                     runWithExceptionCleanup(otelRegistration::close) {
                         registrationValue.provideOTelRegistration(otelRegistration)
+                        manager.triggerOwnInstrumentAdded(registrationValue, IInstrumentAvailabilityCallback.Phase.POST)
                     }
                 }
             }
             return manager
         }
     }
-
-    override val localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion>
-        get() = super.localInstruments
 
     fun start() {
         allowRegistration.set(true)
@@ -118,28 +113,28 @@ internal class WorldInstrumentManager private constructor(
 
     override fun createImmutableDoubleRegistration(
         builder: WorldGaugeInstrumentBuilder,
-        callback: IInstrumentRegistration.Callback<ObservableDoubleMeasurement>,
-    ): ImmutableGaugeInstrumentRegistration<ObservableDoubleMeasurement> {
+        callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>,
+    ): ImmutableGaugeInstrumentRegistration {
         if (builder.persistent) throw IllegalArgumentException("Cannot create persistent immutable instrument registrations")
         return super.createImmutableDoubleRegistration(builder, callback)
     }
 
     override fun createImmutableLongRegistration(
         builder: WorldGaugeInstrumentBuilder,
-        callback: IInstrumentRegistration.Callback<ObservableLongMeasurement>,
-    ): ImmutableGaugeInstrumentRegistration<ObservableLongMeasurement> {
+        callback: IInstrumentRegistration.Callback<ILongInstrumentRegistration>,
+    ): ImmutableGaugeInstrumentRegistration {
         if (builder.persistent) throw IllegalArgumentException("Cannot create persistent immutable instrument registrations")
         return super.createImmutableLongRegistration(builder, callback)
     }
 
-    override fun createMutableDoubleRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableDoubleGaugeInstrumentRegistration {
+    override fun createMutableDoubleRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return WorldMutableDoubleGaugeInstrumentRegistration(builder)
+        return WorldMutableGaugeInstrumentRegistration(builder, supportsFloating = true)
     }
 
-    override fun createMutableLongRegistration(builder: WorldGaugeInstrumentBuilder): MutableLongGaugeInstrumentRegistration {
+    override fun createMutableLongRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
-        return WorldMutableLongGaugeInstrumentRegistration(builder)
+        return WorldMutableGaugeInstrumentRegistration(builder, supportsFloating = false)
     }
 
     internal class WorldGaugeInstrumentBuilder(
@@ -154,18 +149,15 @@ internal class WorldInstrumentManager private constructor(
         override var persistent: Boolean = false
     }
 
-    internal sealed interface IWorldMutableInstrumentRegistration<R : ObservableMeasurement> : IInstrumentRegistration.Mutable<R> {
-
-        val persistent: Boolean
-    }
-
-    internal class WorldMutableLongGaugeInstrumentRegistration : MutableLongGaugeInstrumentRegistration,
-            IWorldMutableInstrumentRegistration<ObservableLongMeasurement> {
+    internal class WorldMutableGaugeInstrumentRegistration :
+            MutableGaugeInstrumentRegistration<WorldMutableGaugeInstrumentRegistration>,
+            IWorldInstrumentManager.IWorldMutableInstrumentRegistration<WorldMutableGaugeInstrumentRegistration> {
 
         override val persistent: Boolean
 
-        constructor(builder: WorldGaugeInstrumentBuilder) : super(
-            builder
+        constructor(builder: WorldGaugeInstrumentBuilder, supportsFloating: Boolean) : super(
+            builder,
+            supportsFloating,
         ) {
             this.persistent = builder.persistent
         }
@@ -175,30 +167,9 @@ internal class WorldInstrumentManager private constructor(
             description: String,
             unit: String,
             attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+            supportsFloating: Boolean,
             persistent: Boolean,
-        ) : super(name, description, unit, attributes) {
-            this.persistent = persistent
-        }
-    }
-
-    internal class WorldMutableDoubleGaugeInstrumentRegistration : MutableDoubleGaugeInstrumentRegistration,
-            IWorldMutableInstrumentRegistration<ObservableDoubleMeasurement> {
-
-        override val persistent: Boolean
-
-        constructor(builder: WorldGaugeInstrumentBuilder) : super(
-            builder
-        ) {
-            this.persistent = builder.persistent
-        }
-
-        constructor(
-            name: String,
-            description: String,
-            unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-            persistent: Boolean,
-        ) : super(name, description, unit, attributes) {
+        ) : super(name, description, unit, attributes, supportsFloating) {
             this.persistent = persistent
         }
     }
@@ -237,14 +208,11 @@ internal class WorldInstrumentManager private constructor(
                 registration: InstrumentManagerBaseRegistrationUnion,
             ): CompoundTag? {
                 val value = registration.value
-                if (value !is IWorldMutableInstrumentRegistration<*>) return null
+                if (value !is IWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) return null
                 if (!value.persistent) return null
                 return CompoundTag().apply {
                     putString("name", name)
-                    val integral: Boolean = when (value) {
-                        is WorldMutableLongGaugeInstrumentRegistration -> true
-                        is WorldMutableDoubleGaugeInstrumentRegistration -> false
-                    }
+                    val integral: Boolean = !value.supportsFloating
                     putBoolean("integral", integral)
                     if (value.description.isNotEmpty()) {
                         putString("description", value.description)
@@ -255,20 +223,9 @@ internal class WorldInstrumentManager private constructor(
                     if (value.attributes.isNotEmpty()) {
                         put("attributes", ListTag().apply {
                             for (attributeKey in value.attributes.values) {
-                                this.add(createAttributeKeyInfoTag(attributeKey))
+                                this.add(attributeKey.save())
                             }
                         })
-                    }
-                }
-            }
-
-            private fun createAttributeKeyInfoTag(key: MappedAttributeKeyInfo<*, *>): CompoundTag {
-                return CompoundTag().apply {
-                    putString("name", key.baseKey.key)
-                    putString("type", key.type.id.toString())
-                    val data = key.save()
-                    if (data != null) {
-                        put("data", data)
                     }
                 }
             }
@@ -288,77 +245,26 @@ internal class WorldInstrumentManager private constructor(
                     if (tag.contains("attributes", Tag.TAG_LIST.toInt())) {
                         buildMap {
                             tag.getList("attributes", Tag.TAG_COMPOUND.toInt()).forEach {
-                                val keyInfo = loadAttributeKeyInfoTag(it as CompoundTag, attributeKeyTypeHolderGetter)
+                                val keyInfo =
+                                    MappedAttributeKeyInfo.load(it as CompoundTag, attributeKeyTypeHolderGetter)
                                 this@buildMap.put(keyInfo.baseKey.key, keyInfo)
                             }
                         }
                     } else {
                         emptyMap()
                     }
-                return name to if (integral)
-                    Union3.of2(
-                        WorldMutableLongGaugeInstrumentRegistration(
-                            name = name,
-                            description = description,
-                            unit = unit,
-                            attributes = attributes,
-                            persistent = true,
-                        )
+                return name to Union2.of2(
+                    WorldMutableGaugeInstrumentRegistration(
+                        name = name,
+                        description = description,
+                        unit = unit,
+                        attributes = attributes,
+                        supportsFloating = !integral,
+                        persistent = true,
                     )
-                else
-                    Union3.of3(
-                        WorldMutableDoubleGaugeInstrumentRegistration(
-                            name = name,
-                            description = description,
-                            unit = unit,
-                            attributes = attributes,
-                            persistent = true,
-                        )
-                    )
+                )
             }
 
-
-            private fun loadAttributeKeyInfoTag(
-                tag: CompoundTag,
-                attributeKeyTypeHolderGetter: HolderGetter<IMappedAttributeKeyType<*, *>>,
-            ): MappedAttributeKeyInfo<*, *> {
-                val name = tag.getString("name")
-                if (name.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'name'")
-                val type = tag.getString("type")
-                if (type.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'type'")
-                val typeResourceLocation = ResourceLocation.parse(type)
-                val mappingType: IMappedAttributeKeyType<*, *> = try {
-                    attributeKeyTypeHolderGetter.getOrThrow(
-                        ResourceKey.create(
-                            OTelCoreModAPI.AttributeTypeMappings,
-                            ResourceLocation.parse(type)
-                        )
-                    ).value()
-                } catch (ex: Exception) {
-                    val otherResourceLocation: ResourceLocation = when (typeResourceLocation.namespace) {
-                        ResourceLocation.DEFAULT_NAMESPACE -> ResourceLocation.fromNamespaceAndPath(
-                            OTelCoreModAPI.MOD_ID,
-                            typeResourceLocation.path
-                        )
-                        OTelCoreModAPI.MOD_ID -> ResourceLocation.fromNamespaceAndPath(
-                            ResourceLocation.DEFAULT_NAMESPACE,
-                            typeResourceLocation.path
-                        )
-                        else -> throw ex
-                    }
-                    try {
-                        attributeKeyTypeHolderGetter.getOrThrow(
-                            ResourceKey.create(OTelCoreModAPI.AttributeTypeMappings, otherResourceLocation)
-                        ).value().also {
-                            OTelCoreMod.logger.warn("Converted attribute resource location from $typeResourceLocation to $otherResourceLocation during loading")
-                        }
-                    } catch (ex2: Exception) {
-                        ex.addSuppressed(ex2)
-                        throw ex
-                    }
-                }
-                return mappingType.create(name, tag.getCompound("data"))
-            }
 
             internal val Factory = Factory<WorldInstrumentSavedData>(
                 ::invoke,

@@ -1,32 +1,47 @@
 {
   "variants": {
-    "facing=east,error=false": {
+    "facing=east,error=ok": {
       "model": "mcotelcore:block/redstone_scraper_block",
       "y": 90
     },
-    "facing=north,error=false": {
+    "facing=north,error=ok": {
       "model": "mcotelcore:block/redstone_scraper_block"
     },
-    "facing=south,error=false": {
+    "facing=south,error=ok": {
       "model": "mcotelcore:block/redstone_scraper_block",
       "y": 180
     },
-    "facing=west,error=false": {
+    "facing=west,error=ok": {
       "model": "mcotelcore:block/redstone_scraper_block",
       "y": 270
     },
-    "facing=east,error=true": {
+    "facing=east,error=warnings": {
+      "model": "mcotelcore:block/redstone_scraper_block_warning",
+      "y": 90
+    },
+    "facing=north,error=warnings": {
+      "model": "mcotelcore:block/redstone_scraper_block_warning"
+    },
+    "facing=south,error=warnings": {
+      "model": "mcotelcore:block/redstone_scraper_block_warning",
+      "y": 180
+    },
+    "facing=west,error=warnings": {
+      "model": "mcotelcore:block/redstone_scraper_block_warning",
+      "y": 270
+    },
+    "facing=east,error=errors": {
       "model": "mcotelcore:block/redstone_scraper_block_error",
       "y": 90
     },
-    "facing=north,error=true": {
+    "facing=north,error=errors": {
       "model": "mcotelcore:block/redstone_scraper_block_error"
     },
-    "facing=south,error=true": {
+    "facing=south,error=errors": {
       "model": "mcotelcore:block/redstone_scraper_block_error",
       "y": 180
     },
-    "facing=west,error=true": {
+    "facing=west,error=errors": {
       "model": "mcotelcore:block/redstone_scraper_block_error",
       "y": 270
     }

@@ -1,7 +1,8 @@
 package de.mctelemetry.core
 
-import de.mctelemetry.core.api.metrics.IInstrumentRegistration
-import de.mctelemetry.core.api.metrics.IMetricDefinition
+import de.mctelemetry.core.api.metrics.IInstrumentDefinition
+import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
+import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 
@@ -16,6 +17,10 @@ object TranslationKeys {
         const val ERRORS_METRIC_NAME_DOUBLE_DELIMITER = "errors.mctelemetry.core.metric.name.double_delimiter"
         const val ERRORS_METRIC_RESPONSE_TYPE_UNEXPECTED = "errors.mctelemetry.core.metric.response_type.unexpected"
         const val ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING = "errors.mctelemetry.core.world.instrument_manager.missing"
+        const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE = "errors.mctelemetry.core.attributes.type.incompatible"
+        const val ERRORS_ATTRIBUTES_MAPPING_MISSING = "errors.mctelemetry.core.attributes.mapping.missing"
+        const val ERRORS_OBSERVATIONS_UNINITIALIZED = "errors.mctelemetry.core.observations.uninitialized"
+        const val ERRORS_OBSERVATIONS_NOT_CONFIGURED = "errors.mctelemetry.core.observations.not_configured"
 
         fun metricsAccessorMissing(): MutableComponent =
             Component.translatableWithFallback(
@@ -72,6 +77,51 @@ object TranslationKeys {
             Component.translatableWithFallback(
                 ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING,
                 "Instrument manager missing for world"
+            )
+
+        fun attributeTypesIncompatible(
+            sourceType: IMappedAttributeKeyType<*, *>,
+            targetType: IMappedAttributeKeyType<*, *>,
+        ): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE,
+                $$"Incompatible attribute types: Cannot assign from %1$s to %2$s",
+                sourceType.id.toString(),
+                targetType.id.toString(),
+            )
+
+        fun attributeTypesIncompatible(
+            source: MappedAttributeKeyInfo<*, *>,
+            target: MappedAttributeKeyInfo<*, *>,
+        ): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE,
+                $$"Incompatible attribute types: Cannot assign from %1$s ('%3$s') to %2$s ('%4$s')",
+                source.type.id.toString(),
+                target.type.id.toString(),
+                source.baseKey.key,
+                target.baseKey.key,
+            )
+
+        fun attributeMappingMissing(
+            target: MappedAttributeKeyInfo<*, *>,
+        ): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_ATTRIBUTES_MAPPING_MISSING,
+                $$"Missing attributes mapping: Cannot find source attribute for '%1$s' (%2$s)",
+                target.baseKey.key,
+                target.type.id.toString(),
+            )
+
+        fun observationsUninitialized(): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_OBSERVATIONS_UNINITIALIZED,
+                "Observations not initialized",
+            )
+        fun observationsNotConfigured(): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_OBSERVATIONS_NOT_CONFIGURED,
+                "Observations not configured",
             )
     }
 
@@ -136,11 +186,11 @@ object TranslationKeys {
                 sum
             )
 
-        fun metricsDeleteSuccess(registration: IInstrumentRegistration): MutableComponent =
+        fun metricsDeleteSuccess(definition: IInstrumentDefinition): MutableComponent =
             Component.translatableWithFallback(
                 COMMANDS_MCOTEL_METRICS_DELETE_SUCCESS,
                 $$"Successfully deleted metric '%1$s'",
-                registration.name
+                definition.name
             )
 
         fun metricsListSuccess(count: Int, scope: String): MutableComponent =
@@ -151,7 +201,7 @@ object TranslationKeys {
                 scope
             )
 
-        fun metricsCreateSuccess(definition: IInstrumentRegistration): MutableComponent =
+        fun metricsCreateSuccess(definition: IInstrumentDefinition): MutableComponent =
             Component.translatableWithFallback(
                 COMMANDS_MCOTEL_METRICS_CREATE_SUCCESS,
                 $$"Successfully created metric '%1$s'",
