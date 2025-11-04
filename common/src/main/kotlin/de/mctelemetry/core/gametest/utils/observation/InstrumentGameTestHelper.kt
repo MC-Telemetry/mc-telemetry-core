@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalContracts::class)
 
-package de.mctelemetry.core.utils.gametest.observation
+package de.mctelemetry.core.gametest.utils.observation
 
 import com.mojang.datafixers.util.Either
 import de.mctelemetry.core.api.metrics.BuiltinAttributeKeyTypes
@@ -17,18 +17,18 @@ import de.mctelemetry.core.api.metrics.managar.gaugeWorldInstrument
 import de.mctelemetry.core.blocks.RedstoneScraperBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.blocks.observation.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.gametest.utils.IGameTestHelperFinalizer
+import de.mctelemetry.core.gametest.utils.IGameTestHelperFinalizer.Companion.finalizer
+import de.mctelemetry.core.gametest.utils.assertNotNullC
+import de.mctelemetry.core.gametest.utils.failC
+import de.mctelemetry.core.gametest.utils.getBlockEntityC
+import de.mctelemetry.core.gametest.utils.observation.InstrumentGameTestHelper.Companion.instruments
+import de.mctelemetry.core.gametest.utils.server
+import de.mctelemetry.core.gametest.utils.thenExecuteAfterC
+import de.mctelemetry.core.gametest.utils.thenExecuteC
 import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.utils.Validators
-import de.mctelemetry.core.utils.gametest.IGameTestHelperFinalizer
-import de.mctelemetry.core.utils.gametest.IGameTestHelperFinalizer.Companion.finalizer
-import de.mctelemetry.core.utils.gametest.assertNotNullC
-import de.mctelemetry.core.utils.gametest.failC
-import de.mctelemetry.core.utils.gametest.getBlockEntityC
-import de.mctelemetry.core.utils.gametest.observation.InstrumentGameTestHelper.Companion.instruments
-import de.mctelemetry.core.utils.gametest.server
-import de.mctelemetry.core.utils.gametest.thenExecuteAfterC
-import de.mctelemetry.core.utils.gametest.thenExecuteC
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.Attributes

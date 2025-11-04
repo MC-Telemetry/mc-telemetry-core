@@ -1,10 +1,9 @@
 @file:OptIn(ExperimentalContracts::class)
 
-package de.mctelemetry.core.utils.gametest
+package de.mctelemetry.core.gametest.utils
 
 import com.mojang.brigadier.context.ContextChain
 import com.mojang.brigadier.exceptions.CommandSyntaxException
-import de.mctelemetry.core.gametest.CallbackCommandSource
 import net.minecraft.commands.CommandResultCallback
 import net.minecraft.commands.CommandSource
 import net.minecraft.commands.CommandSourceStack

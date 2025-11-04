@@ -1,7 +1,7 @@
 @file:Suppress("NOTHING_TO_INLINE", "WRONG_INVOCATION_KIND", "unused")
 @file:OptIn(ExperimentalContracts::class)
 
-package de.mctelemetry.core.utils.gametest
+package de.mctelemetry.core.gametest.utils
 
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction

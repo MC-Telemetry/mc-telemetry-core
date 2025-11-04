@@ -1,4 +1,4 @@
-package de.mctelemetry.core.gametest
+package de.mctelemetry.core.gametest.utils
 
 import net.minecraft.commands.CommandSource
 import net.minecraft.network.chat.Component

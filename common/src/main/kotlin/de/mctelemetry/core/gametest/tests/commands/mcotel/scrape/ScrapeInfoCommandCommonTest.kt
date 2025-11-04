@@ -1,12 +1,12 @@
-package de.mctelemetry.core.gametest.commands.mcotel.scrape
+package de.mctelemetry.core.gametest.tests.commands.mcotel.scrape
 
-import de.mctelemetry.core.utils.gametest.assertCommandCannotParse
-import de.mctelemetry.core.utils.gametest.assertThrows
-import de.mctelemetry.core.utils.gametest.runCommand
+import de.mctelemetry.core.gametest.utils.assertCommandCannotParse
+import de.mctelemetry.core.gametest.utils.assertThrows
+import de.mctelemetry.core.gametest.utils.runCommand
 import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestHelper
 
-object ScrapeCardinalityCommandCommonTest {
+object ScrapeInfoCommandCommonTest {
 
     private val permissionLevel = 2
 
@@ -15,7 +15,7 @@ object ScrapeCardinalityCommandCommonTest {
     @GameTest
     fun permission0Fails(helper: GameTestHelper) {
         helper.assertCommandCannotParse(
-            "mcotel scrape cardinality",
+            "mcotel scrape info",
             permissionLevel = 0,
         )
         helper.succeed()
@@ -26,7 +26,7 @@ object ScrapeCardinalityCommandCommonTest {
     @GameTest
     fun permission0WithMetricFails(helper: GameTestHelper) {
         helper.assertCommandCannotParse(
-            "mcotel scrape cardinality system.memory.utilization",
+            "mcotel scrape info jvm.class.loaded",
             permissionLevel = 0,
         )
         helper.succeed()
@@ -37,7 +37,7 @@ object ScrapeCardinalityCommandCommonTest {
     @GameTest
     fun permission1Fails(helper: GameTestHelper) {
         helper.assertCommandCannotParse(
-            "mcotel scrape cardinality",
+            "mcotel scrape info",
             permissionLevel = 1,
         )
         helper.succeed()
@@ -48,7 +48,7 @@ object ScrapeCardinalityCommandCommonTest {
     @GameTest
     fun permission1WithMetricFails(helper: GameTestHelper) {
         helper.assertCommandCannotParse(
-            "mcotel scrape cardinality system.memory.utilization",
+            "mcotel scrape info jvm.class.loaded",
             permissionLevel = 1,
         )
         helper.succeed()
@@ -59,7 +59,7 @@ object ScrapeCardinalityCommandCommonTest {
     @GameTest
     fun normalSucceeds(helper: GameTestHelper) {
         helper.runCommand(
-            "mcotel scrape cardinality",
+            "mcotel scrape info",
             permissionLevel = permissionLevel,
             requiredSuccess = true
         ).let { commandResult ->
@@ -86,7 +86,7 @@ object ScrapeCardinalityCommandCommonTest {
     @GameTest
     fun filterForMetricReturns1(helper: GameTestHelper) {
         helper.runCommand(
-            "mcotel scrape cardinality system.memory.utilization",
+            "mcotel scrape info jvm.class.loaded",
             permissionLevel = permissionLevel,
             requiredSuccess = true
         ).let { commandResult ->
@@ -98,13 +98,13 @@ object ScrapeCardinalityCommandCommonTest {
                 "messages.size"
             )
             val messageString = commandResult.messages.single().string
-            val matches = Regex("""\s{2}-\s([\w._]+(?:\[\d+(?:⨉\d+)*])?:\s\d+)""").findAll(messageString)
+            val matches = Regex("""\s{2}-\s([\w._]+)(?:\s?\([^)]+\))?: """).findAll(messageString)
                 .map { it.groupValues[1] }
                 .toList()
-            helper.assertValueEqual(matches, listOf("system.memory.utilization[2]: 2"), "messages[0]")
+            helper.assertValueEqual(matches, listOf("jvm.class.loaded"), "messages[0]")
             helper.assertValueEqual(
                 result,
-                2,
+                1,
                 "result"
             )
         }
@@ -117,7 +117,7 @@ object ScrapeCardinalityCommandCommonTest {
     fun filterForMissingMetricFails(helper: GameTestHelper) {
         helper.assertThrows<NoSuchElementException> {
             helper.runCommand(
-                "mcotel scrape cardinality missing.metric",
+                "mcotel scrape info missing.metric",
                 permissionLevel = permissionLevel,
                 requiredSuccess = false
             )
