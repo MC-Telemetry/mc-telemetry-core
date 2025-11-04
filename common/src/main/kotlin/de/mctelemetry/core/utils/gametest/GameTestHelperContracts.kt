@@ -183,26 +183,21 @@ inline fun GameTestHelper.failC(text: String): Nothing =
     @Suppress("CAST_NEVER_SUCCEEDS")
     (fail(text) as Nothing)
 
-inline fun <N : Any> GameTestHelper.assertValueEqualC(expected: N, actual: N?, name: String) {
+inline fun <N> GameTestHelper.assertValueEqualC(actual: N, expected: N, name: String) {
     contract {
-        returns() implies (actual != null)
+        returns() implies (expected != null)
     }
-    return assertValueEqual<N>(
-        expected,
-        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
-        actual,
-        name
-    )
-}
-
-@JvmName("assertNotNullCReceiver")
-context(helper: GameTestHelper)
-inline fun <T> T?.assertNotNullC(name: String): T {
-    contract {
-        returns() implies (this@assertNotNullC != null)
+    return if(expected == null) {
+        assertNullC(actual, name)
+    } else if(actual == null) {
+        assertNotNullC(actual, name) // always fails, but uses correct exception message
+    } else {
+        assertValueEqual(
+            actual,
+            expected,
+            name
+        )
     }
-    helper.assertTrueC(this != null, "Expected $name to not be null")
-    return this
 }
 
 inline fun <T> GameTestHelper.assertNotNullC(value: T?, name: String): T {
@@ -217,7 +212,7 @@ inline fun <T> GameTestHelper.assertNullC(value: T?, name: String) {
     contract {
         returns() implies (value == null)
     }
-    assertTrueC(value == null, "Expected $name to not be null")
+    assertTrueC(value == null, "Expected $name to be null but was $value")
 }
 
 inline fun GameTestHelper.assertTrueC(value: Boolean, text: String) {

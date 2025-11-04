@@ -8,6 +8,8 @@ import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
+import net.minecraft.gametest.framework.GameTestAssertException
+import net.minecraft.gametest.framework.GameTestTimeoutException
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentSkipListSet
@@ -145,6 +147,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
                 mappingResolver,
             )
         } catch (e: RuntimeException) {
+            if(e is GameTestAssertException || e is GameTestTimeoutException) throw e
             state.errorState = state.errorState.withException(e)
         }
     }

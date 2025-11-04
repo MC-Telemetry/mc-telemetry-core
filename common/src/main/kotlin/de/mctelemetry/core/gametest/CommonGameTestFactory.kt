@@ -22,6 +22,7 @@ class CommonGameTestFactory {
             ScrapeCardinalityCommandCommonTest::class.java,
             RedstoneScraperBlockTest::class.java,
             RedstoneScraperBlockAirTest.Undirected::class.java,
+            RedstoneScraperBlockAirTest.Directed::class.java,
         )
 
         @GameTestGenerator
