@@ -15,7 +15,9 @@ import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.Container
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.ChestBlock
 import net.minecraft.world.level.block.entity.BlockEntity
+import net.minecraft.world.level.block.entity.ChestBlockEntity
 import net.minecraft.world.level.block.entity.LecternBlockEntity
 import net.minecraft.world.level.block.state.BlockState
 
@@ -91,9 +93,19 @@ object RedstoneScraperComparatorObservationSource : IObservationSource<BlockEnti
     fun getAdvancedAnalogValue(level: Level, blockState: BlockState, blockPos: BlockPos, fallback: Int): Double {
         if (!blockState.hasBlockEntity()) return fallback.toDouble()
         val blockEntity = level.getChunkAt(blockPos).getBlockEntity(blockPos) ?: return fallback.toDouble()
-        return when (blockEntity) {
-            is LecternBlockEntity -> getLecternAdvancedAnalogOutput(blockEntity, fallback)
-            is Container -> getContainerAdvancedAnalogOutput(blockEntity, fallback)
+        val block = blockState.block
+        return when {
+            blockEntity is LecternBlockEntity -> getLecternAdvancedAnalogOutput(blockEntity, fallback)
+            block is ChestBlock -> getContainerAdvancedAnalogOutput(
+                ChestBlock.getContainer(
+                    block,
+                    blockState,
+                    level,
+                    blockPos,
+                    false
+                ), fallback
+            )
+            blockEntity is Container -> getContainerAdvancedAnalogOutput(blockEntity, fallback)
             else -> fallback.toDouble()
         }
     }
