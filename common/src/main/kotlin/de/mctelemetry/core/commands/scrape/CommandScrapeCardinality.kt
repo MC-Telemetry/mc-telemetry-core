@@ -1,6 +1,5 @@
 package de.mctelemetry.core.commands.scrape
 
-import com.google.common.math.LongMath
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
@@ -112,17 +111,25 @@ class CommandScrapeCardinality(private val metricsAccessor: IMetricsAccessor?) {
             data.mapValues { (_, value: MetricDataReadback) ->
                 val cardinality = analyzeCardinality(value.data.keys)
                 if (cardinality == null) return@mapValues emptyMap<String, Int>() to 0L
-                return@mapValues cardinality to (cardinality.values.fold(1L) { acc, i ->
-                    LongMath.saturatedMultiply(acc, i.toLong())
-                })
+                return@mapValues cardinality to try {
+                    (cardinality.values.fold(1L) { acc, i ->
+                        Math.multiplyExact(acc, i.toLong())
+                    })
+                } catch (_: ArithmeticException) {
+                    Long.MAX_VALUE
+                }
             }
-        val totalSize: Long = cardinalities.values.fold(0L) { acc, value ->
-            assert(value.second > 0)
-            val sum = acc + value.second
-            if (sum < acc)
-                Long.MAX_VALUE
-            else
-                sum
+        val totalSize: Long = try {
+            cardinalities.values.fold(0L) { acc, value ->
+                assert(value.second > 0)
+                val sum = acc + value.second
+                if (sum < acc)
+                    Long.MAX_VALUE
+                else
+                    sum
+            }
+        } catch(_: ArithmeticException){
+            Long.MAX_VALUE
         }
         if (data.isEmpty()) {
             if (metricNameFilter != null) {
