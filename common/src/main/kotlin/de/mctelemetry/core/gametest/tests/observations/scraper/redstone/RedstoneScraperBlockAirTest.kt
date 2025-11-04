@@ -22,7 +22,7 @@ object RedstoneScraperBlockAirTest {
         @JvmStatic
         @GameTest(template = "mcotelcore:redstonescraper.air")
         fun longScrapeAirTest(helper: GameTestHelper) {
-            helper.withConfiguredStartupSequence { sequence, instruments ->
+            helper.withConfiguredStartupSequence { instruments ->
                 val comparatorInstrument = instruments.getValue("comparator").longInstrument
                 val directPowerInstrument = instruments.getValue("direct_power").longInstrument
                 val powerInstrument = instruments.getValue("power").longInstrument
@@ -48,8 +48,8 @@ object RedstoneScraperBlockAirTest {
         @Suppress("unused")
         @JvmStatic
         @GameTest(template = "mcotelcore:redstonescraper.air")
-        fun doubleScrapeAirTest(helper: GameTestHelper) {
-            helper.withConfiguredStartupSequence(useDouble = { true }) { sequence, instruments ->
+        fun doubleScrapeAirComparatorTest(helper: GameTestHelper) {
+            helper.withConfiguredStartupSequence(useDouble = { true }) { instruments ->
                 val comparatorInstrument = instruments.getValue("comparator").doubleInstrument
                 with(helper.instruments) {
                     comparatorInstrument.assertRecordsNone()
@@ -64,8 +64,8 @@ object RedstoneScraperBlockAirTest {
         @Suppress("unused")
         @JvmStatic
         @GameTest(template = "mcotelcore:redstonescraper.air.directed")
-        fun longScrapeAirTest(helper: GameTestHelper) {
-            helper.withConfiguredStartupSequence { sequence, instruments ->
+        fun longScrapeAirPowerTest(helper: GameTestHelper) {
+            helper.withConfiguredStartupSequence { instruments ->
                 val directPowerInstrument = instruments.getValue("direct_power").longInstrument
                 val powerInstrument = instruments.getValue("power").longInstrument
                 with(helper.instruments) {

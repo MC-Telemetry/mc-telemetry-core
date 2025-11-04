@@ -9,6 +9,7 @@ import de.mctelemetry.core.gametest.utils.failC
 import io.opentelemetry.api.common.Attributes
 import net.minecraft.gametest.framework.GameTestHelper
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.abs
 
 abstract class AssertionObservationRecorder(
     protected val gameTestHelper: GameTestHelper,
@@ -35,6 +36,7 @@ abstract class AssertionObservationRecorder(
             val name: String,
             override val supportsFloating: Boolean,
             override var allowAdditional: Boolean = false,
+            val doubleMargin: Double = 0.001,
         ) : IAssertionObservationRecorderBuilder.ForLong, IAssertionObservationRecorderBuilder.ForDouble {
 
             private val subObservers: MutableList<Single> = mutableListOf()
@@ -83,6 +85,7 @@ abstract class AssertionObservationRecorder(
                         allowPreferred = allowPreferred,
                         source = source,
                         requireSourceMatch = requireSourceMatch,
+                        doubleMargin = doubleMargin,
                     ).also {
                         if (!allowPreferred) {
                             cannotSupportLongReason = cannotSupportLongReason ?: it
@@ -141,6 +144,7 @@ abstract class AssertionObservationRecorder(
                         attributes,
                         source = source,
                         requireSourceMatch = requireSourceMatch,
+                        doubleMargin = doubleMargin,
                     ).also {
                         if (cannotSupportLongReason != null)
                             cannotSupportLongReason = it
@@ -156,17 +160,21 @@ abstract class AssertionObservationRecorder(
             gameTestHelper: GameTestHelper,
             name: String,
             supportsFloating: Boolean,
+            doubleMargin: Double = 0.001,
             block: IAssertionObservationRecorderBuilder.() -> Unit,
         ): AssertionObservationRecorder {
-            return BuilderImpl(gameTestHelper, name, supportsFloating).apply(block).build()
+            return BuilderImpl(gameTestHelper, name, supportsFloating, doubleMargin = doubleMargin)
+                .apply(block).build()
         }
 
         inline fun buildAssertionRecorderDouble(
             gameTestHelper: GameTestHelper,
             name: String,
+            doubleMargin: Double = 0.001,
             block: IAssertionObservationRecorderBuilder.ForDouble.() -> Unit,
         ): AssertionObservationRecorder {
-            return BuilderImpl(gameTestHelper, name, supportsFloating = true).apply(block).build()
+            return BuilderImpl(gameTestHelper, name, supportsFloating = true, doubleMargin = doubleMargin)
+                .apply(block).build()
         }
 
         inline fun buildAssertionRecorderLong(
@@ -174,7 +182,8 @@ abstract class AssertionObservationRecorder(
             name: String,
             block: IAssertionObservationRecorderBuilder.ForLong.() -> Unit,
         ): AssertionObservationRecorder {
-            return BuilderImpl(gameTestHelper, name, supportsFloating = false).apply(block).build()
+            return BuilderImpl(gameTestHelper, name, supportsFloating = false)
+                .apply(block).build()
         }
     }
 
@@ -236,6 +245,7 @@ abstract class AssertionObservationRecorder(
         val source: IObservationSource<*, *>? = null,
         val requireSourceMatch: Boolean = source != null,
         override val supportsFloating: Boolean = doubleValue != null,
+        val doubleMargin: Double = 0.001,
     ) : AssertionObservationRecorder(gameTestHelper) {
 
         var sawValue: Boolean
@@ -292,7 +302,10 @@ abstract class AssertionObservationRecorder(
             gameTestHelper.assertTrueC(allowRecordPreferred, "Unexpected preferred observation for $sourceName")
             gameTestHelper.assertValueEqualC(attributes, this.attributes, "attributes for $sourceName")
             if (this.doubleValue != null) {
-                gameTestHelper.assertValueEqualC(double, this.doubleValue, sourceName)
+                gameTestHelper.assertTrueC(
+                    abs(this.doubleValue - doubleValue) <= doubleMargin,
+                    "Expected $sourceName to be ${this.doubleValue} (within ${doubleMargin}), but was $doubleValue"
+                )
             }
             if (this.longValue != null) {
                 gameTestHelper.assertValueEqualC(long, this.longValue, sourceName)
@@ -331,7 +344,10 @@ abstract class AssertionObservationRecorder(
             gameTestHelper.assertTrueC(allowRecordDouble, "Unexpected double observation for $sourceName")
             gameTestHelper.assertValueEqualC(attributes, this.attributes, "attributes for $sourceName")
             if (this.doubleValue != null) {
-                gameTestHelper.assertValueEqualC(value, this.doubleValue, sourceName)
+                gameTestHelper.assertTrueC(
+                    abs(this.doubleValue - value) <= doubleMargin,
+                    "Expected $sourceName to be ${this.doubleValue} (within ${doubleMargin}), but was $value"
+                )
             }
             gameTestHelper.assertFalseC(sawValue, "Unexpected observation from $sourceName after only one was expected")
             gameTestHelper.assertTrueC(
@@ -350,6 +366,7 @@ abstract class AssertionObservationRecorder(
                 allowPreferred: Boolean = true,
                 source: IObservationSource<*, *>? = null,
                 requireSourceMatch: Boolean = source != null,
+                doubleMargin: Double = 0.001,
             ) = Single(
                 gameTestHelper = gameTestHelper,
                 name = name,
@@ -360,7 +377,8 @@ abstract class AssertionObservationRecorder(
                 allowRecordDouble = true,
                 allowRecordPreferred = allowPreferred,
                 source = source,
-                requireSourceMatch = requireSourceMatch
+                requireSourceMatch = requireSourceMatch,
+                doubleMargin = doubleMargin,
             )
 
             fun assertRecordsLong(
@@ -392,6 +410,7 @@ abstract class AssertionObservationRecorder(
                 attributes: Attributes = Attributes.empty(),
                 source: IObservationSource<*, *>? = null,
                 requireSourceMatch: Boolean = source != null,
+                doubleMargin: Double = 0.001,
             ) = Single(
                 gameTestHelper = gameTestHelper,
                 name = name,
@@ -402,7 +421,8 @@ abstract class AssertionObservationRecorder(
                 allowRecordDouble = false,
                 allowRecordPreferred = true,
                 source = source,
-                requireSourceMatch = requireSourceMatch
+                requireSourceMatch = requireSourceMatch,
+                doubleMargin = doubleMargin,
             )
         }
     }

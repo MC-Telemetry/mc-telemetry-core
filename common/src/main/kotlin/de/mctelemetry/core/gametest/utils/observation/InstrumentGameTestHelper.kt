@@ -34,6 +34,7 @@ import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.Attributes
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
+import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestAssertException
 import net.minecraft.gametest.framework.GameTestAssertPosException
 import net.minecraft.gametest.framework.GameTestHelper
@@ -42,6 +43,7 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import java.lang.ref.WeakReference
 import java.util.Collections
 import java.util.WeakHashMap
+import java.util.concurrent.CompletableFuture
 import kotlin.collections.get
 import kotlin.collections.iterator
 import kotlin.contracts.ExperimentalContracts
@@ -306,6 +308,7 @@ class InstrumentGameTestHelper(
         attributes: Attributes,
         value: Double,
         allowPreferred: Boolean = true,
+        doubleMargin: Double = 0.001,
     ) {
         AssertionObservationRecorder.Single.assertRecordsDouble(
             gameTestHelper = gameTestHelper,
@@ -314,7 +317,8 @@ class InstrumentGameTestHelper(
             attributes = attributes,
             allowPreferred = allowPreferred,
             source = null,
-            requireSourceMatch = false
+            requireSourceMatch = false,
+            doubleMargin = doubleMargin,
         ).also(this::observe).assertSawAll()
     }
 
@@ -333,10 +337,17 @@ class InstrumentGameTestHelper(
     fun IInstrumentRegistration.assertRecords(
         supportsFloating: Boolean,
         requireAll: Boolean = true,
+        doubleMargin: Double = 0.001,
         block: IAssertionObservationRecorderBuilder.() -> Unit,
     ) {
         val asserter =
-            AssertionObservationRecorder.buildAssertionRecorder(gameTestHelper, this.name, supportsFloating, block)
+            AssertionObservationRecorder.buildAssertionRecorder(
+                gameTestHelper,
+                this.name,
+                supportsFloating,
+                doubleMargin = doubleMargin,
+                block
+            )
         observe(asserter)
         if (requireAll) {
             asserter.assertSawAll()
@@ -357,9 +368,15 @@ class InstrumentGameTestHelper(
 
     fun IDoubleInstrumentRegistration.assertRecords(
         requireAll: Boolean = true,
+        doubleMargin: Double = 0.001,
         block: IAssertionObservationRecorderBuilder.ForDouble.() -> Unit,
     ) {
-        val asserter = AssertionObservationRecorder.buildAssertionRecorderDouble(gameTestHelper, this.name, block)
+        val asserter = AssertionObservationRecorder.buildAssertionRecorderDouble(
+            gameTestHelper,
+            this.name,
+            doubleMargin = doubleMargin,
+            block
+        )
         observe(asserter)
         if (requireAll) {
             asserter.assertSawAll()
@@ -475,15 +492,38 @@ internal fun GameTestHelper.withConfiguredStartupSequence(
     suffixLimit: Int = 1024,
     overrideExisting: Boolean = true,
     customizer: IGaugeInstrumentBuilder<*>.(originalName: String, isDouble: Boolean) -> Unit = { _, _ -> },
-    block: (GameTestSequence, Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>>) -> Unit,
+    sequenceCustomizer: (
+        GameTestSequence,
+        Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>>,
+    ) -> Unit = { _, _ -> },
 ) {
-    var result: Map<String,
+    return withConfiguredStartupSequence(
+        useDouble,
+        suffixLimit,
+        overrideExisting,
+        customizer,
+        sequenceCustomizer = { sequence, instruments, _ ->
+            sequenceCustomizer(sequence, instruments)
+        }) {}
+}
+
+internal fun <T : Any> GameTestHelper.withConfiguredStartupSequence(
+    useDouble: (originalName: String) -> Boolean = { false },
+    suffixLimit: Int = 1024,
+    overrideExisting: Boolean = true,
+    customizer: IGaugeInstrumentBuilder<*>.(originalName: String, isDouble: Boolean) -> Unit = { _, _ -> },
+    sequenceCustomizer: (
+        GameTestSequence,
+        Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>>,
+        () -> T,
+    ) -> Unit = { _, _, _ -> },
+    block: (Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>>) -> T,
+) {
+    val result: MutableMap<String,
             Either<ILongInstrumentRegistration.Mutable<*>,
-                    IDoubleInstrumentRegistration.Mutable<*>>>? = null
-    var sequence: GameTestSequence? = null
-    @Suppress("AssignedValueIsNeverRead")
-    // assigned value is actually being read in callback after construction of its value
-    sequence = startSequence()
+                    IDoubleInstrumentRegistration.Mutable<*>>> = mutableMapOf()
+    var blockResult: T? = null
+    val sequence: GameTestSequence = startSequence()
         .thenExecuteAfterC(2) {
             BlockPos.betweenClosedStream(bounds.contract(1.0, 1.0, 1.0)).forEachOrdered { blockPos ->
                 val state = getBlockState(blockPos)
@@ -498,11 +538,13 @@ internal fun GameTestHelper.withConfiguredStartupSequence(
                     )
                 }
             }
-            result = instruments.configureObservationContainers(
-                useDouble = useDouble,
-                suffixLimit = suffixLimit,
-                overrideExisting = overrideExisting,
-                customizer = customizer,
+            result.putAll(
+                instruments.configureObservationContainers(
+                    useDouble = useDouble,
+                    suffixLimit = suffixLimit,
+                    overrideExisting = overrideExisting,
+                    customizer = customizer,
+                )
             )
         }.thenExecuteAfterC(2) {
             BlockPos.betweenClosedStream(bounds.contract(1.0, 1.0, 1.0)).forEachOrdered { blockPos ->
@@ -518,9 +560,7 @@ internal fun GameTestHelper.withConfiguredStartupSequence(
                     )
                 }
             }
-            @Suppress("KotlinConstantConditions")
-            // Suppress reported that sequence is always null, which is simply not true because this block is only
-            // executed after the whole containing method already returns.
-            block(sequence!!, result!!)
-        }.thenExecuteC { } // filler node so that iterator of sequence does not report empty before block is done
+            blockResult = block(result)
+        }
+    sequenceCustomizer(sequence, result) { blockResult!! }
 }
