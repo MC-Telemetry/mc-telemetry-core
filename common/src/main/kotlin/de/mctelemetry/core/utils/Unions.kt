@@ -1,5 +1,10 @@
 package de.mctelemetry.core.utils
 
+import com.mojang.datafixers.util.Either
+import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
+import kotlin.reflect.KProperty
+
 sealed interface Union2<T1 : C, T2 : C, out C> {
     data class UnionT1<T1 : C, T2 : C, C>(override val value: T1) : Union2<T1, T2, C>
     data class UnionT2<T1 : C, T2 : C, C>(override val value: T2) : Union2<T1, T2, C>
@@ -27,3 +32,22 @@ sealed interface Union3<T1 : C, T2 : C, T3 : C, out C> {
 
     val value: C
 }
+
+operator fun <T : Any> Either<out T, out T>.getValue(thisObj: Any, property: KProperty<*>): T {
+    return Either.unwrap(this)
+}
+
+val <L> Either<L, *>.left: L get() = this.left().orElseThrow()
+val <R> Either<*, R>.right: R get() = this.right().orElseThrow()
+
+@get:JvmName("leftDoubleInstrument")
+val <T : IDoubleInstrumentRegistration> Either<T, *>.doubleInstrument: T get() = this.left
+
+@get:JvmName("rightDoubleInstrument")
+val <T : IDoubleInstrumentRegistration> Either<*, T>.doubleInstrument: T get() = this.right
+
+@get:JvmName("leftLongInstrument")
+val <T : ILongInstrumentRegistration> Either<T, *>.longInstrument: T get() = this.left
+
+@get:JvmName("rightLongInstrument")
+val <T : ILongInstrumentRegistration> Either<*, T>.longInstrument: T get() = this.right

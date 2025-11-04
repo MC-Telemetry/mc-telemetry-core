@@ -7,16 +7,10 @@ import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IMetricDefinition
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
-import de.mctelemetry.core.commands.scrape.CommandScrape
-import de.mctelemetry.core.commands.scrape.CommandScrapeInfo
-import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.commands.types.getValue
-import de.mctelemetry.core.metrics.manager.WorldInstrumentManager
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
-import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.dsl.commands.invoke
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import de.mctelemetry.core.utils.dsl.components.append
 import de.mctelemetry.core.utils.dsl.components.onHoverShowText
@@ -33,6 +27,7 @@ class CommandMetricsList internal constructor(
 
     val command = buildCommand("list") {
         requires { it.hasPermission(2) }
+        executes(::commandMetricsListAll)
         "all" {
             executes(::commandMetricsListAll)
         }
@@ -60,13 +55,13 @@ class CommandMetricsList internal constructor(
                         onHoverShowText("Mutable")
                     }
                 }
-                if (definition is ILongInstrumentRegistration.Mutable)
+                if (definition is ILongInstrumentRegistration.Mutable<*>)
                     append("L") {
                         style {
                             onHoverShowText("Long")
                         }
                     }
-                if (definition is IDoubleInstrumentRegistration.Mutable)
+                if (definition is IDoubleInstrumentRegistration.Mutable<*>)
                     append("D") {
                         style {
                             onHoverShowText("Double")
@@ -86,7 +81,7 @@ class CommandMetricsList internal constructor(
                         }
                     }
             }
-            if (definition is WorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) {
+            if (definition is IWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) {
                 if (definition.persistent) {
                     append("P") {
                         style {
@@ -112,7 +107,7 @@ class CommandMetricsList internal constructor(
     private fun attributeInfoComponent(info: MappedAttributeKeyInfo<*, *>): MutableComponent {
         return buildComponent(info.baseKey.key) {
             style {
-                onHoverShowText(info.type.id.toString())
+                onHoverShowText(info.type.id.location().toString())
             }
         }
     }
@@ -164,7 +159,7 @@ class CommandMetricsList internal constructor(
         return sendList(
             context,
             instrumentManager.findLocal(Regex(".+")).filterNot {
-                (it is WorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
+                (it is IWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
             },
             "world"
         )
@@ -178,7 +173,7 @@ class CommandMetricsList internal constructor(
         return sendList(
             context,
             instrumentManager.findLocal(Regex(".+")).filter {
-                (it is WorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
+                (it is IWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
             },
             "custom"
         )

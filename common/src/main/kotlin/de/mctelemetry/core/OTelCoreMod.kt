@@ -1,6 +1,7 @@
 package de.mctelemetry.core
 
 import com.mojang.serialization.Lifecycle
+import de.mctelemetry.core.api.metrics.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
@@ -11,6 +12,8 @@ import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import de.mctelemetry.core.commands.metrics.CommandMetrics
 import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
 import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
+import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.observations.ObservationSources
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
 import dev.architectury.event.events.common.CommandRegistrationEvent
@@ -24,7 +27,6 @@ import net.minecraft.core.WritableRegistry
 import java.util.function.Supplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
-import net.minecraft.resources.ResourceKey
 import net.minecraft.world.item.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -74,21 +76,37 @@ object OTelCoreMod {
     }
 
     fun registerAttributeTypes(registry: WritableRegistry<IMappedAttributeKeyType<*, *>>?) {
-        val attributeTypes: List<IMappedAttributeKeyType<*, *>> = NativeAttributeKeyTypes.ALL
+        val attributeTypes: List<IMappedAttributeKeyType<*, *>> = NativeAttributeKeyTypes.ALL + BuiltinAttributeKeyTypes.ALL
         if (registry == null) {
             DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.AttributeTypeMappings).apply {
                 for (nativeType in attributeTypes) {
-                    register(nativeType.id) { nativeType }
+                    register(nativeType.id.location()) { nativeType }
                 }
             }.register()
         } else {
             for (nativeType in attributeTypes) {
                 registry.register(
-                    ResourceKey.create(
-                        OTelCoreModAPI.AttributeTypeMappings,
-                        nativeType.id,
-                    ),
+                    nativeType.id,
                     nativeType,
+                    RegistrationInfo(Optional.empty(), Lifecycle.stable())
+                )
+            }
+        }
+    }
+
+    fun registerObservationSources(registry: WritableRegistry<IObservationSource<*, *>>?) {
+        val observationSources: List<IObservationSource<*, *>> = ObservationSources.ALL
+        if (registry == null) {
+            DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.ObservationSources).apply {
+                for (observationSource in observationSources) {
+                    register(observationSource.id.location()) { observationSource }
+                }
+            }.register()
+        } else {
+            for (observationSource in observationSources) {
+                registry.register(
+                    observationSource.id,
+                    observationSource,
                     RegistrationInfo(Optional.empty(), Lifecycle.stable())
                 )
             }

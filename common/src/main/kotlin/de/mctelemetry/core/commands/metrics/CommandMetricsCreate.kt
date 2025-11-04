@@ -1,6 +1,5 @@
 package de.mctelemetry.core.commands.metrics
 
-import com.mojang.brigadier.Command
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.tree.CommandNode

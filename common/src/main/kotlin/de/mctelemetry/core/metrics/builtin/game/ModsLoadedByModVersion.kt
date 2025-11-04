@@ -16,7 +16,7 @@ object ModsLoadedByModVersion : IGameInstrumentManager.Events.Ready {
             addAttribute(modId)
         }.registerWithCallbackOfLong { measurement ->
             for(mod in Platform.getMods()) {
-                measurement.record(1, Attributes.of(modId, "${mod.modId}:${mod.version}"))
+                measurement.observe(1, Attributes.of(modId, "${mod.modId}:${mod.version}"))
             }
         }
     }
