@@ -14,6 +14,8 @@ import de.mctelemetry.core.commands.metrics.CommandMetrics
 import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
 import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
 import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
+import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.observations.ObservationSources
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
@@ -59,22 +61,50 @@ object OTelCoreMod {
         )
     }
 
-    fun init() {
-        TABS.register()
+    fun registerCallbacks() {
 
-        OTelCoreModBlocks.init()
-        OTelCoreModItems.init()
-        OTelCoreModMenuTypes.init()
-
-        debugMetrics()
+        InstrumentMetaManager.register()
+        BuiltinInstruments.register()
         CommandRegistrationEvent.EVENT.register { evt, ctx, _ ->
             evt.root.addChild(buildCommand("mcotel") {
                 +CommandScrape().command
                 +CommandMetrics(ctx).command
             })
         }
-        InstrumentMetaManager.register()
-        BuiltinInstruments.register()
+        ObservationSourceContainerBlock.RightClickBlockListener.register()
+    }
+
+    fun setupMetricAccessor() {
+        logger.debug {
+            SimpleMessageFactory.INSTANCE.newMessage(
+                "ClassLoader during mod class loading: {}",
+                OTelCoreMod::class.java.classLoader
+            )
+        }
+        val metricsAccessor = IMetricsAccessor.GLOBAL
+        logger.debug("MetricsAccessor during mod class loading: {}", metricsAccessor)
+        if (metricsAccessor != null) {
+            logger.info("Performing initial metrics collection, may throw errors which can be safely ignored (probably?)")
+            metricsAccessor.collect()
+            logger.info("Initial metric collection done, any errors following this should be treated as errors again")
+        } else {
+            logger.debug("Could not find MetricsAccessor during Mod-Init.")
+        }
+    }
+
+    fun registerContent() {
+        TABS.register()
+
+        OTelCoreModBlocks.init()
+        OTelCoreModBlockEntityTypes.init()
+        OTelCoreModItems.init()
+        OTelCoreModMenuTypes.init()
+    }
+
+    fun init() {
+        registerCallbacks()
+        setupMetricAccessor()
+        registerContent()
     }
 
     fun registerAttributeTypes(registry: WritableRegistry<IMappedAttributeKeyType<*, *>>?) {
@@ -112,44 +142,6 @@ object OTelCoreMod {
                     RegistrationInfo(Optional.empty(), Lifecycle.stable())
                 )
             }
-        }
-    }
-
-    init {
-        logger.debug {
-            SimpleMessageFactory.INSTANCE.newMessage(
-                "ClassLoader during mod class loading: {}",
-                OTelCoreMod::class.java.classLoader
-            )
-        }
-        val metricsAccessor = IMetricsAccessor.GLOBAL
-        logger.debug("MetricsAccessor during mod class loading: {}", metricsAccessor)
-        if (metricsAccessor != null) {
-            logger.info("Performing initial metrics collection, may throw errors which can be safely ignored (probably?)")
-            metricsAccessor.collect()
-            logger.info("Initial metric collection done, any errors following this should be treated as errors again")
-        } else {
-            logger.debug("Could not find MetricsAccessor during Mod-Init.")
-        }
-    }
-
-    private fun debugMetrics() {
-        val accessor = IMetricsAccessor.GLOBAL
-        if (accessor != null) {
-            logger.info("Metrics: ")
-            accessor.collect().forEach { (k, v) ->
-                logger.info(
-                    """
-                    |$k:
-                    |   TYPE: ${v.type}
-                    |   UNIT: ${v.unit}
-                    |   DESCRIPTION: ${v.description}
-                    |   DATA: ${v.data}
-                    """.trimIndent().replaceIndentByMargin("    ")
-                )
-            }
-        } else {
-            logger.info("Metrics not configured")
         }
     }
 }

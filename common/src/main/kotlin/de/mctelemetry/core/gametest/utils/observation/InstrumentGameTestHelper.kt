@@ -14,9 +14,8 @@ import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.api.metrics.managar.gaugeWorldInstrument
-import de.mctelemetry.core.blocks.RedstoneScraperBlock
-import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
-import de.mctelemetry.core.blocks.observation.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
+import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.gametest.utils.IGameTestHelperFinalizer
 import de.mctelemetry.core.gametest.utils.IGameTestHelperFinalizer.Companion.finalizer
 import de.mctelemetry.core.gametest.utils.assertNotNullC
@@ -25,8 +24,9 @@ import de.mctelemetry.core.gametest.utils.getBlockEntityC
 import de.mctelemetry.core.gametest.utils.observation.InstrumentGameTestHelper.Companion.instruments
 import de.mctelemetry.core.gametest.utils.server
 import de.mctelemetry.core.gametest.utils.thenExecuteAfterC
-import de.mctelemetry.core.gametest.utils.thenExecuteC
 import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
+import de.mctelemetry.core.observations.model.ObservationSourceErrorState
+import de.mctelemetry.core.observations.model.ObservationSourceErrorState.Companion.asException
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.plus
@@ -34,7 +34,6 @@ import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.Attributes
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
-import net.minecraft.gametest.framework.GameTest
 import net.minecraft.gametest.framework.GameTestAssertException
 import net.minecraft.gametest.framework.GameTestAssertPosException
 import net.minecraft.gametest.framework.GameTestHelper
@@ -43,13 +42,11 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import java.lang.ref.WeakReference
 import java.util.Collections
 import java.util.WeakHashMap
-import java.util.concurrent.CompletableFuture
 import kotlin.collections.get
 import kotlin.collections.iterator
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
-import kotlin.jvm.optionals.getOrNull
 import kotlin.reflect.KProperty
 import kotlin.streams.asSequence
 
@@ -180,12 +177,11 @@ class InstrumentGameTestHelper(
         registerFinalizer: IGameTestHelperFinalizer.FinalizerRegistration = IGameTestHelperFinalizer.FinalizerRegistration.TEST_END,
         customizer: IGaugeInstrumentBuilder<*>.(originalName: String, isDouble: Boolean) -> Unit = { _, _ -> },
     ): Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>> {
-        val observationSourceEntityType = OTelCoreModBlockEntityTypes.OBSERVATION_SOURCE_CONTAINER_BLOCK_ENTITY.get()
         val observationSourceMap: Map<String, List<Pair<ObservationSourceContainerBlockEntity, ObservationSourceState>>> =
-            BlockPos.MutableBlockPos.betweenClosedStream(gameTestHelper.bounds.contract(1.0, 1.0, 1.0))
+            BlockPos.betweenClosedStream(gameTestHelper.bounds.contract(1.0, 1.0, 1.0))
                 .asSequence()
                 .mapNotNull { blockPos ->
-                    gameTestHelper.level.getBlockEntity(blockPos, observationSourceEntityType).getOrNull()
+                    gameTestHelper.level.getBlockEntity(blockPos) as? ObservationSourceContainerBlockEntity
                 }
                 .flatMap { blockEntity ->
                     blockEntity.observationStates!!.values.mapNotNull { state ->
@@ -308,7 +304,7 @@ class InstrumentGameTestHelper(
         attributes: Attributes,
         value: Double,
         allowPreferred: Boolean = true,
-        doubleMargin: Double = 0.001,
+        doubleMargin: Double = AssertionObservationRecorder.DEFAULT_DOUBLE_MARGIN,
     ) {
         AssertionObservationRecorder.Single.assertRecordsDouble(
             gameTestHelper = gameTestHelper,
@@ -337,7 +333,7 @@ class InstrumentGameTestHelper(
     fun IInstrumentRegistration.assertRecords(
         supportsFloating: Boolean,
         requireAll: Boolean = true,
-        doubleMargin: Double = 0.001,
+        doubleMargin: Double = AssertionObservationRecorder.DEFAULT_DOUBLE_MARGIN,
         block: IAssertionObservationRecorderBuilder.() -> Unit,
     ) {
         val asserter =
@@ -368,7 +364,7 @@ class InstrumentGameTestHelper(
 
     fun IDoubleInstrumentRegistration.assertRecords(
         requireAll: Boolean = true,
-        doubleMargin: Double = 0.001,
+        doubleMargin: Double = AssertionObservationRecorder.DEFAULT_DOUBLE_MARGIN,
         block: IAssertionObservationRecorderBuilder.ForDouble.() -> Unit,
     ) {
         val asserter = AssertionObservationRecorder.buildAssertionRecorderDouble(
@@ -525,15 +521,15 @@ internal fun <T : Any> GameTestHelper.withConfiguredStartupSequence(
     var blockResult: T? = null
     val sequence: GameTestSequence = startSequence()
         .thenExecuteAfterC(2) {
-            BlockPos.betweenClosedStream(bounds.contract(1.0, 1.0, 1.0)).forEachOrdered { blockPos ->
+            forEveryBlockInStructure { blockPos ->
                 val state = getBlockState(blockPos)
                 if ((!state.hasBlockEntity()) ||
                     getBlockEntity<BlockEntity>(blockPos) !is ObservationSourceContainerBlockEntity
-                ) return@forEachOrdered
-                val errorStateValue = state.getValue(RedstoneScraperBlock.ERROR)
-                if (errorStateValue != ObservationSourceState.ErrorState.Type.Errors) {
+                ) return@forEveryBlockInStructure
+                val errorStateValue = state.getValue(ObservationSourceContainerBlock.ERROR)
+                if (errorStateValue != ObservationSourceErrorState.Type.Errors) {
                     failC(
-                        "Unexpected error state: Expected ${ObservationSourceState.ErrorState.Type.Errors}, got $errorStateValue",
+                        "Unexpected error state: Expected ${ObservationSourceErrorState.Type.Errors}, got $errorStateValue",
                         blockPos
                     )
                 }
@@ -547,17 +543,36 @@ internal fun <T : Any> GameTestHelper.withConfiguredStartupSequence(
                 )
             )
         }.thenExecuteAfterC(2) {
-            BlockPos.betweenClosedStream(bounds.contract(1.0, 1.0, 1.0)).forEachOrdered { blockPos ->
+            forEveryBlockInStructure { blockPos ->
                 val state = getBlockState(blockPos)
-                if ((!state.hasBlockEntity()) ||
-                    getBlockEntity<BlockEntity>(blockPos) !is ObservationSourceContainerBlockEntity
-                ) return@forEachOrdered
-                val errorStateValue = state.getValue(RedstoneScraperBlock.ERROR)
-                if (errorStateValue != ObservationSourceState.ErrorState.Type.Ok) {
-                    failC(
-                        "Unexpected error state: Expected ${ObservationSourceState.ErrorState.Type.Ok}, got $errorStateValue",
-                        blockPos
-                    )
+                if (!state.hasBlockEntity()) return@forEveryBlockInStructure
+                val entity = getBlockEntity<BlockEntity>(blockPos)
+                if (entity !is ObservationSourceContainerBlockEntity) return@forEveryBlockInStructure
+                val errorStateValue = state.getValue(ObservationSourceContainerBlock.ERROR)
+                if (errorStateValue != ObservationSourceErrorState.Type.Ok) {
+                    val problems = entity.observationStates.orEmpty()
+                        .mapValues { (_, value) ->
+                            value.errorState.withoutWarning(ObservationSourceErrorState.notConfiguredWarning)
+                        }
+                        .filterValues { it != ObservationSourceErrorState.Ok }
+                    if (problems.isEmpty()) {
+                        failC("Unexpected error state without stored errors/warnings: $errorStateValue", blockPos)
+                    }
+                    val exception = (
+                            // first all errors, then all warnings
+                            // (first component is used as exception base, the rest are only added as suppressed)
+                            (problems.values.flatMap { it.errors }) + (problems.values.flatMap { it.warnings })
+                            ).distinct().asException()
+                    if (exception is GameTestAssertPosException) throw exception
+                    val message = exception.message ?: exception::class.java.simpleName
+                    throw GameTestAssertPosException(
+                        message,
+                        absolutePos(blockPos),
+                        blockPos,
+                        tick
+                    ).also {
+                        it.addSuppressed(exception)
+                    }
                 }
             }
             blockResult = block(result)
