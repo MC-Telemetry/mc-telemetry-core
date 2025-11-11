@@ -7,7 +7,7 @@ import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.invoke
-import de.mctelemetry.core.blocks.RedstoneScraperBlock
+import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
 import net.minecraft.resources.ResourceKey
@@ -48,7 +48,7 @@ object RedstoneScraperDirectPowerObservationSource : IObservationSource<BlockEnt
         if (level == null || context.isRemoved) return
         val scraperPos = context.blockPos
         if (!(level.isLoaded(scraperPos) && level.shouldTickBlocksAt(scraperPos))) return
-        val facing = context.blockState.getValue(RedstoneScraperBlock.FACING)
+        val facing = context.blockState.getValue(ObservationSourceContainerBlock.FACING)
         val observationPos = scraperPos.relative(facing)
         attributes[POS_KEY] = GlobalPos(level.dimension(), observationPos)
         if (DIR_KEY in unusedAttributes) {

@@ -6,15 +6,16 @@ import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.api.metrics.IObservationSource
-import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
+import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
+import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.ui.RedstoneScraperBlockScreen
+import net.minecraft.Util
 import net.minecraft.client.gui.screens.MenuScreens
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.commands.synchronization.ArgumentTypeInfos
 import net.minecraft.core.WritableRegistry
 import net.minecraft.core.registries.Registries
-import net.minecraft.world.level.block.BaseEntityBlock
 import net.minecraft.world.level.chunk.status.ChunkStatus
 import net.neoforged.fml.common.Mod
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent
@@ -31,7 +32,7 @@ import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
 @Mod(OTelCoreMod.MOD_ID)
 object OTelCoreModNeoForge {
 
-    fun <A : ArgumentType<*>, T : ArgumentTypeInfo.Template<A>, I : ArgumentTypeInfo<A, T>>
+    private fun <A : ArgumentType<*>, T : ArgumentTypeInfo.Template<A>, I : ArgumentTypeInfo<A, T>>
             ArgumentTypes.PreparedArgumentTypeRegistration<A, T, I>.register(defReg: DeferredRegister<ArgumentTypeInfo<*, *>>) {
         ArgumentTypeInfos.registerByClass<A, T, I>(infoClass, info)
         defReg.register<I>(this.id.path) { -> info }
@@ -66,28 +67,36 @@ object OTelCoreModNeoForge {
         FORGE_BUS.addListener(ChunkEvent.Load::class.java) { event ->
             if (event.chunk.highestGeneratedStatus.isOrAfter(ChunkStatus.FULL)) {
                 event.chunk.findBlocks({ state ->
-                                           state.hasBlockEntity() && state.block is BaseEntityBlock
+                                           state.hasBlockEntity() && state.block is ObservationSourceContainerBlock
                                        }) { pos, state ->
-                    val entity = event.chunk.getBlockEntity(
-                        pos,
-                        OTelCoreModBlockEntityTypes.OBSERVATION_SOURCE_CONTAINER_BLOCK_ENTITY.get()
-                    )
-                    if (entity.isPresent) {
-                        OTelCoreMod.logger.trace(
-                            "Detected matching blockentity for {} in ChunkEvent.Load, scheduling tick at {}",
-                            entity.get(),
-                            pos
-                        )
-                        event.level.scheduleTick(pos, state.block, 1)
+
+                    val entity = event.chunk.getBlockEntity(pos)
+                    if (entity == null) {
+                        OTelCoreMod.logger.trace("Null blockentity in ChunkEvent.Load at {}", pos)
+                        return@findBlocks
                     }
+                    if (entity !is ObservationSourceContainerBlockEntity) {
+                        Util.logAndPauseIfInIde("Unexpected blockentity $entity in ChunkEvent.Load")
+                        return@findBlocks
+                    }
+                    OTelCoreMod.logger.trace(
+                        "Detected matching blockentity {} in ChunkEvent.Load, scheduling tick at {}",
+                        entity,
+                        pos
+                    )
+                    event.level.scheduleTick(pos, state.block, 1)
                 }
             }
         }
     }
 
-    private fun registerContent() {
-        OTelCoreModBlockEntityTypesNeoForge.init()
+    private fun init() {
+        registerCallbacks()
+        OTelCoreMod.init()
+        registerContent()
+    }
 
+    private fun registerContent() {
         DeferredRegister.create(Registries.COMMAND_ARGUMENT_TYPE, OTelCoreMod.MOD_ID).let { defReg ->
             ArgumentTypes.register {
                 it.register(defReg)
@@ -97,8 +106,6 @@ object OTelCoreModNeoForge {
     }
 
     init {
-        registerCallbacks()
-        OTelCoreMod.init()
-        registerContent()
+        init()
     }
 }
