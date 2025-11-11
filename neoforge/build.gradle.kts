@@ -127,6 +127,7 @@ dependencies {
     modApi("dev.architectury:architectury-neoforge:${rootProject.property("architectury_version")}")
 
     modRuntimeOnly("curse.maven:jei-238222:7057366")
+    modRuntimeOnly("curse.maven:nbtedit-reborn-678133:6125444")
 
     common(project(":common", "namedElements")) { isTransitive = false }
     shadowBundle(project(":common", "transformProductionNeoForge")) { isTransitive = false }

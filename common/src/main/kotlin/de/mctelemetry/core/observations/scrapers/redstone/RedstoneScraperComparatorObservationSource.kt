@@ -7,7 +7,7 @@ import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.invoke
-import de.mctelemetry.core.blocks.RedstoneScraperBlock
+import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.BlockPos
 import net.minecraft.core.GlobalPos
 import net.minecraft.core.component.DataComponents
@@ -17,7 +17,6 @@ import net.minecraft.world.Container
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.ChestBlock
 import net.minecraft.world.level.block.entity.BlockEntity
-import net.minecraft.world.level.block.entity.ChestBlockEntity
 import net.minecraft.world.level.block.entity.LecternBlockEntity
 import net.minecraft.world.level.block.state.BlockState
 
@@ -52,7 +51,7 @@ object RedstoneScraperComparatorObservationSource : IObservationSource<BlockEnti
         if (level == null || context.isRemoved) return
         val scraperPos = context.blockPos
         if (!(level.isLoaded(scraperPos) && level.shouldTickBlocksAt(scraperPos))) return
-        val facing = context.blockState.getValue(RedstoneScraperBlock.FACING)
+        val facing = context.blockState.getValue(ObservationSourceContainerBlock.FACING)
         val observationPos = scraperPos.relative(facing)
         attributes.value = GlobalPos(level.dimension(), observationPos)
         val state = level.getBlockState(observationPos)

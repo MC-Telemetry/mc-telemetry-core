@@ -21,6 +21,7 @@ object TranslationKeys {
         const val ERRORS_ATTRIBUTES_MAPPING_MISSING = "errors.mctelemetry.core.attributes.mapping.missing"
         const val ERRORS_OBSERVATIONS_UNINITIALIZED = "errors.mctelemetry.core.observations.uninitialized"
         const val ERRORS_OBSERVATIONS_NOT_CONFIGURED = "errors.mctelemetry.core.observations.not_configured"
+        const val ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND = "errors.mctelemetry.core.observations.configuration.instrument.not_found"
 
         fun metricsAccessorMissing(): MutableComponent =
             Component.translatableWithFallback(
@@ -122,6 +123,12 @@ object TranslationKeys {
             Component.translatableWithFallback(
                 ERRORS_OBSERVATIONS_NOT_CONFIGURED,
                 "Observations not configured",
+            )
+        fun observationsConfigurationInstrumentNotFound(name: String): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND,
+                $$"Instrument not found: '%1$s'",
+                name
             )
     }
 

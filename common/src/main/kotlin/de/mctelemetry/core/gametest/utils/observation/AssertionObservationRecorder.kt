@@ -30,13 +30,16 @@ abstract class AssertionObservationRecorder(
     abstract fun assertSawAll()
 
     companion object {
+
+        const val DEFAULT_DOUBLE_MARGIN = 1E-6
+
         @PublishedApi
         internal class BuilderImpl(
             private val gameTestHelper: GameTestHelper,
             val name: String,
             override val supportsFloating: Boolean,
             override var allowAdditional: Boolean = false,
-            val doubleMargin: Double = 0.001,
+            val doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
         ) : IAssertionObservationRecorderBuilder.ForLong, IAssertionObservationRecorderBuilder.ForDouble {
 
             private val subObservers: MutableList<Single> = mutableListOf()
@@ -160,7 +163,7 @@ abstract class AssertionObservationRecorder(
             gameTestHelper: GameTestHelper,
             name: String,
             supportsFloating: Boolean,
-            doubleMargin: Double = 0.001,
+            doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
             block: IAssertionObservationRecorderBuilder.() -> Unit,
         ): AssertionObservationRecorder {
             return BuilderImpl(gameTestHelper, name, supportsFloating, doubleMargin = doubleMargin)
@@ -170,7 +173,7 @@ abstract class AssertionObservationRecorder(
         inline fun buildAssertionRecorderDouble(
             gameTestHelper: GameTestHelper,
             name: String,
-            doubleMargin: Double = 0.001,
+            doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
             block: IAssertionObservationRecorderBuilder.ForDouble.() -> Unit,
         ): AssertionObservationRecorder {
             return BuilderImpl(gameTestHelper, name, supportsFloating = true, doubleMargin = doubleMargin)
@@ -245,7 +248,7 @@ abstract class AssertionObservationRecorder(
         val source: IObservationSource<*, *>? = null,
         val requireSourceMatch: Boolean = source != null,
         override val supportsFloating: Boolean = doubleValue != null,
-        val doubleMargin: Double = 0.001,
+        val doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
     ) : AssertionObservationRecorder(gameTestHelper) {
 
         var sawValue: Boolean
@@ -303,8 +306,8 @@ abstract class AssertionObservationRecorder(
             gameTestHelper.assertValueEqualC(attributes, this.attributes, "attributes for $sourceName")
             if (this.doubleValue != null) {
                 gameTestHelper.assertTrueC(
-                    abs(this.doubleValue - doubleValue) <= doubleMargin,
-                    "Expected $sourceName to be ${this.doubleValue} (within ${doubleMargin}), but was $doubleValue"
+                    abs(this.doubleValue - double) <= doubleMargin,
+                    "Expected $sourceName to be ${this.doubleValue} (within ${doubleMargin}), but was $double"
                 )
             }
             if (this.longValue != null) {
@@ -366,7 +369,7 @@ abstract class AssertionObservationRecorder(
                 allowPreferred: Boolean = true,
                 source: IObservationSource<*, *>? = null,
                 requireSourceMatch: Boolean = source != null,
-                doubleMargin: Double = 0.001,
+                doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
             ) = Single(
                 gameTestHelper = gameTestHelper,
                 name = name,
@@ -410,7 +413,7 @@ abstract class AssertionObservationRecorder(
                 attributes: Attributes = Attributes.empty(),
                 source: IObservationSource<*, *>? = null,
                 requireSourceMatch: Boolean = source != null,
-                doubleMargin: Double = 0.001,
+                doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
             ) = Single(
                 gameTestHelper = gameTestHelper,
                 name = name,
