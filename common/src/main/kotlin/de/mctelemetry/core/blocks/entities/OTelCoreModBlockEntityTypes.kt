@@ -1,7 +1,7 @@
 package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.blocks.observation.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
 import net.minecraft.core.registries.Registries
@@ -15,9 +15,13 @@ object OTelCoreModBlockEntityTypes {
             : DeferredRegister<BlockEntityType<*>> =
         DeferredRegister.create<BlockEntityType<*>>(OTelCoreMod.MOD_ID, Registries.BLOCK_ENTITY_TYPE)
 
-    lateinit var OBSERVATION_SOURCE_CONTAINER_BLOCK_ENTITY: RegistrySupplier<BlockEntityType<ObservationSourceContainerBlockEntity>>
+    val SCRAPER_BLOCK_ENTITY: RegistrySupplier<BlockEntityType<ScraperBlockEntity>> = registerBlockEntity("redstone_scraper_block") {
+        BlockEntityType.Builder
+            .of(::ScraperBlockEntity, OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get())
+            .build(null)
+    }
 
-    fun writeRegister() {
+    fun init() {
         BLOCK_ENTITIES.register()
     }
 

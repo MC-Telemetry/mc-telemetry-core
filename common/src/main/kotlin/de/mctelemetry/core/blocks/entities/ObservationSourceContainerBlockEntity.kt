@@ -1,4 +1,4 @@
-package de.mctelemetry.core.blocks.observation
+package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.IObservationSource
@@ -6,8 +6,8 @@ import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.useInstrumentManagerWhenAvailable
-import de.mctelemetry.core.blocks.RedstoneScraperBlock
-import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
+import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
+import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.utils.runWithExceptionCleanup
@@ -21,18 +21,23 @@ import net.minecraft.nbt.Tag
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
+import net.minecraft.sounds.SoundEvents
+import net.minecraft.sounds.SoundSource
+import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
+import kotlin.collections.forEach
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-class ObservationSourceContainerBlockEntity(
+abstract class ObservationSourceContainerBlockEntity(
+    blockEntityType: BlockEntityType<*>,
     blockPos: BlockPos,
     blockState: BlockState,
-) : BlockEntity(OTelCoreModBlockEntityTypes.OBSERVATION_SOURCE_CONTAINER_BLOCK_ENTITY.get(), blockPos, blockState) {
+) : BlockEntity(blockEntityType, blockPos, blockState) {
 
     private var container: BlockEntityObservationSourceContainer? = null
         set(value) {
@@ -50,10 +55,10 @@ class ObservationSourceContainerBlockEntity(
     internal val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>?
         get() = container?.observationStates
 
-    override fun getType(): BlockEntityType<out ObservationSourceContainerBlockEntity> {
-        @Suppress("UNCHECKED_CAST") // known value from constructor
-        return super.type as BlockEntityType<ObservationSourceContainerBlockEntity>
-    }
+    protected val blockEntityType: BlockEntityType<*>
+        get() = super.type
+
+    abstract override fun getType(): BlockEntityType<out ObservationSourceContainerBlockEntity>
 
     override fun loadAdditional(compoundTag: CompoundTag, provider: HolderLookup.Provider) {
         super.loadAdditional(compoundTag, provider)
@@ -66,13 +71,23 @@ class ObservationSourceContainerBlockEntity(
         ).also {
             this.container = it
         })
-        val callback = container.loadStatesDelayedFromTag(compoundTag, provider)
         val level = level
-        if (level != null) {
-            callback(level)
-        } else {
+        if (level == null) {
+            require(onLevelCallback == null) { "onLevelCallback already set" }
+            val callback = container.loadStatesDelayedFromTag(compoundTag, provider)
             require(onLevelCallback == null) { "onLevelCallback already set" }
             onLevelCallback = callback
+        } else if (level.isClientSide) {
+            container.loadStatesFromTag(compoundTag, provider, IInstrumentManager.ReadonlyEmpty)
+        } else {
+            level as ServerLevel
+            val manager = level.server.instrumentManager
+            if (manager != null) {
+                container.loadStatesFromTag(compoundTag, provider, manager)
+            } else {
+                val callback = container.loadStatesDelayedFromTag(compoundTag, provider)
+                callback(level)
+            }
         }
     }
 
@@ -83,37 +98,46 @@ class ObservationSourceContainerBlockEntity(
 
     private fun updateState() {
         val container = container ?: return
-        var targetState: ObservationSourceState.ErrorState.Type? = null
+        var targetState: ObservationSourceErrorState.Type? = null
         for (state in container.observationStates.values) {
             targetState = when (state.errorState) {
-                ObservationSourceState.ErrorState.Ok -> {
-                    targetState ?: ObservationSourceState.ErrorState.Type.Ok
+                ObservationSourceErrorState.Ok -> {
+                    targetState ?: ObservationSourceErrorState.Type.Ok
                 }
-                is ObservationSourceState.ErrorState.Warnings -> {
-                    if (state.errorState.warnings.singleOrNull() === ObservationSourceState.ErrorState.notConfiguredWarning)
+                is ObservationSourceErrorState.Warnings -> {
+                    if (state.errorState.warnings.singleOrNull() === ObservationSourceErrorState.notConfiguredWarning)
                         continue
-                    if (targetState == ObservationSourceState.ErrorState.Type.Errors || targetState == null)
+                    if (targetState == ObservationSourceErrorState.Type.Errors || targetState == null)
                         continue
-                    ObservationSourceState.ErrorState.Type.Warnings
+                    ObservationSourceErrorState.Type.Warnings
                 }
-                is ObservationSourceState.ErrorState.Errors -> {
-                    targetState = ObservationSourceState.ErrorState.Type.Errors
+                is ObservationSourceErrorState.Errors -> {
+                    targetState = ObservationSourceErrorState.Type.Errors
                     break
                 }
             }
         }
-        targetState = targetState ?: ObservationSourceState.ErrorState.Type.Warnings
-        val currentState = blockState.getValue(RedstoneScraperBlock.ERROR)
+        targetState = targetState ?: ObservationSourceErrorState.Type.Warnings
+        val currentState = blockState.getValue(ObservationSourceContainerBlock.ERROR)
         if (currentState != targetState) {
             level!!.setBlock(
                 blockPos,
                 blockState.setValue(
-                    RedstoneScraperBlock.ERROR,
+                    ObservationSourceContainerBlock.Companion.ERROR,
                     targetState
                 ),
                 2
             )
         }
+    }
+
+    fun percussiveMaintenance(player: Player? = null) {
+        observationStates?.values?.forEach {
+            it.resetErrorState()
+        }
+        updateState()
+        val level = level ?: return
+        level.playSound(player, blockPos, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.3f, 7.0f/8.0f)
     }
 
     fun doBlockTick() {
@@ -280,7 +304,7 @@ class ObservationSourceContainerBlockEntity(
         fun loadStatesFromTag(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
-            instrumentManager: IInstrumentManager
+            instrumentManager: IInstrumentManager,
         ) {
             loadAndApplyToStateTags(compoundTag, holderLookupProvider) { state, tag ->
                 val data = tag.getCompound("data")

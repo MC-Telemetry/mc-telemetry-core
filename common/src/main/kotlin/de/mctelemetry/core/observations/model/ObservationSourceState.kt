@@ -1,24 +1,18 @@
 package de.mctelemetry.core.observations.model
 
-import com.mojang.datafixers.util.Pair
-import com.mojang.serialization.Codec
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.metrics.IInstrumentRegistration
 import de.mctelemetry.core.api.metrics.IInstrumentSubRegistration
 import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.api.metrics.managar.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
-import de.mctelemetry.core.utils.ExceptionComponent
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.NbtOps
 import net.minecraft.network.RegistryFriendlyByteBuf
-import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentSerialization
-import net.minecraft.network.chat.ThrowingComponent
-import net.minecraft.util.StringRepresentable
 
 open class ObservationSourceState(
     val source: IObservationSource<*, *>,
@@ -92,21 +86,21 @@ open class ObservationSourceState(
         val configuration = configuration ?: return false
         if (configuration.instrument.name.isEmpty()) return false
         return when (errorState) {
-            ErrorState.Ok -> true
-            is ErrorState.Warnings -> true
-            is ErrorState.Errors -> false
+            ObservationSourceErrorState.Ok -> true
+            is ObservationSourceErrorState.Warnings -> true
+            is ObservationSourceErrorState.Errors -> false
         }
     }
 
 
-    var errorState: ErrorState
+    var errorState: ObservationSourceErrorState
         set(value) {
             setErrorState(value)
         }
         get() = errorStateField
-    protected var errorStateField: ErrorState = ErrorState.Uninitialized
+    protected var errorStateField: ObservationSourceErrorState = ObservationSourceErrorState.Uninitialized
 
-    protected open fun setErrorState(value: ErrorState, silent: Boolean = false): Boolean {
+    protected open fun setErrorState(value: ObservationSourceErrorState, silent: Boolean = false): Boolean {
         val oldValue = errorStateField
         if (oldValue === value) {
             return false
@@ -262,23 +256,47 @@ open class ObservationSourceState(
     }
 
     @Suppress("SameParameterValue")
-    protected open fun updateDerivedErrorState(silent: Boolean = false): Boolean {
+    protected open fun updateDerivedErrorState(
+        silent: Boolean = false,
+        errorStateBase: ObservationSourceErrorState = this.errorState,
+    ): Boolean {
         if (!cascadeUpdates) return false
-        var errorState = this.errorState
+        var errorState = errorStateBase
         val configuration = configuration
         if (configuration == null || configuration.instrument.name.isEmpty()) {
             errorState = errorState
-                .withoutError(ErrorState.uninitializedError)
-                .withWarning(ErrorState.notConfiguredWarning)
+                .withoutError(ObservationSourceErrorState.uninitializedError)
+                .withoutTranslatableError(TranslationKeys.Errors.ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND)
+                .withWarning(ObservationSourceErrorState.notConfiguredWarning)
         } else {
-            errorState = errorState.withoutWarning(ErrorState.notConfiguredWarning)
+            errorState = errorState.withoutWarning(ObservationSourceErrorState.notConfiguredWarning)
             if (instrumentSubRegistration == null) {
-                errorState = errorState.withError(ErrorState.uninitializedError)
+                errorState = if (instrument == null) {
+                    errorState
+                        .withoutError(ObservationSourceErrorState.uninitializedError)
+                        .withError(
+                            TranslationKeys.Errors.observationsConfigurationInstrumentNotFound(
+                                configuration.instrument.name
+                            )
+                        )
+                } else {
+                    errorState
+                        .withoutTranslatableError(TranslationKeys.Errors.ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND)
+                        .withError(ObservationSourceErrorState.uninitializedError)
+                }
             } else {
-                errorState = errorState.withoutError(ErrorState.uninitializedError)
+                errorState = errorState
+                    .withoutError(ObservationSourceErrorState.uninitializedError)
+                    .withoutTranslatableError(
+                        TranslationKeys.Errors.ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND
+                    )
             }
         }
         return setErrorState(errorState, silent = silent)
+    }
+
+    fun resetErrorState(silent: Boolean = false): Boolean {
+        return updateDerivedErrorState(silent = silent, ObservationSourceErrorState.Ok)
     }
 
     protected fun triggerOnDirty() {
@@ -360,10 +378,10 @@ open class ObservationSourceState(
         if (modified && !silent) triggerOnDirty()
     }
 
-    protected open fun loadErrorState(tag: CompoundTag): ErrorState {
+    protected open fun loadErrorState(tag: CompoundTag): ObservationSourceErrorState {
         val errorStateTag = tag.getCompound("errorState")
         if (errorStateTag == null) {
-            return ErrorState.Ok
+            return ObservationSourceErrorState.Ok
         } else {
             val errorsTag = tag.get("errors") as? ListTag
             val warningsTag = tag.get("warnings") as? ListTag
@@ -375,12 +393,12 @@ open class ObservationSourceState(
             }
             return if (errorComponents.isNullOrEmpty()) {
                 if (warningComponents.isNullOrEmpty()) {
-                    ErrorState.Ok
+                    ObservationSourceErrorState.Ok
                 } else {
-                    ErrorState.Warnings(warningComponents)
+                    ObservationSourceErrorState.Warnings(warningComponents)
                 }
             } else {
-                ErrorState.Errors(errorComponents, warningComponents.orEmpty())
+                ObservationSourceErrorState.Errors(errorComponents, warningComponents.orEmpty())
             }
         }
     }
@@ -395,7 +413,7 @@ open class ObservationSourceState(
 
     protected open fun saveErrorState(tag: CompoundTag) {
         val errorState = errorState
-        if (errorState != ErrorState.Ok) {
+        if (errorState != ObservationSourceErrorState.Ok) {
             tag.put("errorState", CompoundTag().apply {
                 if (errorState.warnings.isNotEmpty()) {
                     put("warnings", ListTag().apply {
@@ -412,166 +430,6 @@ open class ObservationSourceState(
                     })
                 }
             })
-        }
-    }
-
-    sealed class ErrorState(val type: Type) {
-
-        enum class Type(private val serializedName: String) : StringRepresentable {
-            Ok("ok"),
-            Warnings("warnings"),
-            Errors("errors"),
-            ;
-
-            override fun getSerializedName() = serializedName
-        }
-
-        abstract val warnings: List<Component>
-        abstract val errors: List<Component>
-
-        fun withWarning(warning: Component): ErrorState {
-            val warnings = warnings
-            if (warning in warnings) return this
-            val newWarnings = warnings + warning
-            val errors = errors
-            return if (errors.isNotEmpty()) {
-                Errors(errors = errors, warnings = newWarnings)
-            } else {
-                Warnings(warnings = newWarnings)
-            }
-        }
-
-        fun withoutWarning(warning: Component): ErrorState {
-            val warnings = warnings
-            if (warning !in warnings) return this
-            val newWarnings = warnings - warning
-            val errors = errors
-            return if (errors.isNotEmpty()) {
-                Errors(errors = errors, warnings = newWarnings)
-            } else if (newWarnings.isNotEmpty()) {
-                Warnings(warnings = newWarnings)
-            } else {
-                Ok
-            }
-        }
-
-        fun withError(error: Component): ErrorState {
-            val errors = errors
-            if (error in errors) return this
-            val newErrors = errors + error
-            return Errors(errors = newErrors, warnings = warnings)
-        }
-
-        fun withoutError(error: Component): ErrorState {
-            val errors = errors
-            if (error !in errors) return this
-            val newErrors = errors - error
-            val warnings = warnings
-            return if (newErrors.isNotEmpty()) {
-                Errors(errors = newErrors, warnings = warnings)
-            } else if (warnings.isNotEmpty()) {
-                Warnings(warnings = warnings)
-            } else {
-                Ok
-            }
-        }
-
-        fun withException(ex: Exception): ErrorState {
-            return if (ex is ThrowingComponent) {
-                withError(ex.component)
-            } else if (errors.none {
-                    it is ExceptionComponent && (
-                            it.exception == ex ||
-                                    (it.exception.javaClass == ex.javaClass && it.exception.message == ex.message)
-                            )
-                }) {
-                withError(ExceptionComponent(ex))
-            } else this
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as ErrorState
-
-            if (type != other.type) return false
-            if (warnings != other.warnings) return false
-            if (errors != other.errors) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = type.hashCode()
-            result = 31 * result + warnings.hashCode()
-            result = 31 * result + errors.hashCode()
-            return result
-        }
-
-
-        class Errors(
-            override val errors: List<Component>,
-            override val warnings: List<Component>,
-        ) : ErrorState(Type.Errors) {
-
-            init {
-                require(errors.isNotEmpty()) { "Errors must contain at least one element" }
-            }
-
-            constructor(errors: List<Component>) : this(errors, emptyList())
-
-            override fun toString(): String {
-                return "ErrorState.Errors(errors=$errors, warnings=$warnings)"
-            }
-        }
-
-        class Warnings(
-            override val warnings: List<Component>,
-        ) : ErrorState(Type.Warnings) {
-
-            override val errors: List<Component> = emptyList()
-
-            init {
-                require(warnings.isNotEmpty()) { "Warnings must contain at least one element" }
-            }
-
-            override fun toString(): String {
-                return "ErrorState.Warnings($warnings)"
-            }
-        }
-
-        object Ok : ErrorState(Type.Ok) {
-
-            override val warnings: List<Component> = emptyList()
-            override val errors: List<Component> = emptyList()
-
-            override fun toString(): String {
-                return "ErrorState.Ok"
-            }
-        }
-
-        companion object {
-
-            internal val uninitializedError = TranslationKeys.Errors.observationsUninitialized()
-            internal val notConfiguredWarning = TranslationKeys.Errors.observationsNotConfigured()
-            val Uninitialized = Errors(listOf(uninitializedError))
-            val NotConfigured = Warnings(listOf(notConfiguredWarning))
-            val CODEC: Codec<ErrorState> =
-                Codec.pair(ComponentSerialization.CODEC.listOf(), ComponentSerialization.CODEC.listOf()).xmap(
-                    {
-                        val warnings = it.first
-                        val errors = it.second
-                        when {
-                            errors.isNotEmpty() -> Errors(errors = errors, warnings = warnings)
-                            warnings.isNotEmpty() -> Warnings(warnings = warnings)
-                            else -> Ok
-                        }
-                    },
-                    {
-                        Pair.of(it.warnings, it.errors)
-                    }
-                )
         }
     }
 

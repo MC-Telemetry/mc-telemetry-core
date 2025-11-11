@@ -3,7 +3,7 @@ package de.mctelemetry.core.fabric
 import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
-import de.mctelemetry.core.blocks.observation.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.commands.types.ArgumentTypes
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry
@@ -46,7 +46,6 @@ object OTelCoreModFabric : ModInitializer {
                 .attribute(RegistryAttribute.SYNCED)
                 .attribute(RegistryAttribute.MODDED)
                 .buildAndRegister()
-        OTelCoreModBlockEntityTypesFabric.init()
         OTelCoreMod.registerAttributeTypes(attributeTypeRegistry)
         OTelCoreMod.registerObservationSources(observationSourceRegistry)
         ArgumentTypes.register {
