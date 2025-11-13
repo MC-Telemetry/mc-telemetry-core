@@ -58,6 +58,15 @@ loom {
                     .outputs.files.singleFile.absolutePath
             )
         }
+        create("clientWithDocker") {
+            client()
+            inherit(this@runs["client"])
+            configName = "Minecraft Client + Docker"
+            environmentVariable(
+                "OTEL_JAVAAGENT_CONFIGURATION_FILE",
+                rootProject.layout.projectDirectory.file("docker.otel.properties")
+            )
+        }
         create("gameTestServer") {
             server()
 
