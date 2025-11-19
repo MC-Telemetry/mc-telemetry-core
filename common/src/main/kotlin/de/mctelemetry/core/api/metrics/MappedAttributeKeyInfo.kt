@@ -186,8 +186,6 @@ open class MappedAttributeKeyInfo<T : Any, B: Any>(
     }
 
     override fun hashCode(): Int {
-        var result = baseKey.hashCode()
-        result = 31 * result + type.hashCode()
-        return result
+        return baseKey.hashCode()
     }
 }

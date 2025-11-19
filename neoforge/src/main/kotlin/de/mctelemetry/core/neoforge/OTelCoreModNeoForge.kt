@@ -8,6 +8,7 @@ import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.network.observations.container.observationsync.ObservationSyncManagerClient
 import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.ui.RedstoneScraperBlockScreen
 import net.minecraft.Util
@@ -18,6 +19,7 @@ import net.minecraft.core.WritableRegistry
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.level.chunk.status.ChunkStatus
 import net.neoforged.fml.common.Mod
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent
 import net.neoforged.neoforge.event.level.ChunkEvent
 import net.neoforged.neoforge.registries.DeferredRegister
@@ -62,6 +64,12 @@ object OTelCoreModNeoForge {
                     OTelCoreModMenuTypes.REDSTONE_SCRAPER_BLOCK.get(),
                     MenuScreens.ScreenConstructor(::RedstoneScraperBlockScreen)
                 )
+            }
+            FORGE_BUS.addListener { event: ClientPlayerNetworkEvent.LoggingIn ->
+                ObservationSyncManagerClient.onClientConnecting()
+            }
+            FORGE_BUS.addListener { event: ClientPlayerNetworkEvent.LoggingOut ->
+                ObservationSyncManagerClient.onClientDisconnecting()
             }
         }
         FORGE_BUS.addListener(ChunkEvent.Load::class.java) { event ->

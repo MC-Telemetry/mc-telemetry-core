@@ -10,6 +10,7 @@ interface IMappedAttributeKeyType<T : Any, B : Any> {
 
     val id: ResourceKey<IMappedAttributeKeyType<*, *>>
     val valueType: Class<T>
+    val valueStreamCodec: StreamCodec<in RegistryFriendlyByteBuf, T>
     val baseType: GenericAttributeType<B>
     fun format(value: T): B
     fun create(name: String, savedData: CompoundTag?): MappedAttributeKeyInfo<T, B> {

@@ -61,6 +61,7 @@ allprojects {
 
     dependencies {
         compileOnly("org.jetbrains.kotlin:kotlin-stdlib:${rootProject.property("kotlin_stdlib_version")}")
+        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:${rootProject.property("kotlin_coroutines_version")}")
     }
 
     tasks.withType<JavaCompile> {

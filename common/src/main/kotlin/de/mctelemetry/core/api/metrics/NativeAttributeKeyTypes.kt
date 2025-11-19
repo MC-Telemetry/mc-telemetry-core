@@ -3,6 +3,13 @@ package de.mctelemetry.core.api.metrics
 import io.netty.buffer.ByteBuf
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.AttributeType
+import it.unimi.dsi.fastutil.booleans.BooleanArrayList
+import it.unimi.dsi.fastutil.booleans.BooleanList
+import it.unimi.dsi.fastutil.booleans.BooleanLists
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList
+import it.unimi.dsi.fastutil.longs.LongArrayList
+import net.minecraft.network.FriendlyByteBuf
+import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.resources.ResourceKey
@@ -102,6 +109,7 @@ object NativeAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
+        override val valueStreamCodec: StreamCodec<ByteBuf, String> = ByteBufCodecs.STRING_UTF8
         override val valueType: Class<String> = String::class.java
 
         override fun canConvertDirectlyFrom(subtype: IMappedAttributeKeyType<*, *>): Boolean {
@@ -123,6 +131,7 @@ object NativeAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<Boolean> = GenericAttributeType.BOOLEAN
+        override val valueStreamCodec: StreamCodec<ByteBuf, Boolean> = ByteBufCodecs.BOOL
         override val valueType: Class<Boolean> = Boolean::class.java
 
         override fun format(value: Boolean): Boolean = value
@@ -136,6 +145,7 @@ object NativeAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<Long> = GenericAttributeType.LONG
+        override val valueStreamCodec: StreamCodec<ByteBuf, Long> = ByteBufCodecs.VAR_LONG
         override val valueType: Class<Long> = Long::class.java
 
         override fun format(value: Long): Long = value
@@ -149,6 +159,7 @@ object NativeAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<Double> = GenericAttributeType.DOUBLE
+        override val valueStreamCodec: StreamCodec<ByteBuf, Double> = ByteBufCodecs.DOUBLE
         override val valueType: Class<Double> = Double::class.java
 
         override fun format(value: Double): Double = value
@@ -165,11 +176,14 @@ object NativeAttributeKeyTypes {
 
         @Suppress("UNCHECKED_CAST")
         override val valueType: Class<List<String>> = List::class.java as Class<List<String>>
+        override val valueStreamCodec: StreamCodec<in RegistryFriendlyByteBuf, List<String>> =
+            ByteBufCodecs.collection({ if (it == 0) emptyList() else ArrayList(it) }, ByteBufCodecs.STRING_UTF8)
 
         override fun format(value: List<String>): List<String> = value
     }
 
-    object BooleanArrayType : IMappedAttributeKeyType<List<Boolean>, List<Boolean>> {
+    object BooleanArrayType : IMappedAttributeKeyType<List<Boolean>, List<Boolean>>,
+            StreamCodec<FriendlyByteBuf, List<Boolean>> {
 
         override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
@@ -182,6 +196,49 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<List<Boolean>> = List::class.java as Class<List<Boolean>>
 
         override fun format(value: List<Boolean>): List<Boolean> = value
+        override val valueStreamCodec: StreamCodec<in RegistryFriendlyByteBuf, List<Boolean>>
+            get() = this
+
+        override fun decode(`object`: FriendlyByteBuf): BooleanList {
+            val size = `object`.readVarInt()
+            if (size == 0) return BooleanLists.emptyList()
+            val list: BooleanList = BooleanArrayList(size)
+            repeat(size.floorDiv(8)) { byteIndex ->
+                var data = `object`.readByte().toInt()
+                repeat(8) { i ->
+                    list.add(byteIndex * 8 + 7 - i, (data and 0b1) == 0b1)
+                    data = data ushr 1
+                }
+                assert(data == 0)
+            }
+            val partialDataSize = size % 8
+            if (partialDataSize == 0) return list
+            var data: Int = `object`.readByte().toInt()
+            val partialBaseIndex = size - partialDataSize
+            repeat(partialDataSize) { i ->
+                list.add(partialBaseIndex + partialDataSize - i, (data and 0b1) == 0b1)
+                data = data ushr 1
+            }
+            assert(data == 0)
+            return list
+        }
+
+        override fun encode(`object`: FriendlyByteBuf, object2: List<Boolean>) {
+            `object`.writeVarInt(object2.size)
+            var currentByteIndex = 0
+            var currentByte = 0
+            for (entry in object2) {
+                currentByte = (currentByte shl 1) or if (entry) 1 else 0
+                currentByteIndex = (currentByteIndex + 1) % 8
+                if (currentByteIndex == 0) {
+                    `object`.writeByte(currentByte)
+                    currentByte = 0
+                }
+            }
+            if (currentByteIndex != 0) {
+                `object`.writeByte(currentByte)
+            }
+        }
     }
 
     object LongArrayType : IMappedAttributeKeyType<List<Long>, List<Long>> {
@@ -195,6 +252,8 @@ object NativeAttributeKeyTypes {
 
         @Suppress("UNCHECKED_CAST")
         override val valueType: Class<List<Long>> = List::class.java as Class<List<Long>>
+        override val valueStreamCodec: StreamCodec<in RegistryFriendlyByteBuf, List<Long>> =
+            ByteBufCodecs.collection({ if (it == 0) emptyList() else LongArrayList(it) }, ByteBufCodecs.VAR_LONG)
 
         override fun format(value: List<Long>): List<Long> = value
     }
@@ -210,6 +269,8 @@ object NativeAttributeKeyTypes {
 
         @Suppress("UNCHECKED_CAST")
         override val valueType: Class<List<Double>> = List::class.java as Class<List<Double>>
+        override val valueStreamCodec: StreamCodec<in RegistryFriendlyByteBuf, List<Double>> =
+            ByteBufCodecs.collection({ if (it == 0) emptyList() else DoubleArrayList(it) }, ByteBufCodecs.DOUBLE)
 
         override fun format(value: List<Double>): List<Double> = value
     }

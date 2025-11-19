@@ -39,7 +39,7 @@ abstract class ObservationSourceContainerBlockEntity(
     blockState: BlockState,
 ) : BlockEntity(blockEntityType, blockPos, blockState) {
 
-    private var container: BlockEntityObservationSourceContainer? = null
+    private var _container: BlockEntityObservationSourceContainer? = null
         set(value) {
             val oldValue = field
             if (oldValue === value) return
@@ -48,12 +48,14 @@ abstract class ObservationSourceContainerBlockEntity(
             }
             field = value
         }
+    val container: ObservationSourceContainer<*>?
+        get() = _container
 
     private var setupRun = false
     private var onLevelCallback: ((Level) -> Unit)? = null
 
-    internal val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>?
-        get() = container?.observationStates
+    val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>?
+        get() = _container?.observationStates
 
     protected val blockEntityType: BlockEntityType<*>
         get() = super.type
@@ -63,13 +65,13 @@ abstract class ObservationSourceContainerBlockEntity(
     override fun loadAdditional(compoundTag: CompoundTag, provider: HolderLookup.Provider) {
         super.loadAdditional(compoundTag, provider)
         val observationSourceLookup = provider.lookupOrThrow(OTelCoreModAPI.ObservationSources)
-        val container = this.container ?: (BlockEntityObservationSourceContainer(
+        val container = this._container ?: (BlockEntityObservationSourceContainer(
             observationSourceLookup
                 .listElements()
                 .map(Holder<IObservationSource<*, *>>::value)
                 .toList()
         ).also {
-            this.container = it
+            this._container = it
         })
         val level = level
         if (level == null) {
@@ -93,11 +95,11 @@ abstract class ObservationSourceContainerBlockEntity(
 
     override fun saveAdditional(compoundTag: CompoundTag, provider: HolderLookup.Provider) {
         super.saveAdditional(compoundTag, provider)
-        container?.saveStatesToTag(compoundTag)
+        _container?.saveStatesToTag(compoundTag)
     }
 
     private fun updateState() {
-        val container = container ?: return
+        val container = _container ?: return
         var targetState: ObservationSourceErrorState.Type? = null
         for (state in container.observationStates.values) {
             targetState = when (state.errorState) {
@@ -151,11 +153,11 @@ abstract class ObservationSourceContainerBlockEntity(
         runWithExceptionCleanup(cleanup = {
             setupRun = false
         }) {
-            val container = this.container ?: (BlockEntityObservationSourceContainer(
+            val container = this._container ?: (BlockEntityObservationSourceContainer(
                 level.registryAccess()
                     .registryOrThrow(OTelCoreModAPI.ObservationSources),
             ).also {
-                this.container = it
+                this._container = it
             })
             container.setup()
             container.setCascadeUpdates(!level.isClientSide)
@@ -206,7 +208,7 @@ abstract class ObservationSourceContainerBlockEntity(
 
     override fun setRemoved() {
         super.setRemoved()
-        val oldContainer = container
+        val oldContainer = _container
         try {
             if (oldContainer != null) {
                 for (state in oldContainer.observationStates.values) {
@@ -215,7 +217,7 @@ abstract class ObservationSourceContainerBlockEntity(
                 oldContainer.close()
             }
         } finally {
-            container = null
+            _container = null
         }
     }
 
