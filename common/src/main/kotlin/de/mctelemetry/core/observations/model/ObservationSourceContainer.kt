@@ -14,6 +14,9 @@ import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentSkipListSet
 import kotlin.collections.iterator
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceState.InstrumentSubRegistrationFactory {
 
@@ -126,10 +129,95 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
         }
     }
 
-    open fun observe(recorder: IObservationRecorder.Resolved, source: IObservationSource<in C, *>) {
+    open fun observe(recorder: IObservationRecorder.Resolved, source: IObservationSource<in C, *>, forceObservation: Boolean = false) {
         val state = observationStates.getValue(source)
+        withValidMapping(state, forceObservation=forceObservation) { mapping ->
+            val mappingResolver = ObservationMappingResolver(recorder, mapping)
+            doObservation(
+                source,
+                context,
+                createAttributeLookup(),
+                mutableSetOf(),
+                mapping,
+                mappingResolver,
+            )
+        }
+    }
+
+    open fun observe(recorder: IObservationRecorder.Resolved, filter: Set<IObservationSource<in C, *>>? = null, forceObservation: Boolean = false) {
+        val attributeLookup = createAttributeLookup()
+        val context = context
+        var mappingResolver: ObservationMappingResolver? = null
+        val unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>> = mutableSetOf()
+        for ((source, state) in observationStates) {
+            if (filter != null && source !in filter) continue
+            try {
+                if ((!forceObservation) && !state.shouldBeObserved()) continue
+                withValidMapping(state, forceObservation = forceObservation) { mapping ->
+                    if (mappingResolver != null) {
+                        mappingResolver.mapping = mapping
+                    } else {
+                        mappingResolver = ObservationMappingResolver(recorder, mapping)
+                    }
+                    doObservation(
+                        source,
+                        context,
+                        attributeLookup,
+                        unusedAttributesSet,
+                        mapping,
+                        mappingResolver,
+                    )
+                }
+            } catch (e: RuntimeException) {
+                state.errorState = state.errorState.withException(e)
+            }
+        }
+    }
+
+    open fun observe(recorder: IObservationRecorder.Unresolved, source: IObservationSource<in C, *>, forceObservation: Boolean = false) {
+        val state = observationStates.getValue(source)
+        withValidMapping(state, forceObservation=forceObservation) { mapping ->
+            doObservation(
+                source,
+                context,
+                createAttributeLookup(),
+                mutableSetOf(),
+                mapping,
+                recorder,
+            )
+        }
+    }
+
+    open fun observe(recorder: IObservationRecorder.Unresolved, filter: Set<IObservationSource<in C, *>>?=null, forceObservation: Boolean = false) {
+        val attributeLookup = createAttributeLookup()
+        val context = context
+        val unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>> = mutableSetOf()
+        for ((source, state) in observationStates) {
+            if (filter != null && source !in filter) continue
+            withValidMapping(state, forceObservation = forceObservation) { mapping ->
+                doObservation(
+                    source,
+                    context,
+                    attributeLookup,
+                    unusedAttributesSet,
+                    mapping,
+                    recorder,
+                )
+            }
+        }
+    }
+
+    @OptIn(ExperimentalContracts::class)
+    protected inline fun withValidMapping(
+        state: ObservationSourceState,
+        forceObservation: Boolean=false,
+        observationBlock: (ObservationAttributeMapping) -> Unit
+    ) {
+        contract {
+            callsInPlace(observationBlock, InvocationKind.AT_MOST_ONCE)
+        }
         try {
-            if (!state.shouldBeObserved()) return
+            if ((!forceObservation) && !state.shouldBeObserved()) return
             val configuration = state.configuration ?: return
             val instrument = configuration.instrument
             val mapping = configuration.mapping
@@ -138,52 +226,10 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
                 state.errorState = state.errorState.withError(validationError)
                 return
             }
-            val mappingResolver = ObservationMappingResolver(recorder, configuration.mapping)
-            doObservation(
-                source,
-                context,
-                createAttributeLookup(),
-                mutableSetOf(),
-                mappingResolver,
-            )
+            observationBlock(mapping)
         } catch (e: RuntimeException) {
             if(e is GameTestAssertException || e is GameTestTimeoutException) throw e
             state.errorState = state.errorState.withException(e)
-        }
-    }
-
-    open fun observe(recorder: IObservationRecorder.Resolved, filter: Set<IObservationSource<in C, *>>? = null) {
-        val attributeLookup = createAttributeLookup()
-        val context = context
-        var mappingResolver: ObservationMappingResolver? = null
-        val unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>> = mutableSetOf()
-        for ((source, state) in observationStates) {
-            if (filter != null && source !in filter) continue
-            try {
-                if (!state.shouldBeObserved()) continue
-                val configuration = state.configuration ?: continue
-                val instrument = configuration.instrument
-                val mapping = configuration.mapping
-                val validationError = mapping.validate(instrument.attributes.values)
-                if (validationError != null) {
-                    state.errorState = state.errorState.withError(validationError)
-                    continue
-                }
-                if (mappingResolver != null) {
-                    mappingResolver.mapping = configuration.mapping
-                } else {
-                    mappingResolver = ObservationMappingResolver(recorder, configuration.mapping)
-                }
-                doObservation(
-                    source,
-                    context,
-                    attributeLookup,
-                    unusedAttributesSet,
-                    mappingResolver,
-                )
-            } catch (e: RuntimeException) {
-                state.errorState = state.errorState.withException(e)
-            }
         }
     }
 
@@ -192,11 +238,12 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
         context: C,
         parentLookup: IMappedAttributeValueLookup,
         unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>>,
-        observer: ObservationMappingResolver,
+        mapping: ObservationAttributeMapping,
+        recorder: IObservationRecorder.Unresolved,
     ) {
         val lookup = source.createAttributeLookup(context, parentLookup)
         unusedAttributesSet.clear()
-        observer.mapping.findUnusedAttributes(lookup.keys, unusedAttributesSet)
-        source.observe(context, observer, lookup, unusedAttributesSet)
+        mapping.findUnusedAttributes(lookup.keys, unusedAttributesSet)
+        source.observe(context, recorder, lookup, unusedAttributesSet)
     }
 }

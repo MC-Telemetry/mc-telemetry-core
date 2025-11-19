@@ -1,8 +1,14 @@
 package de.mctelemetry.core.api.metrics
 
+import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
+import net.minecraft.core.UUIDUtil
+import net.minecraft.core.registries.Registries
+import net.minecraft.network.RegistryFriendlyByteBuf
+import net.minecraft.network.codec.ByteBufCodecs
+import net.minecraft.network.codec.StreamCodec
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.Item
@@ -27,6 +33,7 @@ object BuiltinAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<List<Long>> = GenericAttributeType.LONG_ARRAY
+        override val valueStreamCodec: StreamCodec<ByteBuf, BlockPos> = BlockPos.STREAM_CODEC
         override val valueType: Class<BlockPos> = BlockPos::class.java
 
         override fun format(value: BlockPos): List<Long> {
@@ -66,6 +73,7 @@ object BuiltinAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<List<String>> = GenericAttributeType.STRING_ARRAY
+        override val valueStreamCodec: StreamCodec<ByteBuf, GlobalPos> = GlobalPos.STREAM_CODEC
         override val valueType: Class<GlobalPos> = GlobalPos::class.java
 
         override fun format(value: GlobalPos): List<String> {
@@ -107,6 +115,7 @@ object BuiltinAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
+        override val valueStreamCodec: StreamCodec<ByteBuf, Direction> = Direction.STREAM_CODEC
         override val valueType: Class<Direction> = Direction::class.java
 
         override fun format(value: Direction): String {
@@ -122,6 +131,7 @@ object BuiltinAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
+        override val valueStreamCodec: StreamCodec<RegistryFriendlyByteBuf, Item> = ByteBufCodecs.registry(Registries.ITEM)
         override val valueType: Class<Item> = Item::class.java
 
         override fun format(value: Item): String {
@@ -138,6 +148,7 @@ object BuiltinAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
+        override val valueStreamCodec: StreamCodec<ByteBuf, UUID> = UUIDUtil.STREAM_CODEC
         override val valueType: Class<UUID> = UUID::class.java
 
 
