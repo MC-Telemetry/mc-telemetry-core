@@ -48,13 +48,17 @@ abstract class ObservationSourceContainerBlockEntity(
             }
             field = value
         }
-    val container: ObservationSourceContainer<*>?
+    val container: ObservationSourceContainer<*>
+        get() = _container ?: throw IllegalStateException("Container has not been initialized yet")
+    val containerIfInitialized: ObservationSourceContainer<*>?
         get() = _container
 
     private var setupRun = false
     private var onLevelCallback: ((Level) -> Unit)? = null
 
-    val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>?
+    val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>
+        get() = (_container ?: throw IllegalStateException("Container has not been initialized yet")).observationStates
+    val observationStatesIfInitialized: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>?
         get() = _container?.observationStates
 
     protected val blockEntityType: BlockEntityType<*>
@@ -134,12 +138,12 @@ abstract class ObservationSourceContainerBlockEntity(
     }
 
     fun percussiveMaintenance(player: Player? = null) {
-        observationStates?.values?.forEach {
+        observationStates.values.forEach {
             it.resetErrorState()
         }
         updateState()
         val level = level ?: return
-        level.playSound(player, blockPos, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.3f, 7.0f/8.0f)
+        level.playSound(player, blockPos, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.3f, 7.0f / 8.0f)
     }
 
     fun doBlockTick() {
