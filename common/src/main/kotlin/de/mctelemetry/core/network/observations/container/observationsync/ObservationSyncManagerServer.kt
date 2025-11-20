@@ -3,7 +3,7 @@ package de.mctelemetry.core.network.observations.container.observationsync
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
-import de.mctelemetry.core.network.observations.container.observationsync.ObservationSyncManagerServer.PlayerBlockRegistration.Companion.RANGE
+import de.mctelemetry.core.network.observations.container.ObservationContainerInteractionLimits
 import dev.architectury.event.events.common.LifecycleEvent
 import dev.architectury.event.events.common.TickEvent
 import dev.architectury.networking.NetworkManager
@@ -22,9 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.contract
-import kotlin.math.abs
 import kotlin.math.min
 
 class ObservationSyncManagerServer(
@@ -34,7 +31,7 @@ class ObservationSyncManagerServer(
     companion object {
 
         private val subLogger =
-            LogManager.getLogger("${OTelCoreMod.MOD_ID}.${ObservationSyncManagerClient::class.simpleName}")
+            LogManager.getLogger("${OTelCoreMod.MOD_ID}.${ObservationSyncManagerServer::class.simpleName}")
 
         const val DEFAULT_TICK_INTERVAL: UInt = 20U
 
@@ -81,28 +78,6 @@ class ObservationSyncManagerServer(
             currentTick + MAX_AGE_TICKS
         )
 
-        companion object {
-
-
-            const val RANGE: Double = 40.0
-
-            @OptIn(ExperimentalContracts::class)
-            fun blockIsValid(level: ServerLevel?, pos: BlockPos, checkBlockEntity: Boolean = true): Boolean {
-                contract {
-                    returns(true) implies (level != null)
-                }
-                level ?: return false
-                if (!level.isLoaded(pos)) return false
-                if (checkBlockEntity) {
-                    val blockEntity = level.getBlockEntity(pos)
-                    if (blockEntity !is ObservationSourceContainerBlockEntity) {
-                        return false
-                    }
-                }
-                return true
-            }
-        }
-
         fun isTimeout(currentTick: Long): Boolean {
             return currentTick > maxAgeTick
         }
@@ -120,14 +95,11 @@ class ObservationSyncManagerServer(
         }
 
         fun validForBlock(dimension: ResourceKey<Level>, pos: BlockPos): Boolean {
-            if (player.isRemoved)
-                return false
-            val playerPos = player.position()
-            if (player.level().dimension() != dimension)
-                return false
-            val deltaX = pos.x + 0.5 - playerPos.x
-            val deltaZ = pos.z + 0.5 - playerPos.z
-            return !(deltaX > RANGE || deltaX < -RANGE || deltaZ > RANGE || deltaZ < -RANGE)
+            return ObservationContainerInteractionLimits.checkCanInteract(
+                player,
+                dimension,
+                pos,
+            )
         }
     }
 
@@ -157,62 +129,21 @@ class ObservationSyncManagerServer(
     fun checkCanRequest(
         player: ServerPlayer,
         pos: GlobalPos,
-        requestName: String,
         checkDimension: Boolean = true,
         checkDistance: Boolean = true,
         checkLoaded: Boolean = true,
         checkBlockEntity: Boolean = true,
     ): Boolean {
-        val playerLevel = player.level()
-        if (checkDimension && playerLevel.dimension() != pos.dimension) {
-            subLogger.trace(
-                "Ignoring {} because of dimension mismatch: Requested {} in {} but player is in {}",
-                requestName,
-                pos.pos,
-                pos.dimension,
-                playerLevel.dimension()
-            )
-            return false
-        }
-        if (checkDistance) {
-            val playerPos = player.position()
-            val deltaX = pos.pos.x + 0.5 - playerPos.x
-            val deltaZ = pos.pos.z + 0.5 - playerPos.z
-            if (deltaX > RANGE || deltaX < -RANGE || deltaZ > RANGE || deltaZ < -RANGE) {
-                subLogger.trace(
-                    "Ignoring {} because of distance: Requested {} in {} but player is {},{} (x,z) blocks away",
-                    requestName,
-                    pos.pos,
-                    pos.dimension,
-                    abs(deltaX),
-                    abs(deltaZ),
-                )
-                return false
-            }
-        }
-        if ((checkLoaded || checkBlockEntity) && !playerLevel.isLoaded(pos.pos)) {
-            subLogger.trace(
-                "Ignoring {} because position is unloaded: Requested {} in {}",
-                requestName,
-                pos.pos,
-                pos.dimension,
-            )
-            return false
-        } else if (checkBlockEntity) {
-            val blockEntity = playerLevel.getBlockEntity(pos.pos)
-            if (blockEntity !is ObservationSourceContainerBlockEntity) {
-                subLogger.trace(
-                    "Ignoring {} because position does not contain an {}: Requested {} in {} is {}",
-                    requestName,
-                    ObservationSourceContainerBlockEntity::class.java.simpleName,
-                    pos.pos,
-                    pos.dimension,
-                    blockEntity
-                )
-                return false
-            }
-        }
-        return true
+        return ObservationContainerInteractionLimits.checkCanInteract(
+            player,
+            pos.dimension,
+            pos.pos,
+            log = true,
+            checkDimension = checkDimension,
+            checkDistance = checkDistance,
+            checkLoaded = checkLoaded,
+            checkBlockEntity = checkBlockEntity,
+        )
     }
 
     private inline fun updateRegistration(
@@ -248,7 +179,7 @@ class ObservationSyncManagerServer(
     }
 
     fun handleRequestSingle(player: ServerPlayer, pos: GlobalPos, log: Boolean = true) {
-        if (!checkCanRequest(player, pos, "ObservationsRequestSingle")) {
+        if (!checkCanRequest(player, pos)) {
             handleRequestStop(player, pos)
             return
         }
@@ -281,8 +212,8 @@ class ObservationSyncManagerServer(
 
     fun handleRequestStart(player: ServerPlayer, pos: GlobalPos, tickInterval: UInt, log: Boolean = true) {
         // accept request even if block is not currently correct block entity -> might be changed in time for next tick
-        if (!checkCanRequest(player, pos, "ObservationsRequestStart", checkBlockEntity = false)) {
-            handleRequestStop(player, pos, log=false)
+        if (!checkCanRequest(player, pos, checkBlockEntity = false)) {
+            handleRequestStop(player, pos, log = false)
             return
         }
         val currentTick = player.server.tickCount.toLong()
@@ -311,8 +242,8 @@ class ObservationSyncManagerServer(
 
 
     fun handleRequestKeepalive(player: ServerPlayer, pos: GlobalPos, tickInterval: UInt, log: Boolean = true) {
-        if (!checkCanRequest(player, pos, "ObservationsRequestKeepalive")) {
-            handleRequestStop(player, pos, log=false)
+        if (!checkCanRequest(player, pos)) {
+            handleRequestStop(player, pos, log = false)
             return
         }
         val currentTick = player.server.tickCount.toLong()
@@ -349,7 +280,7 @@ class ObservationSyncManagerServer(
         if (!level.isLoaded(pos)) return
         val entity = level.getBlockEntity(pos)
         if (entity !is ObservationSourceContainerBlockEntity) return
-        val container = entity.container ?: return
+        val container = entity.containerIfInitialized ?: return
         val memoryRecorder = MemoryObservationRecorder()
         container.observe(memoryRecorder, forceObservation = true)
         observations = memoryRecorder.recordedAsMap()
@@ -381,7 +312,7 @@ class ObservationSyncManagerServer(
                 val serverLevel: ServerLevel? = server.getLevel(level)
                 for ((block, registrationMap) in levelMap.entries) {
                     if (registrationMap.isNotEmpty()) {
-                        if (!PlayerBlockRegistration.blockIsValid(serverLevel, block)) {
+                        if (!ObservationContainerInteractionLimits.checkIsInteractable(serverLevel, block)) {
                             removePendingRegistrations = removePendingRegistrations ?: ArrayDeque()
                             removePendingRegistrations.addAll(registrationMap.values)
                             subLogger.trace(
