@@ -14,6 +14,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.Level
+import org.apache.logging.log4j.LogManager
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
@@ -31,6 +32,9 @@ class ObservationSyncManagerServer(
 ) {
 
     companion object {
+
+        private val subLogger =
+            LogManager.getLogger("${OTelCoreMod.MOD_ID}.${ObservationSyncManagerClient::class.simpleName}")
 
         const val DEFAULT_TICK_INTERVAL: UInt = 20U
 
@@ -73,7 +77,7 @@ class ObservationSyncManagerServer(
         constructor(player: ServerPlayer, updateIntervalTicks: UInt, currentTick: Long) : this(
             player,
             updateIntervalTicks,
-            currentTick + updateIntervalTicks.toLong(),
+            currentTick,
             currentTick + MAX_AGE_TICKS
         )
 
@@ -116,6 +120,8 @@ class ObservationSyncManagerServer(
         }
 
         fun validForBlock(dimension: ResourceKey<Level>, pos: BlockPos): Boolean {
+            if (player.isRemoved)
+                return false
             val playerPos = player.position()
             if (player.level().dimension() != dimension)
                 return false
@@ -131,7 +137,7 @@ class ObservationSyncManagerServer(
     var tickInterval: UInt = tickInterval
         set(value) {
             field = value
-            val intValue = if(value < Int.MAX_VALUE.toUInt()) value.toInt() else Int.MAX_VALUE
+            val intValue = if (value < Int.MAX_VALUE.toUInt()) value.toInt() else Int.MAX_VALUE
             cooldownTicksRemaining.updateAndGet { min(it, intValue) }
         }
 
@@ -159,7 +165,7 @@ class ObservationSyncManagerServer(
     ): Boolean {
         val playerLevel = player.level()
         if (checkDimension && playerLevel.dimension() != pos.dimension) {
-            OTelCoreMod.logger.trace(
+            subLogger.trace(
                 "Ignoring {} because of dimension mismatch: Requested {} in {} but player is in {}",
                 requestName,
                 pos.pos,
@@ -173,7 +179,7 @@ class ObservationSyncManagerServer(
             val deltaX = pos.pos.x + 0.5 - playerPos.x
             val deltaZ = pos.pos.z + 0.5 - playerPos.z
             if (deltaX > RANGE || deltaX < -RANGE || deltaZ > RANGE || deltaZ < -RANGE) {
-                OTelCoreMod.logger.trace(
+                subLogger.trace(
                     "Ignoring {} because of distance: Requested {} in {} but player is {},{} (x,z) blocks away",
                     requestName,
                     pos.pos,
@@ -185,7 +191,7 @@ class ObservationSyncManagerServer(
             }
         }
         if ((checkLoaded || checkBlockEntity) && !playerLevel.isLoaded(pos.pos)) {
-            OTelCoreMod.logger.trace(
+            subLogger.trace(
                 "Ignoring {} because position is unloaded: Requested {} in {}",
                 requestName,
                 pos.pos,
@@ -195,7 +201,7 @@ class ObservationSyncManagerServer(
         } else if (checkBlockEntity) {
             val blockEntity = playerLevel.getBlockEntity(pos.pos)
             if (blockEntity !is ObservationSourceContainerBlockEntity) {
-                OTelCoreMod.logger.trace(
+                subLogger.trace(
                     "Ignoring {} because position does not contain an {}: Requested {} in {} is {}",
                     requestName,
                     ObservationSourceContainerBlockEntity::class.java.simpleName,
@@ -241,10 +247,13 @@ class ObservationSyncManagerServer(
         }
     }
 
-    fun handleRequestSingle(player: ServerPlayer, pos: GlobalPos) {
+    fun handleRequestSingle(player: ServerPlayer, pos: GlobalPos, log: Boolean = true) {
         if (!checkCanRequest(player, pos, "ObservationsRequestSingle")) {
             handleRequestStop(player, pos)
             return
+        }
+        if (log) {
+            subLogger.trace("Received RequestSingle from {} for {}@{}", player, pos.dimension, pos.pos)
         }
         val currentTick = player.server.tickCount.toLong()
         updateRegistration(player, pos) {
@@ -257,7 +266,10 @@ class ObservationSyncManagerServer(
         }
     }
 
-    fun handleRequestStop(player: ServerPlayer, pos: GlobalPos) {
+    fun handleRequestStop(player: ServerPlayer, pos: GlobalPos, log: Boolean = true) {
+        if (log) {
+            subLogger.trace("Received Stop from {} for {}@{}", player, pos.dimension, pos.pos)
+        }
         readWriteLock.readLock().withLock {
             val map = levelMaps[pos.dimension()] ?: return
             map.computeIfPresent(pos.pos) { _, old ->
@@ -267,13 +279,22 @@ class ObservationSyncManagerServer(
         }
     }
 
-    fun handleRequestStart(player: ServerPlayer, pos: GlobalPos, tickInterval: UInt) {
+    fun handleRequestStart(player: ServerPlayer, pos: GlobalPos, tickInterval: UInt, log: Boolean = true) {
         // accept request even if block is not currently correct block entity -> might be changed in time for next tick
         if (!checkCanRequest(player, pos, "ObservationsRequestStart", checkBlockEntity = false)) {
-            handleRequestStop(player, pos)
+            handleRequestStop(player, pos, log=false)
             return
         }
         val currentTick = player.server.tickCount.toLong()
+        if (log) {
+            subLogger.trace(
+                "Received Start from {} for {}@{} with interval {}",
+                player,
+                pos.dimension,
+                pos.pos,
+                tickInterval
+            )
+        }
         updateRegistration(player, pos) {
             if (it == null)
                 PlayerBlockRegistration(
@@ -289,12 +310,21 @@ class ObservationSyncManagerServer(
     }
 
 
-    fun handleRequestKeepalive(player: ServerPlayer, pos: GlobalPos, tickInterval: UInt) {
+    fun handleRequestKeepalive(player: ServerPlayer, pos: GlobalPos, tickInterval: UInt, log: Boolean = true) {
         if (!checkCanRequest(player, pos, "ObservationsRequestKeepalive")) {
-            handleRequestStop(player, pos)
+            handleRequestStop(player, pos, log=false)
             return
         }
         val currentTick = player.server.tickCount.toLong()
+        if (log) {
+            subLogger.trace(
+                "Received Keepalive from {} for {}@{} with interval {}",
+                player,
+                pos.dimension,
+                pos.pos,
+                tickInterval
+            )
+        }
         updateRegistration(player, pos) {
             if (it == null)
                 PlayerBlockRegistration(
@@ -323,6 +353,13 @@ class ObservationSyncManagerServer(
         val memoryRecorder = MemoryObservationRecorder()
         container.observe(memoryRecorder, forceObservation = true)
         observations = memoryRecorder.recordedAsMap()
+        subLogger.trace(
+            "Sending {} observation-points for {}@{} to players {}",
+            observations.values.sumOf { it.observations.size },
+            level.dimension().location(),
+            pos,
+            players
+        )
         NetworkManager.sendToPlayers(
             players,
             S2CObservationsPayload(
@@ -334,7 +371,7 @@ class ObservationSyncManagerServer(
     }
 
     fun tick(server: MinecraftServer) {
-        if(cooldownTicksRemaining.getAndUpdate { (it +1) % tickInterval.toInt() } != 0) return
+        if (cooldownTicksRemaining.getAndUpdate { (it + 1) % tickInterval.toInt() } != 0) return
         readWriteLock.writeLock().withLock {
             val currentTick = server.tickCount.toLong()
             var removePendingRegistrations: ArrayDeque<PlayerBlockRegistration>? = null
@@ -343,39 +380,55 @@ class ObservationSyncManagerServer(
             for ((level, levelMap) in levelMaps.entries) {
                 val serverLevel: ServerLevel? = server.getLevel(level)
                 for ((block, registrationMap) in levelMap.entries) {
-                    if (!PlayerBlockRegistration.blockIsValid(serverLevel, block)) {
-                        removePendingRegistrations = removePendingRegistrations ?: ArrayDeque()
-                        removePendingRegistrations.addAll(registrationMap.values)
-                    } else {
-                        for (registration in registrationMap.values) {
-                            if (!registration.validForBlock(level, block)) {
-                                removePendingRegistrations = removePendingRegistrations ?: ArrayDeque()
-                                removePendingRegistrations.add(registration)
-                            } else {
-                                if (registration.isTimeout(currentTick)) {
+                    if (registrationMap.isNotEmpty()) {
+                        if (!PlayerBlockRegistration.blockIsValid(serverLevel, block)) {
+                            removePendingRegistrations = removePendingRegistrations ?: ArrayDeque()
+                            removePendingRegistrations.addAll(registrationMap.values)
+                            subLogger.trace(
+                                "Removing {} registrations for {}@{} because base block is no longer valid",
+                                registrationMap.values.size,
+                                level.location(),
+                                block
+                            )
+                        } else {
+                            for (registration in registrationMap.values) {
+                                if (!registration.validForBlock(level, block)) {
                                     removePendingRegistrations = removePendingRegistrations ?: ArrayDeque()
                                     removePendingRegistrations.add(registration)
-                                }
-                                if (registration.updateTick(currentTick)) {
-                                    updatePendingRegistrations = updatePendingRegistrations ?: ArrayDeque()
-                                    updatePendingRegistrations.add(registration.player)
+                                    subLogger.trace(
+                                        "Removing {} because no longer valid for {}@{}",
+                                        registration,
+                                        level.location(),
+                                        block
+                                    )
+                                } else {
+                                    if (registration.isTimeout(currentTick)) {
+                                        removePendingRegistrations = removePendingRegistrations ?: ArrayDeque()
+                                        removePendingRegistrations.add(registration)
+                                        subLogger.trace("Removing {} because of timeout", registration)
+                                    }
+                                    if (registration.updateTick(currentTick)) {
+                                        updatePendingRegistrations = updatePendingRegistrations ?: ArrayDeque()
+                                        updatePendingRegistrations.add(registration.player)
+                                        subLogger.trace("Scheduling {} for payload", registration)
+                                    }
                                 }
                             }
                         }
-                    }
-                    if (!updatePendingRegistrations.isNullOrEmpty()) {
-                        sendObservation(currentTick, serverLevel!!, block, updatePendingRegistrations)
-                        updatePendingRegistrations.clear()
-                    }
-                    if (!removePendingRegistrations.isNullOrEmpty()) {
-                        for (registration in removePendingRegistrations) {
-                            registrationMap.remove(registration.player, registration)
+                        if (!updatePendingRegistrations.isNullOrEmpty()) {
+                            sendObservation(currentTick, serverLevel!!, block, updatePendingRegistrations)
+                            updatePendingRegistrations.clear()
                         }
-                        if (registrationMap.isEmpty()) {
-                            removePendingBlocks = removePendingBlocks ?: ArrayDeque()
-                            removePendingBlocks.add(block)
+                        if (!removePendingRegistrations.isNullOrEmpty()) {
+                            for (registration in removePendingRegistrations) {
+                                registrationMap.remove(registration.player, registration)
+                            }
+                            removePendingRegistrations.clear()
                         }
-                        removePendingRegistrations.clear()
+                    }
+                    if (registrationMap.isEmpty()) { // not else-if because might be result of deletion above
+                        removePendingBlocks = removePendingBlocks ?: ArrayDeque()
+                        removePendingBlocks.add(block)
                     }
                 }
                 if (!removePendingBlocks.isNullOrEmpty()) {
