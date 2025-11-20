@@ -1,12 +1,24 @@
 package de.mctelemetry.core.blocks
 
+import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
+import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes
+import de.mctelemetry.core.api.metrics.convertFrom
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.network.observations.container.observationsync.ObservationSyncManagerClient
+import de.mctelemetry.core.network.observations.container.observationsync.S2CObservationsPayloadObservationType
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import dev.architectury.event.EventResult
 import dev.architectury.event.events.common.InteractionEvent
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import net.minecraft.Util
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
+import net.minecraft.core.GlobalPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.RandomSource
 import net.minecraft.world.InteractionHand
@@ -72,6 +84,41 @@ abstract class ObservationSourceContainerBlock(properties: Properties) : BaseEnt
 
     object RightClickBlockListener : InteractionEvent.RightClickBlock {
 
+        private fun onObservations(observationPayload: S2CObservationsPayloadObservationType) {
+            for ((source, observations) in observationPayload) {
+                OTelCoreMod.logger.info(
+                    "Observations from {}:{}",
+                    source,
+                    if (observations.observations.isEmpty())
+                        ""
+                    else observations.observations.values.joinToString(
+                        prefix = "\n\t- ",
+                        separator = "\n\t- "
+                    ) {
+                        it.attributes.map.entries.joinToString(
+                            prefix = "[",
+                            postfix = "]"
+                        ) { (k, v) ->
+                            "${k.baseKey.key}=${
+                                NativeAttributeKeyTypes.StringType.convertFrom(
+                                    k.type as IMappedAttributeKeyType<Any, *>,
+                                    v
+                                )
+                            }"
+                        } + ": " + buildString {
+                            if (it.hasLong) {
+                                append(it.longValue)
+                                append('L')
+                            }
+                            if (it.hasDouble) {
+                                append(it.doubleValue)
+                                append("d")
+                            }
+                        }
+                    })
+            }
+        }
+
         override fun click(player: Player, hand: InteractionHand, pos: BlockPos, face: Direction): EventResult {
             val blockEntity = player.level().getBlockEntity(pos)
             if (blockEntity !is ObservationSourceContainerBlockEntity) {
@@ -85,6 +132,23 @@ abstract class ObservationSourceContainerBlock(properties: Properties) : BaseEnt
                     return EventResult.interruptTrue()
                 }
                 return EventResult.pass()
+            }
+
+            val isClientLevel = player.level().isClientSide
+
+            @Suppress("OPT_IN_USAGE")
+            if (isClientLevel) {
+                val job = GlobalScope.launch {
+                    val observations = ObservationSyncManagerClient.getActiveManager()
+                        .requestObservations(GlobalPos(player.level().dimension(), pos), 20U)
+                    (observations.onStart { emit(observations.value) }).collect { observationPayload ->
+                        onObservations(observationPayload)
+                    }
+                }
+                GlobalScope.launch {
+                    delay(60000)
+                    job.cancelAndJoin()
+                }
             }
 
             return EventResult.interruptTrue()
