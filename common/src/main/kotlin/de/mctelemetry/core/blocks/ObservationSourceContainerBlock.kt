@@ -7,6 +7,8 @@ import de.mctelemetry.core.api.metrics.convertFrom
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.observationsync.ObservationSyncManagerClient
 import de.mctelemetry.core.network.observations.container.observationsync.S2CObservationsPayloadObservationType
+import de.mctelemetry.core.network.observations.container.settings.C2SObservationSourceSettingsUpdatePayload.Companion.sendConfigurationUpdate
+import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import dev.architectury.event.EventResult
 import dev.architectury.event.events.common.InteractionEvent
@@ -119,6 +121,9 @@ abstract class ObservationSourceContainerBlock(properties: Properties) : BaseEnt
             }
         }
 
+        @Volatile
+        private var configurationCopyPasteBuffer: Pair<Int, ObservationSourceConfiguration?>? = null
+
         override fun click(player: Player, hand: InteractionHand, pos: BlockPos, face: Direction): EventResult {
             val blockEntity = player.level().getBlockEntity(pos)
             if (blockEntity !is ObservationSourceContainerBlockEntity) {
@@ -126,28 +131,68 @@ abstract class ObservationSourceContainerBlock(properties: Properties) : BaseEnt
             }
 
             if (player.isShiftKeyDown) {
-                if (player.getItemInHand(hand).item == Items.STICK) {
-                    if (!player.level().isClientSide)
-                        blockEntity.percussiveMaintenance()
-                    return EventResult.interruptTrue()
-                }
-                return EventResult.pass()
-            }
-
-            val isClientLevel = player.level().isClientSide
-
-            @Suppress("OPT_IN_USAGE")
-            if (isClientLevel) {
-                val job = GlobalScope.launch {
-                    val observations = ObservationSyncManagerClient.getActiveManager()
-                        .requestObservations(GlobalPos(player.level().dimension(), pos), 20U)
-                    (observations.onStart { emit(observations.value) }).collect { observationPayload ->
-                        onObservations(observationPayload)
+                when (player.getItemInHand(hand).item) {
+                    Items.STICK -> {
+                        if (!player.level().isClientSide)
+                            blockEntity.percussiveMaintenance()
+                        return EventResult.interruptTrue()
+                    }
+                    Items.PAPER -> {
+                        if (player.level().isClientSide) {
+                            val existingBufferValue = configurationCopyPasteBuffer
+                            val entryWithConfiguration = blockEntity.observationStates.values.withIndex().firstOrNull {
+                                it.value.configuration != null
+                            }
+                            configurationCopyPasteBuffer = if (entryWithConfiguration != null) {
+                                OTelCoreMod.logger.info("Config found, copy paste buffer set to ${entryWithConfiguration.index}->${entryWithConfiguration.value}")
+                                entryWithConfiguration.index to entryWithConfiguration.value.configuration
+                            } else if (existingBufferValue != null) {
+                                OTelCoreMod.logger.info("Value was stored but no config found, copy paste buffer set to ${existingBufferValue.first}->null")
+                                existingBufferValue.first to null
+                            } else {
+                                OTelCoreMod.logger.info("No value was stored and no config found, copy paste buffer null")
+                                null
+                            }
+                        }
                     }
                 }
-                GlobalScope.launch {
-                    delay(60000)
-                    job.cancelAndJoin()
+                return EventResult.pass()
+            } else {
+                when (player.getItemInHand(hand).item) {
+                    Items.PAPER -> {
+                        if (player.level().isClientSide) {
+                            val buffer = configurationCopyPasteBuffer
+                            if (buffer != null) {
+                                val (index, value) = buffer
+                                val state = blockEntity.observationStates.values.toList()[index]
+                                OTelCoreMod.logger.info("Sending configuration update of ${blockEntity.level!!.dimension().location()}@${blockEntity.blockPos}/${state.source.id.location()} to $value")
+                                state.sendConfigurationUpdate(
+                                    GlobalPos(
+                                        blockEntity.level!!.dimension(),
+                                        blockEntity.blockPos,
+                                    ),
+                                    value
+                                )
+                            }
+                            EventResult.interruptTrue()
+                        }
+                    }
+                    Items.SPIDER_EYE -> {
+                        @Suppress("OPT_IN_USAGE")
+                        if (player.level().isClientSide) {
+                            val job = GlobalScope.launch {
+                                val observations = ObservationSyncManagerClient.getActiveManager()
+                                    .requestObservations(GlobalPos(player.level().dimension(), pos), 20U)
+                                (observations.onStart { emit(observations.value) }).collect { observationPayload ->
+                                    onObservations(observationPayload)
+                                }
+                            }
+                            GlobalScope.launch {
+                                delay(60000)
+                                job.cancelAndJoin()
+                            }
+                        }
+                    }
                 }
             }
 
