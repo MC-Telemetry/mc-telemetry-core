@@ -1,5 +1,6 @@
 package de.mctelemetry.core.network.observations.container.observationsync
 
+import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import dev.architectury.networking.NetworkManager
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -28,6 +30,7 @@ import kotlinx.coroutines.plus
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.core.GlobalPos
+import org.apache.logging.log4j.LogManager
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -37,6 +40,7 @@ import kotlin.math.max
 import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -45,6 +49,9 @@ import kotlin.time.Instant
 class ObservationSyncManagerClient() : AutoCloseable {
 
     companion object {
+
+        private val subLogger =
+            LogManager.getLogger("${OTelCoreMod.MOD_ID}.${ObservationSyncManagerClient::class.simpleName}")
 
         private var clock: Clock = Clock.System
         fun setClock(clock: Clock) {
@@ -65,10 +72,7 @@ class ObservationSyncManagerClient() : AutoCloseable {
         }
 
         fun onClientDisconnecting() {
-            val oldValue = instance.getAndSet(null)
-            if (oldValue == null) {
-                throw IllegalStateException("No ${ObservationSyncManagerClient::class.java.simpleName} currently active")
-            }
+            val oldValue = instance.getAndSet(null) ?: return
             oldValue.close()
         }
 
@@ -83,7 +87,7 @@ class ObservationSyncManagerClient() : AutoCloseable {
     }
 
 
-    private sealed class PendingRequest: AutoCloseable {
+    private sealed class PendingRequest : AutoCloseable {
 
         abstract fun onResult(observations: S2CObservationsPayloadObservationType): PendingRequest?
 
@@ -143,6 +147,7 @@ class ObservationSyncManagerClient() : AutoCloseable {
             }
 
             suspend fun getStateFlow(): StateFlow<S2CObservationsPayloadObservationType> {
+                subLogger.trace("Requested StateFlow from SubscriptionRequest for {}", removeCallbackArgs)
                 ensureNotClosed()
                 currentCoroutineContext().ensureActive()
                 internalUsage.update { it + 1 }
@@ -150,6 +155,7 @@ class ObservationSyncManagerClient() : AutoCloseable {
                     currentCoroutineContext().ensureActive()
                     ensureNotClosed()
                     return flowDeferred.await().also {
+                        subLogger.trace("StateFlow for SubscriptionRequest for {} ready", removeCallbackArgs)
                         currentCoroutineContext().ensureActive()
                         ensureNotClosed()
                     }
@@ -159,11 +165,13 @@ class ObservationSyncManagerClient() : AutoCloseable {
             }
 
             private fun startCleanupTimer() {
+                subLogger.trace("Cleanup timer for Subscription for {} started", removeCallbackArgs)
                 val storedTask = cleanupTimer.get()
                 if (storedTask != null) return
                 val targetTimeRef: AtomicReference<Instant> = AtomicReference(clock.now() + SUBSCRIPTION_TIMEOUT)
                 var cleanupJob: Job? = null
                 cleanupJob = scope.launch(start = CoroutineStart.LAZY, context = CoroutineName("CleanupJob")) {
+                    subLogger.trace("Cleanup job for Subscription for {} started", removeCallbackArgs)
                     requireNotNull(cleanupJob)
                     var storedTargetTime: Instant = targetTimeRef.get()
                     do {
@@ -175,14 +183,26 @@ class ObservationSyncManagerClient() : AutoCloseable {
                     } while (observedTargetTime != storedTargetTime)
                     ensureActive()
                     if (cleanupJob != cleanupTimer.get()) {
+                        subLogger.trace(
+                            "Cleanup job for Subscription for {} done waiting but cancelling because of job-mismatch",
+                            removeCallbackArgs
+                        )
                         val ex = CancellationException()
                         cancel(ex)
                         throw ex
                     }
+                    subLogger.trace(
+                        "Cleanup job for Subscription for {} done waiting, closing",
+                        removeCallbackArgs
+                    )
                     close()
                 }
                 val previousJob = cleanupTimer.compareAndExchange(null, cleanupJob)
                 if (previousJob != null) {
+                    subLogger.trace(
+                        "Cleanup job for Subscription for {} prematurely cancelled because of job-mismatch",
+                        removeCallbackArgs
+                    )
                     cleanupJob.cancel()
                     return
                 }
@@ -190,6 +210,7 @@ class ObservationSyncManagerClient() : AutoCloseable {
             }
 
             private fun stopCleanupTimer() {
+                subLogger.trace("Cleanup timer for Subscription for {} stopping", removeCallbackArgs)
                 val job = cleanupTimer.getAndSet(null) ?: return
                 job.cancel()
             }
@@ -218,33 +239,67 @@ class ObservationSyncManagerClient() : AutoCloseable {
                             null
                         }
                     } finally {
-                        cleanupTimer.get()?.cancel()
+                        try {
+                            cleanupTimer.get()?.cancel()
+                        } finally {
+                            scope.cancel()
+                        }
                     }
                 }
             }
 
             @Suppress("OPT_IN_USAGE")
             override fun onResult(observations: S2CObservationsPayloadObservationType): Subscription<*> {
+                subLogger.trace("Received result for Subscription for {}", removeCallbackArgs)
                 do {
                     val deferred = nextDeferred.value ?: break
                     deferred.complete(observations)
+                    subLogger.trace(
+                        "Triggered deferred {} for Subscription for {}",
+                        deferred,
+                        removeCallbackArgs
+                    )
                 } while (nextDeferred.compareAndSet(deferred, null))
                 if (flowDeferred.isCompleted) {
+                    subLogger.trace(
+                        "Providing value to existing flowDeferred for Subscription for {}",
+                        removeCallbackArgs
+                    )
                     flowDeferred.getCompleted().value = observations
                 } else {
+                    subLogger.trace(
+                        "No existing flowDeferred found for Subscription for {}, creating new",
+                        removeCallbackArgs
+                    )
                     val deferredValue = MutableStateFlow(observations)
-                    val cleanupTimerFlow =
-                        deferredValue.subscriptionCount
-                            .combine(internalUsage) { subCount, internalCount ->
-                                (subCount + internalCount) > 0
-                            }.combine(nextDeferred) { hasSubscribers, nextDeferredValue ->
-                                hasSubscribers || nextDeferredValue != null
-                            }.distinctUntilChanged().onEach {
-                                if (it)
-                                    stopCleanupTimer()
-                                else
-                                    startCleanupTimer()
-                            }
+                    val loggedSubscriptionCountFlow = deferredValue.subscriptionCount.onEach {
+                        subLogger.trace(
+                            "Subscriber count for flowDeferred for Subscription for {}: {}",
+                            removeCallbackArgs,
+                            it
+                        )
+                    }
+                    val loggedInternalUsageCountFlow = internalUsage.onEach {
+                        subLogger.trace(
+                            "Internal usage count for Subscription for {}: {}",
+                            removeCallbackArgs,
+                            it
+                        )
+                    }
+                    val loggedHasDeferredFlow = nextDeferred.map { it != null }.distinctUntilChanged().onEach {
+                        subLogger.trace("Deferred present for Subscription for {}: {}", removeCallbackArgs, it)
+                    }
+                    val cleanupTimerFlow = loggedSubscriptionCountFlow
+                        .combine(loggedInternalUsageCountFlow) { subCount, internalCount ->
+                            (subCount + internalCount) > 0
+                        }.combine(loggedHasDeferredFlow) { hasSubscribers, nextDeferredValue ->
+                            hasSubscribers || nextDeferredValue
+                        }.distinctUntilChanged().onEach {
+                            if (it)
+                                stopCleanupTimer()
+                            else
+                                startCleanupTimer()
+                        }
                     if (flowDeferred.complete(deferredValue)) {
                         cleanupTimerFlow.launchIn(scope + CoroutineName("CleanupManagerJob"))
                     } else {
@@ -277,18 +332,28 @@ class ObservationSyncManagerClient() : AutoCloseable {
                 ensureNotClosed()
                 if (keepaliveJob.get() != null) return
                 val job = scope.launch(context = CoroutineName("KeepaliveJob"), start = CoroutineStart.LAZY) {
+                    subLogger.trace(
+                        "Keepalive Job for Subscription for {} started",
+                        removeCallbackArgs
+                    )
                     keepaliveJobImpl(pos, updateIntervalTicks)
                 }
                 if (keepaliveJob.compareAndSet(null, job)) {
                     job.start()
+                } else {
+                    job.cancel()
                 }
             }
 
             private suspend fun keepaliveJobImpl(pos: GlobalPos, updateIntervalTicks: UInt) {
                 try {
                     while (coroutineContext.isActive && !closedRef.get()) {
-                        delay(((ObservationSyncManagerServer.MAX_AGE_TICKS * 2 / 3) * 500).milliseconds) // send keepalive after two thirds of the max age has passed
+                        delay((((ObservationSyncManagerServer.MAX_AGE_TICKS / 20.0) * 2 / 3)).seconds) // send keepalive after two thirds of the max age has passed
                         if (coroutineContext.isActive && !closedRef.get()) {
+                            subLogger.trace(
+                                "Keepalive for Subscription for {} triggered",
+                                removeCallbackArgs
+                            )
                             NetworkManager.sendToServer(
                                 C2SObservationsRequestPayload(
                                     blockPos = pos,
@@ -301,6 +366,10 @@ class ObservationSyncManagerClient() : AutoCloseable {
                         }
                     }
                 } finally {
+                    subLogger.trace(
+                        "Keepalive for Subscription for {} complete, sending stop signal",
+                        removeCallbackArgs
+                    )
                     NetworkManager.sendToServer(
                         C2SObservationsRequestPayload(
                             blockPos = pos,
@@ -325,7 +394,7 @@ class ObservationSyncManagerClient() : AutoCloseable {
                 // close during compute to use synchronization of ConcurrentMap
                 try {
                     oldValue.closeWithoutCallback()
-                } catch (ex: Exception){
+                } catch (ex: Exception) {
                     exceptionStore += ex
                 }
                 null
@@ -333,13 +402,13 @@ class ObservationSyncManagerClient() : AutoCloseable {
         }
         try {
             assert(pendingRequests.isEmpty())
-        } catch (ex: Exception){
-            if(exceptionStore != null) {
+        } catch (ex: Exception) {
+            if (exceptionStore != null) {
                 ex.addSuppressed(exceptionStore)
             }
             throw ex
         }
-        if(exceptionStore != null) {
+        if (exceptionStore != null) {
             throw exceptionStore
         }
     }

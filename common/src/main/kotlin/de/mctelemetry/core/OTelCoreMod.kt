@@ -16,7 +16,9 @@ import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
 import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
+import de.mctelemetry.core.network.observations.container.observationsync.C2SObservationsRequestPayload
 import de.mctelemetry.core.network.observations.container.observationsync.ObservationSyncManagerServer
+import de.mctelemetry.core.network.observations.container.observationsync.S2CObservationsPayload
 import de.mctelemetry.core.observations.ObservationSources
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
@@ -74,6 +76,8 @@ object OTelCoreMod {
         }
         ObservationSourceContainerBlock.RightClickBlockListener.register()
         ObservationSyncManagerServer.registerListeners()
+        S2CObservationsPayload.register()
+        C2SObservationsRequestPayload.register()
     }
 
     fun setupMetricAccessor() {

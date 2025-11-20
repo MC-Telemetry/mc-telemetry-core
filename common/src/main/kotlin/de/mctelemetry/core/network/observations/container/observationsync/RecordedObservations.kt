@@ -43,76 +43,80 @@ data class RecordedObservations(
 
         override fun decode(`object`: RegistryFriendlyByteBuf): RecordedObservations {
             val hasDefinition: Boolean = `object`.readBoolean()
-            val definition: IInstrumentDefinition? = if(hasDefinition)
+            val definition: IInstrumentDefinition? = if (hasDefinition)
                 IInstrumentDefinition.Record.INTERFACE_STREAM_CODEC.decode(`object`)
             else
                 null
-            val builtInAttributeInfos: Array<MappedAttributeKeyInfo<*, *>> = definition?.attributes?.values?.toTypedArray() ?: emptyArray()
+            val builtInAttributeInfos: Array<MappedAttributeKeyInfo<*, *>> =
+                definition?.attributes?.values?.toTypedArray() ?: emptyArray()
             val extraAttributeInfosSize = `object`.readVarInt()
             val extraAttributeInfos: Array<MappedAttributeKeyInfo<*, *>> =
                 if (extraAttributeInfosSize == 0) emptyArray()
                 else Array(extraAttributeInfosSize) {
-                        MappedAttributeKeyInfo.STREAM_CODEC.decode(`object`)
+                    MappedAttributeKeyInfo.STREAM_CODEC.decode(`object`)
                 }
             val attributeValuesSize = `object`.readVarInt()
             val attributeValues: Array<MappedAttributeKeyValue<*, *>> = if (attributeValuesSize == 0) emptyArray()
             else Array(attributeValuesSize) {
                 val infoId = `object`.readVarInt()
-                    val info: MappedAttributeKeyInfo<*, *> = if (infoId >= 0) {
-                        builtInAttributeInfos[infoId]
-                    } else {
-                        extraAttributeInfos[infoId.inv()]
-                    }
-                    info.decodeToValue(`object`)
+                val info: MappedAttributeKeyInfo<*, *> = if (infoId >= 0) {
+                    builtInAttributeInfos[infoId]
+                } else {
+                    extraAttributeInfos[infoId.inv()]
+                }
+                info.decodeToValue(`object`)
             }
             val observationCount = `object`.readVarInt()
             val observations: Map<List<MappedAttributeKeyValue<*, *>>, RecordedObservationPoint> =
                 if (observationCount == 0) emptyMap()
                 else buildMap(observationCount) {
-                    val attributeValuesSize = `object`.readVarInt()
-                    val attributeValues: List<MappedAttributeKeyValue<*, *>> = if (attributeValuesSize == 0) emptyList()
-                    else buildList(attributeValuesSize) attributeValues@{
-                        repeat(attributeValuesSize) {
-                            val attributeValueId = `object`.readVarInt()
-                            val attributeValue = attributeValues[attributeValueId]
-                            this@attributeValues.add(attributeValue)
-                        }
-                    }
-                    val attributeValuesMap: MappedAttributeKeyMap<*> = MappedAttributeKeyMap(attributeValues)
-                    val flags = `object`.readByte().toInt()
-                    val observationPoint: RecordedObservationPoint =
-                        if (flags and FLAG_HASLONG != 0) {
-                            val longValue = `object`.readLong()
-                            if (flags and FLAG_HASDOUBLE != 0) {
+                    repeat(observationCount) {
+                        val attributeValuesSize = `object`.readVarInt()
+                        val attributeValues: List<MappedAttributeKeyValue<*, *>> =
+                            if (attributeValuesSize == 0) emptyList()
+                            else buildList(attributeValuesSize) attributeValues@{
+                                repeat(attributeValuesSize) {
+                                    val attributeValueId = `object`.readVarInt()
+                                    val attributeValue = attributeValues[attributeValueId]
+                                    this@attributeValues.add(attributeValue)
+                                }
+                            }
+                        val attributeValuesMap: MappedAttributeKeyMap<*> = MappedAttributeKeyMap(attributeValues)
+                        val flags = `object`.readByte().toInt()
+                        val observationPoint: RecordedObservationPoint =
+                            if (flags and FLAG_HASLONG != 0) {
+                                val longValue = `object`.readLong()
+                                if (flags and FLAG_HASDOUBLE != 0) {
+                                    val doubleValue = `object`.readDouble()
+                                    RecordedObservationPoint(
+                                        attributeValuesMap,
+                                        doubleValue = doubleValue,
+                                        longValue = longValue,
+                                    )
+                                } else {
+                                    RecordedObservationPoint(
+                                        attributeValuesMap,
+                                        longValue = longValue,
+                                    )
+                                }
+                            } else if (flags and FLAG_HASDOUBLE != 0) {
                                 val doubleValue = `object`.readDouble()
                                 RecordedObservationPoint(
                                     attributeValuesMap,
                                     doubleValue = doubleValue,
-                                    longValue = longValue,
                                 )
                             } else {
-                                RecordedObservationPoint(
-                                    attributeValuesMap,
-                                    longValue = longValue,
-                                )
+                                throw IllegalArgumentException("Cannot decode observation point with neither FLAG_HASDOUBLE or FLAG_HASLONG set: ${flags.toHexString()}")
                             }
-                        } else if (flags and FLAG_HASDOUBLE != 0) {
-                            val doubleValue = `object`.readDouble()
-                            RecordedObservationPoint(
-                                attributeValuesMap,
-                                doubleValue = doubleValue,
-                            )
-                        } else {
-                            throw IllegalArgumentException("Cannot decode observation point with neither FLAG_HASDOUBLE or FLAG_HASLONG set: ${flags.toHexString()}")
-                        }
-                    put(attributeValues, observationPoint)
+                        put(attributeValues, observationPoint)
+                    }
                 }
             return RecordedObservations(definition, observations)
         }
 
         override fun encode(`object`: RegistryFriendlyByteBuf, object2: RecordedObservations) {
             val instrument = object2.instrument
-            if(instrument != null) {
+            if (instrument != null) {
                 `object`.writeBoolean(true)
                 IInstrumentDefinition.Record.INTERFACE_STREAM_CODEC.encode(`object`, instrument)
             } else {
