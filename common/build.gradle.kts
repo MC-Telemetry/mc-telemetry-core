@@ -19,5 +19,5 @@ dependencies {
     modCompileOnly("io.wispforest:owo-lib:${rootProject.property("owo_fabric_version")}")
 
     // opentelemetry
-    compileOnly("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:${rootProject.property("otel_version")}")
+    compileOnly("io.opentelemetry:opentelemetry-api:${rootProject.property("otel_version")}")
 }

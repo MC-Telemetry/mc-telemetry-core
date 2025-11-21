@@ -34,11 +34,6 @@ loom {
                 "OTEL_JAVAAGENT_CONFIGURATION_FILE",
                 rootProject.layout.projectDirectory.file("dev.otel.properties")
             )
-            environmentVariable(
-                "OTEL_JAVAAGENT_EXTENSIONS",
-                rootProject.project("common").tasks.named("jar").get()
-                    .outputs.files.singleFile.absolutePath
-            )
             runDir = "serverRun"
         }
         named("client") {
@@ -51,11 +46,6 @@ loom {
             environmentVariable(
                 "OTEL_JAVAAGENT_CONFIGURATION_FILE",
                 rootProject.layout.projectDirectory.file("dev.otel.properties")
-            )
-            environmentVariable(
-                "OTEL_JAVAAGENT_EXTENSIONS",
-                rootProject.project("common").tasks.named("jar").get()
-                    .outputs.files.singleFile.absolutePath
             )
         }
         create("clientWithDocker") {
@@ -79,11 +69,6 @@ loom {
             environmentVariable(
                 "OTEL_JAVAAGENT_CONFIGURATION_FILE",
                 rootProject.layout.projectDirectory.file("gameTest.otel.properties")
-            )
-            environmentVariable(
-                "OTEL_JAVAAGENT_EXTENSIONS",
-                rootProject.project("common").tasks.named("jar").get()
-                    .outputs.files.singleFile.absolutePath
             )
 
             this.property("fabric-api.gametest")
@@ -132,8 +117,8 @@ dependencies {
 
     // opentelemetry
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
-    common("io.opentelemetry:opentelemetry-sdk-metrics:$otelVersion")
-    shadowBundle("io.opentelemetry:opentelemetry-sdk-metrics:$otelVersion")
+    common("io.opentelemetry:opentelemetry-api:$otelVersion")
+    shadowBundle("io.opentelemetry:opentelemetry-api:$otelVersion")
 }
 
 tasks.named("configureLaunch") {
