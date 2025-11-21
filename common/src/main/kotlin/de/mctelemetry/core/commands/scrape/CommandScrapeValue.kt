@@ -76,7 +76,7 @@ class CommandScrapeValue(private val metricsAccessor: IMetricsAccessor?) {
             else
                 throw ex
         }
-        val scrapeResponse = metricsAccessor.collectDataPointValue(metricNameFilter, labelMap, exact = true)
+        val scrapeResponse = metricsAccessor.collectDataPointValue(metricNameFilter, labelMap, exact = true).join()
         if (scrapeResponse == null) {
             source.sendFailureAndThrow(
                 TranslationKeys.Commands.metricDatapointNotFound(metricNameFilter, labelMap),
@@ -122,7 +122,7 @@ class CommandScrapeValue(private val metricsAccessor: IMetricsAccessor?) {
                 else
                     throw ex
             }
-            val scrapeResponse = metricsAccessor.collectDataPoint(metricNameFilter, labelMap, exact = exact)
+            val scrapeResponse = metricsAccessor.collectDataPoint(metricNameFilter, labelMap, exact = exact).join()
             if (scrapeResponse == null) {
                 source.sendFailureAndThrow(
                     TranslationKeys.Commands.metricNameNotFound(metricNameFilter),
