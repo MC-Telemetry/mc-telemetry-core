@@ -383,13 +383,20 @@ open class ObservationSourceState(
         if (errorStateTag == null) {
             return ObservationSourceErrorState.Ok
         } else {
-            val errorsTag = tag.get("errors") as? ListTag
-            val warningsTag = tag.get("warnings") as? ListTag
-            val errorComponents = errorsTag?.map {
-                ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, it).orThrow.first
+            val errorsTag = errorStateTag.get("errors") as? ListTag
+            val warningsTag = errorStateTag.get("warnings") as? ListTag
+            val errorComponents = errorsTag?.map {val component = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, it).orThrow.first
+                if(component.contents == ObservationSourceErrorState.uninitializedError.contents)
+                    ObservationSourceErrorState.uninitializedError
+                else
+                    component
             }
             val warningComponents = warningsTag?.map {
-                ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, it).orThrow.first
+                val component = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, it).orThrow.first
+                if(component.contents == ObservationSourceErrorState.notConfiguredWarning.contents)
+                    ObservationSourceErrorState.notConfiguredWarning
+                else
+                    component
             }
             return if (errorComponents.isNullOrEmpty()) {
                 if (warningComponents.isNullOrEmpty()) {

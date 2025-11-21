@@ -18,6 +18,9 @@ import net.minecraft.core.SectionPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
+import net.minecraft.network.protocol.Packet
+import net.minecraft.network.protocol.game.ClientGamePacketListener
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
@@ -25,6 +28,7 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
@@ -102,7 +106,18 @@ abstract class ObservationSourceContainerBlockEntity(
         _container?.saveStatesToTag(compoundTag)
     }
 
+    override fun getUpdateTag(provider: HolderLookup.Provider): CompoundTag {
+        val updateTag: CompoundTag = super.getUpdateTag(provider)
+        _container?.saveStatesToTag(updateTag)
+        return updateTag
+    }
+
+    override fun getUpdatePacket(): Packet<ClientGamePacketListener?>? {
+        return ClientboundBlockEntityDataPacket.create(this)
+    }
+
     private fun updateState() {
+        if (level?.isClientSide == true) return
         val container = _container ?: return
         var targetState: ObservationSourceErrorState.Type? = null
         for (state in container.observationStates.values) {
@@ -197,6 +212,7 @@ abstract class ObservationSourceContainerBlockEntity(
         val level = level!!
         if (!level.isClientSide) {
             if (level.isLoaded(blockPos)) {
+                level.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS)
                 level.scheduleTick(blockPos, blockState.block, 1)
             } else {
                 updateState()

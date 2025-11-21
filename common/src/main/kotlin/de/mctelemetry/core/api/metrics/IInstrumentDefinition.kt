@@ -93,11 +93,15 @@ interface IInstrumentDefinition : IMetricDefinition {
                 val unit = bb.readUtf(OTelCoreModAPI.Limits.INSTRUMENT_UNIT_MAX_LENGTH)
                 val attributeCount = bb.readUnsignedByte()
                 require(attributeCount >= 0 && attributeCount < OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT)
-                val attributes: Map<String, MappedAttributeKeyInfo<*, *>> = buildMap {
-                    val attribute = MappedAttributeKeyInfo.STREAM_CODEC.decode(bb)
-                    val existing = putIfAbsent(attribute.baseKey.key, attribute)
-                    require(existing == null) { "Duplicate attributes for ${attribute.baseKey.key}: Stored $existing, tried to add $attribute" }
-                }
+                val attributes: Map<String, MappedAttributeKeyInfo<*, *>> =
+                    if (attributeCount.toInt() == 0) emptyMap()
+                    else buildMap {
+                        repeat(attributeCount.toInt()) {
+                            val attribute = MappedAttributeKeyInfo.STREAM_CODEC.decode(bb)
+                            val existing = putIfAbsent(attribute.baseKey.key, attribute)
+                            require(existing == null) { "Duplicate attributes for ${attribute.baseKey.key}: Stored $existing, tried to add $attribute" }
+                        }
+                    }
                 Record(name, description, unit, attributes)
             }
 
