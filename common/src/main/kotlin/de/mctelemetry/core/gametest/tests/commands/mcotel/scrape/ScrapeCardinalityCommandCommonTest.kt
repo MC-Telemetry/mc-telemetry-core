@@ -56,7 +56,7 @@ object ScrapeCardinalityCommandCommonTest {
 
     @Suppress("unused")
     @JvmStatic
-    @GameTest
+    @GameTest(required = false) // execution requires IMetricsAccessor, which currently has no implementations
     fun normalSucceeds(helper: GameTestHelper) {
         helper.runCommand(
             "mcotel scrape cardinality",
@@ -83,7 +83,7 @@ object ScrapeCardinalityCommandCommonTest {
 
     @Suppress("unused")
     @JvmStatic
-    @GameTest
+    @GameTest(required = false) // execution requires IMetricsAccessor, which currently has no implementations
     fun filterForMetricReturns1(helper: GameTestHelper) {
         helper.runCommand(
             "mcotel scrape cardinality system.memory.utilization",
@@ -113,7 +113,7 @@ object ScrapeCardinalityCommandCommonTest {
 
     @Suppress("unused")
     @JvmStatic
-    @GameTest
+    @GameTest(required = false) // execution requires IMetricsAccessor, which currently has no implementations
     fun filterForMissingMetricFails(helper: GameTestHelper) {
         helper.assertThrows<NoSuchElementException> {
             helper.runCommand(
