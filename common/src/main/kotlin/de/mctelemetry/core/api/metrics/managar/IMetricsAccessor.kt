@@ -3,21 +3,17 @@ package de.mctelemetry.core.api.metrics.managar
 import de.mctelemetry.core.metrics.exporters.MetricDataReadback
 import de.mctelemetry.core.metrics.exporters.MetricDefinitionReadback
 import de.mctelemetry.core.metrics.exporters.MetricValueReadback
-import de.mctelemetry.core.metrics.exporters.agent.ObjectMetricsAccessor
 import io.opentelemetry.api.common.Attributes
 import java.util.Objects
+import java.util.concurrent.CompletableFuture
 
 interface IMetricsAccessor {
 
-    fun collect(): Map<String, MetricDataReadback>
+    fun collect(): CompletableFuture<Map<String, MetricDataReadback>>
 
-    fun collectDefinitions(): Map<String, MetricDefinitionReadback>
+    fun collectDefinitions(): CompletableFuture<Map<String, MetricDefinitionReadback>>
 
     companion object {
-
-        val GLOBAL: IMetricsAccessor? by lazy {
-            ObjectMetricsAccessor.Companion.INSTANCE
-        }
 
         fun matchFilter(value: Attributes, filter: Map<String, String>?, exact: Boolean): Boolean {
             if (filter == null) return true
@@ -48,25 +44,25 @@ interface IMetricsAccessor {
         }
     }
 
-    fun collectDefinition(name: String): MetricDefinitionReadback? {
-        return collectDefinitions()[name]
+    fun collectDefinition(name: String): CompletableFuture<MetricDefinitionReadback?> {
+        return collectDefinitions().thenApply { it[name] }
     }
 
-    fun collectNamed(name: String): MetricDataReadback? {
-        return collect()[name]
+    fun collectNamed(name: String): CompletableFuture<MetricDataReadback?> {
+        return collect().thenApply { it[name] }
     }
 
     fun collectDataPoint(
         name: String,
         attributes: Map<String, String>,
         exact: Boolean = true,
-    ): MetricDataReadback?
+    ): CompletableFuture<MetricDataReadback?>
 
     fun collectDataPoint(
         name: String,
         attributes: Attributes,
         exact: Boolean = true,
-    ): MetricDataReadback? {
+    ): CompletableFuture<MetricDataReadback?> {
         return collectDataPoint(
             name = name,
             attributes = attributes.asMap().entries.associate {
@@ -80,13 +76,13 @@ interface IMetricsAccessor {
         name: String,
         attributes: Map<String, String>,
         exact: Boolean = true,
-    ): MetricValueReadback?
+    ): CompletableFuture<MetricValueReadback?>
 
     fun collectDataPointValue(
         name: String,
         attributes: Attributes,
         exact: Boolean = true,
-    ): MetricValueReadback? {
+    ): CompletableFuture<MetricValueReadback?> {
         return collectDataPointValue(
             name = name,
             attributes = attributes.asMap().entries.associate {
