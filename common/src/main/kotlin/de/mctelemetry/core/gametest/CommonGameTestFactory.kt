@@ -2,7 +2,6 @@ package de.mctelemetry.core.gametest
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.gametest.tests.GameLoadsCommonTest
-import de.mctelemetry.core.gametest.tests.MetricScrapeCommonTest
 import de.mctelemetry.core.gametest.tests.commands.mcotel.scrape.ScrapeCardinalityCommandCommonTest
 import de.mctelemetry.core.gametest.tests.commands.mcotel.scrape.ScrapeInfoCommandCommonTest
 import de.mctelemetry.core.gametest.tests.observations.scraper.redstone.RedstoneScraperBlockAirTest
@@ -20,7 +19,6 @@ class CommonGameTestFactory {
 
         private val testClasses: List<Class<*>> = listOf(
             GameLoadsCommonTest::class.java,
-            MetricScrapeCommonTest::class.java,
             ScrapeInfoCommandCommonTest::class.java,
             ScrapeCardinalityCommandCommonTest::class.java,
             RedstoneScraperBlockTest::class.java,

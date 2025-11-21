@@ -16,6 +16,7 @@ import de.mctelemetry.core.utils.dsl.components.style
 import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.MutableComponent
+import java.util.concurrent.CompletableFuture
 import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.math.min
@@ -101,9 +102,9 @@ class CommandScrapeCardinality(private val metricsAccessor: IMetricsAccessor?) {
         val metricNameFilter = MetricNameArgumentType["metric"]
         val data: Map<String, MetricDataReadback> =
             if (metricNameFilter == null) {
-                metricsAccessor.collect()
+                metricsAccessor.collect().join()
             } else {
-                val result = metricsAccessor.collectNamed(metricNameFilter)
+                val result = metricsAccessor.collectNamed(metricNameFilter).join()
                 if (result == null) emptyMap()
                 else mapOf(result.name to result)
             }
