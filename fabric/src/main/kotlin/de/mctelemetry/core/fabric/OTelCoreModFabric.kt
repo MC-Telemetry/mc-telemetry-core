@@ -5,7 +5,7 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.OTelCoreModAPI
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.commands.types.ArgumentTypes
-import de.mctelemetry.core.network.observations.container.observationsync.ObservationSyncManagerClient
+import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import dev.architectury.platform.Platform
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.ModInitializer
@@ -39,10 +39,10 @@ object OTelCoreModFabric : ModInitializer {
         }
         if (Platform.getEnv() == EnvType.CLIENT) {
             ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
-                ObservationSyncManagerClient.onClientDisconnecting()
+                ObservationRequestManagerClient.onClientDisconnecting()
             }
             ClientPlayConnectionEvents.INIT.register { _, _ ->
-                ObservationSyncManagerClient.onClientConnecting()
+                ObservationRequestManagerClient.onClientConnecting()
             }
         }
     }

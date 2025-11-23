@@ -1,4 +1,4 @@
-package de.mctelemetry.core.network.observations.container.observationsync
+package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.IObservationSource
@@ -24,30 +24,30 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
 import kotlin.math.min
 
-class ObservationSyncManagerServer(
+class ObservationRequestManagerServer(
     tickInterval: UInt = DEFAULT_TICK_INTERVAL,
 ) {
 
     companion object {
 
         private val subLogger =
-            LogManager.getLogger("${OTelCoreMod.MOD_ID}.${ObservationSyncManagerServer::class.simpleName}")
+            LogManager.getLogger("${OTelCoreMod.MOD_ID}.${ObservationRequestManagerServer::class.simpleName}")
 
         const val DEFAULT_TICK_INTERVAL: UInt = 20U
 
         const val MAX_AGE_TICKS: Int = (20 * 60 * 3) / 2 // 1.5 minutes at 20tps
 
-        private val instanceMap: ConcurrentMap<MinecraftServer, ObservationSyncManagerServer> = ConcurrentHashMap()
+        private val instanceMap: ConcurrentMap<MinecraftServer, ObservationRequestManagerServer> = ConcurrentHashMap()
 
-        fun getObservationSyncManagerOrNull(server: MinecraftServer): ObservationSyncManagerServer? {
+        fun getObservationSyncManagerOrNull(server: MinecraftServer): ObservationRequestManagerServer? {
             return instanceMap[server]
         }
 
-        fun getObservationSyncManagerOrCreate(server: MinecraftServer): ObservationSyncManagerServer {
-            return instanceMap.computeIfAbsent(server) { ObservationSyncManagerServer() }
+        fun getObservationSyncManagerOrCreate(server: MinecraftServer): ObservationRequestManagerServer {
+            return instanceMap.computeIfAbsent(server) { ObservationRequestManagerServer() }
         }
 
-        val MinecraftServer.observationSyncManager: ObservationSyncManagerServer
+        val MinecraftServer.observationSyncManager: ObservationRequestManagerServer
             get() = getObservationSyncManagerOrCreate(this)
 
         fun registerListeners() {

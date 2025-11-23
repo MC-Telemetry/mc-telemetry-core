@@ -9,16 +9,15 @@ import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.ui.OTelCoreModMenuTypes
-import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import de.mctelemetry.core.commands.metrics.CommandMetrics
 import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
 import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
 import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
-import de.mctelemetry.core.network.observations.container.observationsync.C2SObservationsRequestPayload
-import de.mctelemetry.core.network.observations.container.observationsync.ObservationSyncManagerServer
-import de.mctelemetry.core.network.observations.container.observationsync.S2CObservationsPayload
+import de.mctelemetry.core.network.observations.container.observationrequest.C2SObservationsRequestPayload
+import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerServer
+import de.mctelemetry.core.network.observations.container.observationrequest.S2CObservationsPayload
 import de.mctelemetry.core.network.observations.container.settings.C2SObservationSourceSettingsUpdatePayload
 import de.mctelemetry.core.observations.ObservationSources
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
@@ -37,7 +36,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import org.apache.logging.log4j.message.SimpleMessageFactory
 import java.util.Optional
 
 object OTelCoreMod {
@@ -76,7 +74,7 @@ object OTelCoreMod {
             })
         }
         ObservationSourceContainerBlock.RightClickBlockListener.register()
-        ObservationSyncManagerServer.registerListeners()
+        ObservationRequestManagerServer.registerListeners()
         S2CObservationsPayload.register()
         C2SObservationsRequestPayload.register()
         C2SObservationSourceSettingsUpdatePayload.register()
