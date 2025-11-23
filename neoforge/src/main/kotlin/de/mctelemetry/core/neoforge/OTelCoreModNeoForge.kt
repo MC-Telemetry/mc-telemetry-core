@@ -8,7 +8,7 @@ import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.api.metrics.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
-import de.mctelemetry.core.network.observations.container.observationsync.ObservationSyncManagerClient
+import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.ui.RedstoneScraperBlockScreen
 import net.minecraft.Util
@@ -66,10 +66,10 @@ object OTelCoreModNeoForge {
                 )
             }
             FORGE_BUS.addListener { event: ClientPlayerNetworkEvent.LoggingIn ->
-                ObservationSyncManagerClient.onClientConnecting()
+                ObservationRequestManagerClient.onClientConnecting()
             }
             FORGE_BUS.addListener { event: ClientPlayerNetworkEvent.LoggingOut ->
-                ObservationSyncManagerClient.onClientDisconnecting()
+                ObservationRequestManagerClient.onClientDisconnecting()
             }
         }
         FORGE_BUS.addListener(ChunkEvent.Load::class.java) { event ->

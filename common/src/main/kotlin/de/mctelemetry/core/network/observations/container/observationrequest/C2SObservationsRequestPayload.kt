@@ -1,7 +1,7 @@
-package de.mctelemetry.core.network.observations.container.observationsync
+package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.network.observations.container.observationsync.ObservationSyncManagerServer.Companion.observationSyncManager
+import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerServer.Companion.observationSyncManager
 import dev.architectury.networking.NetworkManager
 import net.minecraft.core.GlobalPos
 import net.minecraft.network.FriendlyByteBuf
@@ -119,7 +119,7 @@ data class C2SObservationsRequestPayload(
 
         override fun receive(value: C2SObservationsRequestPayload, context: NetworkManager.PacketContext) {
             val player = context.player as ServerPlayer
-            val manager: ObservationSyncManagerServer = context.player.server!!.observationSyncManager
+            val manager: ObservationRequestManagerServer = context.player.server!!.observationSyncManager
             when(value.requestType) {
                 ObservationRequestType.Stop -> {
                     manager.handleRequestStop(player, value.blockPos)

@@ -1,4 +1,4 @@
-package de.mctelemetry.core.network.observations.container.observationsync
+package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.api.metrics.MappedAttributeKeyMap
 

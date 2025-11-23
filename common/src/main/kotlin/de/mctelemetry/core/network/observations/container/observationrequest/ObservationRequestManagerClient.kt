@@ -1,4 +1,4 @@
-package de.mctelemetry.core.network.observations.container.observationsync
+package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.utils.plus
@@ -46,12 +46,12 @@ import kotlin.time.Instant
 
 @Environment(EnvType.CLIENT)
 @OptIn(ExperimentalTime::class)
-class ObservationSyncManagerClient() : AutoCloseable {
+class ObservationRequestManagerClient() : AutoCloseable {
 
     companion object {
 
         private val subLogger =
-            LogManager.getLogger("${OTelCoreMod.MOD_ID}.${ObservationSyncManagerClient::class.simpleName}")
+            LogManager.getLogger("${OTelCoreMod.MOD_ID}.${ObservationRequestManagerClient::class.simpleName}")
 
         private var clock: Clock = Clock.System
         fun setClock(clock: Clock) {
@@ -59,14 +59,14 @@ class ObservationSyncManagerClient() : AutoCloseable {
         }
 
         private val SUBSCRIPTION_TIMEOUT: Duration = 500.milliseconds
-        private val instance: AtomicReference<ObservationSyncManagerClient?> = AtomicReference(null)
+        private val instance: AtomicReference<ObservationRequestManagerClient?> = AtomicReference(null)
 
         fun onClientConnecting() {
-            val newValue = ObservationSyncManagerClient()
+            val newValue = ObservationRequestManagerClient()
             runWithExceptionCleanup(newValue::close) {
                 val oldValue = instance.compareAndExchange(null, newValue)
                 if (oldValue != null) {
-                    throw IllegalStateException("${ObservationSyncManagerClient::class.java.simpleName} is already in use: $oldValue")
+                    throw IllegalStateException("${ObservationRequestManagerClient::class.java.simpleName} is already in use: $oldValue")
                 }
             }
         }
@@ -76,12 +76,12 @@ class ObservationSyncManagerClient() : AutoCloseable {
             oldValue.close()
         }
 
-        fun getActiveManager(): ObservationSyncManagerClient {
+        fun getActiveManager(): ObservationRequestManagerClient {
             return getActiveManagerOrNull()
-                ?: throw IllegalStateException("No ${ObservationSyncManagerClient::class.simpleName} currently active")
+                ?: throw IllegalStateException("No ${ObservationRequestManagerClient::class.simpleName} currently active")
         }
 
-        fun getActiveManagerOrNull(): ObservationSyncManagerClient? {
+        fun getActiveManagerOrNull(): ObservationRequestManagerClient? {
             return instance.get()
         }
     }
@@ -348,7 +348,7 @@ class ObservationSyncManagerClient() : AutoCloseable {
             private suspend fun keepaliveJobImpl(pos: GlobalPos, updateIntervalTicks: UInt) {
                 try {
                     while (coroutineContext.isActive && !closedRef.get()) {
-                        delay((((ObservationSyncManagerServer.MAX_AGE_TICKS / 20.0) * 2 / 3)).seconds) // send keepalive after two thirds of the max age has passed
+                        delay((((ObservationRequestManagerServer.MAX_AGE_TICKS / 20.0) * 2 / 3)).seconds) // send keepalive after two thirds of the max age has passed
                         if (coroutineContext.isActive && !closedRef.get()) {
                             subLogger.trace(
                                 "Keepalive for Subscription for {} triggered",

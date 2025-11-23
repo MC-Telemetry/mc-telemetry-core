@@ -1,4 +1,4 @@
-package de.mctelemetry.core.network.observations.container.observationsync
+package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.metrics.IObservationSource
@@ -69,7 +69,7 @@ data class S2CObservationsPayload(
     object Receiver : NetworkManager.NetworkReceiver<S2CObservationsPayload> {
 
         override fun receive(value: S2CObservationsPayload, context: NetworkManager.PacketContext) {
-            ObservationSyncManagerClient.getActiveManager().acceptObservationPayload(value)
+            ObservationRequestManagerClient.getActiveManager().acceptObservationPayload(value)
         }
     }
 }
