@@ -3,12 +3,12 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
-import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
-import de.mctelemetry.core.api.metrics.canConvertTo
-import de.mctelemetry.core.api.metrics.convertFrom
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.canConvertTo
+import de.mctelemetry.core.api.attributes.convertFrom
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes

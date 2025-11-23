@@ -1,6 +1,6 @@
 package de.mctelemetry.core.metrics.exporters
 
-import de.mctelemetry.core.api.metrics.IMetricDefinition
+import de.mctelemetry.core.api.IMetricDefinition
 
 data class MetricDefinitionReadback(
     override val name: String,

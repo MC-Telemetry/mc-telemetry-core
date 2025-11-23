@@ -1,6 +1,6 @@
 package de.mctelemetry.core.network.observations.container.observationrequest
 
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyMap
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
 
 class RecordedObservationPoint {
 

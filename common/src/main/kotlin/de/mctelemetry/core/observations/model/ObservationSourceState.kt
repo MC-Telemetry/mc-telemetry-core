@@ -1,11 +1,12 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.metrics.IInstrumentRegistration
-import de.mctelemetry.core.api.metrics.IInstrumentSubRegistration
-import de.mctelemetry.core.api.metrics.IObservationSource
-import de.mctelemetry.core.api.metrics.managar.IInstrumentAvailabilityCallback
-import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
+import de.mctelemetry.core.api.instruments.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.IInstrumentSubRegistration
+import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
+import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
@@ -193,7 +194,7 @@ open class ObservationSourceState(
         }
 
     open fun updateRegistration(
-        manager: IInstrumentManager,
+        manager: IMutableInstrumentManager,
         instrumentSubRegistrationFactory: InstrumentSubRegistrationFactory,
     ) {
         val configuration = configuration ?: return
@@ -209,7 +210,7 @@ open class ObservationSourceState(
                 this.instrument = null
             }
             if (availabilityCallbackCloser == null) {
-                availabilityCallbackCloser = manager.addLocalMutableCallback(this)
+                availabilityCallbackCloser = manager.addLocalMutableRegistrationCallback(this)
             }
         } else {
             this.bindMutableInstrument(
@@ -315,7 +316,7 @@ open class ObservationSourceState(
 
     open fun loadFromByteBuf(
         bb: RegistryFriendlyByteBuf,
-        instrumentManager: IInstrumentManager,
+        instrumentManager: IMutableInstrumentManager?,
         silent: Boolean = false,
     ) {
         loadFromTag(bb.readNbt() ?: return, bb.registryAccess(), instrumentManager, silent = silent)
@@ -332,7 +333,7 @@ open class ObservationSourceState(
         holderLookupProvider: HolderLookup.Provider,
         initialSilent: Boolean = false,
         callbackSilent: Boolean = false,
-    ): (IInstrumentManager) -> Unit {
+    ): (IMutableInstrumentManager?) -> Unit {
         val errorState = loadErrorState(tag)
         val delayedConfiguration = ObservationSourceConfiguration.loadDelayedFromTag(
             tag.getCompound("configuration"),
@@ -358,7 +359,7 @@ open class ObservationSourceState(
     open fun loadFromTag(
         tag: CompoundTag,
         holderLookupProvider: HolderLookup.Provider,
-        instrumentManager: IInstrumentManager,
+        instrumentManager: IMutableInstrumentManager?,
         silent: Boolean = false,
     ) {
         val errorState = loadErrorState(tag)
@@ -385,15 +386,16 @@ open class ObservationSourceState(
         } else {
             val errorsTag = errorStateTag.get("errors") as? ListTag
             val warningsTag = errorStateTag.get("warnings") as? ListTag
-            val errorComponents = errorsTag?.map {val component = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, it).orThrow.first
-                if(component.contents == ObservationSourceErrorState.uninitializedError.contents)
+            val errorComponents = errorsTag?.map {
+                val component = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, it).orThrow.first
+                if (component.contents == ObservationSourceErrorState.uninitializedError.contents)
                     ObservationSourceErrorState.uninitializedError
                 else
                     component
             }
             val warningComponents = warningsTag?.map {
                 val component = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, it).orThrow.first
-                if(component.contents == ObservationSourceErrorState.notConfiguredWarning.contents)
+                if (component.contents == ObservationSourceErrorState.notConfiguredWarning.contents)
                     ObservationSourceErrorState.notConfiguredWarning
                 else
                     component

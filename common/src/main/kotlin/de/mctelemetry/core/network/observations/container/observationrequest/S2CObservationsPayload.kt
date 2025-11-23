@@ -1,9 +1,11 @@
 package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.IObservationSource
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
+import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.OTelCoreModAPI
 import dev.architectury.networking.NetworkManager
+import dev.architectury.platform.Platform
+import dev.architectury.utils.Env
 import net.minecraft.core.GlobalPos
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
@@ -61,8 +63,12 @@ data class S2CObservationsPayload(
             }
         }
 
-        fun register() {
-            NetworkManager.registerReceiver(NetworkManager.s2c(), TYPE, STREAM_CODEC, Receiver)
+        fun register(client: Boolean = Platform.getEnvironment() == Env.CLIENT) {
+            if (client) {
+                NetworkManager.registerReceiver(NetworkManager.s2c(), TYPE, STREAM_CODEC, Receiver)
+            } else {
+                NetworkManager.registerS2CPayloadType(TYPE, STREAM_CODEC)
+            }
         }
     }
 

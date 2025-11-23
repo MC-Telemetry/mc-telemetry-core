@@ -2,7 +2,7 @@ package de.mctelemetry.core.fabric
 
 import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient

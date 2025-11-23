@@ -1,6 +1,6 @@
 package de.mctelemetry.core.observations
 
-import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperComparatorObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperDirectPowerObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperPowerObservationSource

@@ -1,9 +1,9 @@
 package de.mctelemetry.core.utils
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.IMetricDefinition
-import de.mctelemetry.core.api.metrics.managar.IInstrumentAvailabilityCallback
-import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
+import de.mctelemetry.core.api.IMetricDefinition
+import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
+import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import org.apache.logging.log4j.Level
 
 internal class InstrumentAvailabilityLogger(
