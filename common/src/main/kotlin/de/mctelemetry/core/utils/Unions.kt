@@ -1,8 +1,8 @@
 package de.mctelemetry.core.utils
 
 import com.mojang.datafixers.util.Either
-import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
-import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
+import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
 import kotlin.reflect.KProperty
 
 sealed interface Union2<T1 : C, T2 : C, out C> {

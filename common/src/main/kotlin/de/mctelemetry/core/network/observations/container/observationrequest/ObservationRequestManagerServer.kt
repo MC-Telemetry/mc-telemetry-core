@@ -1,7 +1,7 @@
 package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.ObservationContainerInteractionLimits
 import dev.architectury.event.events.common.LifecycleEvent

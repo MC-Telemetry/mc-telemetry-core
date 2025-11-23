@@ -1,18 +1,18 @@
 package de.mctelemetry.core
 
 import com.mojang.serialization.Lifecycle
-import de.mctelemetry.core.api.metrics.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
-import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.commands.metrics.CommandMetrics
-import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
-import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
-import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.instruments.builtin.BuiltinInstruments
+import de.mctelemetry.core.instruments.manager.InstrumentMetaManager
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.network.observations.container.observationrequest.C2SObservationsRequestPayload

@@ -3,17 +3,17 @@
 package de.mctelemetry.core.gametest.utils.observation
 
 import com.mojang.datafixers.util.Either
-import de.mctelemetry.core.api.metrics.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.metrics.DuplicateInstrumentException
-import de.mctelemetry.core.api.metrics.IDoubleInstrumentRegistration
-import de.mctelemetry.core.api.metrics.IInstrumentRegistration
-import de.mctelemetry.core.api.metrics.ILongInstrumentRegistration
-import de.mctelemetry.core.api.metrics.IObservationSource
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.metrics.builder.IGaugeInstrumentBuilder
-import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager
-import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
-import de.mctelemetry.core.api.metrics.managar.gaugeWorldInstrument
+import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
+import de.mctelemetry.core.api.instruments.DuplicateInstrumentException
+import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.instruments.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
+import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.builder.IGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.gaugeWorldInstrument
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.gametest.utils.IGameTestHelperFinalizer
@@ -56,7 +56,7 @@ class InstrumentGameTestHelper(
 
     val testName: String = gameTestHelper.testInfo.testName
 
-    val worldInstruments: IWorldInstrumentManager = gameTestHelper.server.instrumentManager!!
+    val worldInstruments: IServerWorldInstrumentManager = gameTestHelper.server.instrumentManager!!
 
     inline fun createMutableLongGaugeWorldInstrument(
         baseName: String = "",

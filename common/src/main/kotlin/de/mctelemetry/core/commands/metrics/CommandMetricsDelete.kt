@@ -2,7 +2,7 @@ package de.mctelemetry.core.commands.metrics
 
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
 import de.mctelemetry.core.commands.types.getValue
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand

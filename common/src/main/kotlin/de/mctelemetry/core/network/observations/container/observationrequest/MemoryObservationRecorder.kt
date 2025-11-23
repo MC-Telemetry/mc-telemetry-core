@@ -1,10 +1,10 @@
 package de.mctelemetry.core.network.observations.container.observationrequest
 
-import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
-import de.mctelemetry.core.api.metrics.IObservationRecorder
-import de.mctelemetry.core.api.metrics.IObservationSource
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyMap
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyValue
+import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.observations.IObservationRecorder
+import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 

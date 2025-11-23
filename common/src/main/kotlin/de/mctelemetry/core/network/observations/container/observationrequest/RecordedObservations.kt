@@ -1,10 +1,10 @@
 package de.mctelemetry.core.network.observations.container.observationrequest
 
-import de.mctelemetry.core.api.metrics.IInstrumentDefinition
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyMap
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyValue
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyValue.Companion.decodeToValue
+import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue.Companion.decodeToValue
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMaps
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap

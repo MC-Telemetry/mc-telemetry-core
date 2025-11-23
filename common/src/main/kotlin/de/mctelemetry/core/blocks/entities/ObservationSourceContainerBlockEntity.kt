@@ -1,11 +1,14 @@
 package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.IObservationSource
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
-import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
-import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
-import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.useInstrumentManagerWhenAvailable
+import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.useInstrumentManagerWhenAvailable
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
@@ -88,7 +91,7 @@ abstract class ObservationSourceContainerBlockEntity(
             require(onLevelCallback == null) { "onLevelCallback already set" }
             onLevelCallback = callback
         } else if (level.isClientSide) {
-            container.loadStatesFromTag(compoundTag, provider, IInstrumentManager.ReadonlyEmpty)
+            container.loadStatesFromTag(compoundTag, provider, null)
         } else {
             level as ServerLevel
             val manager = level.server.instrumentManager
@@ -278,6 +281,10 @@ abstract class ObservationSourceContainerBlockEntity(
             get() {
                 val level = level
                     ?: throw NullPointerException("BlockEntity not assigned to a level: ${this@ObservationSourceContainerBlockEntity}")
+                if (level.isClientSide) {
+                    return IClientWorldInstrumentManager.clientWorldInstrumentManager
+                        ?: throw NullPointerException("Instrument manager not initialized for client")
+                }
                 val server = level.server ?: throw NullPointerException("Level not bound to a server: $level")
                 return server.instrumentManager
                     ?: throw NullPointerException("Instrument manager not available for server: $server")
@@ -326,7 +333,7 @@ abstract class ObservationSourceContainerBlockEntity(
         fun loadStatesFromTag(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
-            instrumentManager: IInstrumentManager,
+            instrumentManager: IMutableInstrumentManager?,
         ) {
             loadAndApplyToStateTags(compoundTag, holderLookupProvider) { state, tag ->
                 val data = tag.getCompound("data")
@@ -347,7 +354,7 @@ abstract class ObservationSourceContainerBlockEntity(
             return { level ->
                 if (level.isClientSide) {
                     for (delayedCallback in delayedMap.values) {
-                        delayedCallback.invoke(IInstrumentManager.ReadonlyEmpty)
+                        delayedCallback.invoke(null)
                     }
                 } else {
                     (level as ServerLevel).server.useInstrumentManagerWhenAvailable { manager ->
