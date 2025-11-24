@@ -32,14 +32,6 @@
                                 <panel-inset/>
                             </surface>
                         </scroll>
-
-
-                        <button id="the-button">
-                            <text>Confirm</text>
-                            <margins>
-                                <top>5</top>
-                            </margins>
-                        </button>
                     </children>
 
                     <horizontal-alignment>center</horizontal-alignment>
@@ -73,8 +65,8 @@
                             <horizontal method="fill">68</horizontal>
                         </sizing>
                     </label>
-                    <label id="observation-source-preview">
-                        <text>{{observation-source-preview}}</text>
+                    <label id="observation-source-value">
+                        <text>{{observation-source-value}}</text>
                         <sizing>
                             <horizontal method="fill">20</horizontal>
                         </sizing>
