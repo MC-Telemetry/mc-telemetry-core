@@ -62,9 +62,9 @@ class CommandScrapeInfo(private val metricsAccessor: IMetricsAccessor?) {
         val metricNameFilter: String? = MetricNameArgumentType["metric"]
         val definitions: Map<String, MetricDefinitionReadback> =
             if (metricNameFilter == null) {
-                metricsAccessor.collectDefinitions()
+                metricsAccessor.collectDefinitions().join()
             } else {
-                val result = metricsAccessor.collectDefinition(metricNameFilter)
+                val result = metricsAccessor.collectDefinition(metricNameFilter).join()
                 if (result == null) emptyMap()
                 else mapOf(result.name to result)
             }
