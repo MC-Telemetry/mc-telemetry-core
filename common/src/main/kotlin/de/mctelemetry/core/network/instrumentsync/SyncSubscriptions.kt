@@ -35,7 +35,6 @@ class SyncSubscriptions(private val server: MinecraftServer) : IInstrumentAvaila
                 NetworkManager.sendToPlayer(player, S2CAllInstrumentsPayload.fromManager(it))
             }
         }
-
     }
 
     @OptIn(ExperimentalContracts::class)
@@ -55,7 +54,7 @@ class SyncSubscriptions(private val server: MinecraftServer) : IInstrumentAvaila
     ) {
         if (phase != IInstrumentAvailabilityCallback.Phase.POST) return
         if (isSynchronizedInstrument(manager, instrument)) {
-            NetworkManager.sendToPlayers(server.playerList.players, A2AInstrumentAddedPayload(instrument))
+            NetworkManager.sendToPlayers(server.playerList.players, A2AInstrumentAddedPayload.S2C(instrument))
         } else {
             NetworkManager.sendToPlayers(
                 server.playerList.players,
@@ -71,7 +70,7 @@ class SyncSubscriptions(private val server: MinecraftServer) : IInstrumentAvaila
     ) {
         if (phase != IInstrumentAvailabilityCallback.Phase.POST) return
         if (isSynchronizedInstrument(manager, instrument)) {
-            NetworkManager.sendToPlayers(server.playerList.players, A2AInstrumentRemovedPayload(instrument))
+            NetworkManager.sendToPlayers(server.playerList.players, A2AInstrumentRemovedPayload.S2C(instrument))
         } else {
             NetworkManager.sendToPlayers(
                 server.playerList.players,

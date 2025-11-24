@@ -17,41 +17,68 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 import org.apache.logging.log4j.LogManager
 
-data class A2AInstrumentRemovedPayload(
+sealed class A2AInstrumentRemovedPayload(
     val instrument: IWorldInstrumentDefinition,
 ) : CustomPacketPayload {
 
-    override fun type(): CustomPacketPayload.Type<A2AInstrumentRemovedPayload> = TYPE
+
+    class S2C(
+        instrument: IWorldInstrumentDefinition
+    ): A2AInstrumentRemovedPayload(instrument) {
+        override fun type(): CustomPacketPayload.Type<S2C> = TYPE
+        companion object {
+
+            val TYPE: CustomPacketPayload.Type<S2C> = CustomPacketPayload.Type(
+                ResourceLocation.fromNamespaceAndPath(
+                    OTelCoreMod.MOD_ID,
+                    "instruments.remove.s2c"
+                )
+            )
+            val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, S2C> = StreamCodec.composite(
+                IWorldInstrumentDefinition.Record.INTERFACE_STREAM_CODEC,
+                S2C::instrument,
+                ::S2C
+            )
+        }
+    }
+
+    class C2S(
+        instrument: IWorldInstrumentDefinition
+    ): A2AInstrumentRemovedPayload(instrument) {
+        override fun type(): CustomPacketPayload.Type<C2S> = TYPE
+        companion object {
+
+            val TYPE: CustomPacketPayload.Type<C2S> = CustomPacketPayload.Type(
+                ResourceLocation.fromNamespaceAndPath(
+                    OTelCoreMod.MOD_ID,
+                    "instruments.remove.c2s"
+                )
+            )
+            val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, C2S> = StreamCodec.composite(
+                IWorldInstrumentDefinition.Record.INTERFACE_STREAM_CODEC,
+                C2S::instrument,
+                ::C2S
+            )
+        }
+    }
 
     companion object {
 
         private val subLogger =
             LogManager.getLogger("${OTelCoreMod.MOD_ID}.${A2AInstrumentRemovedPayload::class.java.simpleName}")
 
-        val TYPE: CustomPacketPayload.Type<A2AInstrumentRemovedPayload> = CustomPacketPayload.Type(
-            ResourceLocation.fromNamespaceAndPath(
-                OTelCoreMod.MOD_ID,
-                "instruments.remove"
-            )
-        )
-        val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, A2AInstrumentRemovedPayload> = StreamCodec.composite(
-            IWorldInstrumentDefinition.Record.INTERFACE_STREAM_CODEC,
-            A2AInstrumentRemovedPayload::instrument,
-            ::A2AInstrumentRemovedPayload
-        )
-
         fun register(client: Boolean = Platform.getEnvironment() == Env.CLIENT) {
-            NetworkManager.registerReceiver(NetworkManager.c2s(), TYPE, STREAM_CODEC, ::receiveC2S)
+            NetworkManager.registerReceiver(NetworkManager.c2s(), C2S.TYPE, C2S.STREAM_CODEC, ::receiveC2S)
             if (client) {
-                NetworkManager.registerReceiver(NetworkManager.s2c(), TYPE, STREAM_CODEC, ::receiveS2C)
+                NetworkManager.registerReceiver(NetworkManager.s2c(), S2C.TYPE, S2C.STREAM_CODEC, ::receiveS2C)
             } else {
-                NetworkManager.registerS2CPayloadType(TYPE, STREAM_CODEC)
+                NetworkManager.registerS2CPayloadType(S2C.TYPE, S2C.STREAM_CODEC)
             }
         }
 
 
         private fun receiveC2S(
-            value: A2AInstrumentRemovedPayload,
+            value: C2S,
             // unused but still required for signature of NetworkManager.NetworkReceiver
             @Suppress("unused")
             context: NetworkManager.PacketContext,
@@ -75,7 +102,7 @@ data class A2AInstrumentRemovedPayload(
 
         @Environment(EnvType.CLIENT)
         private fun receiveS2C(
-            value: A2AInstrumentRemovedPayload,
+            value: S2C,
             // unused but still required for signature of NetworkManager.NetworkReceiver
             @Suppress("unused")
             context: NetworkManager.PacketContext,
