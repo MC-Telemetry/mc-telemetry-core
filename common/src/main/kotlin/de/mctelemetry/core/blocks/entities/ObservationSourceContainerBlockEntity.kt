@@ -137,7 +137,7 @@ abstract class ObservationSourceContainerBlockEntity(
         }
         updateState()
         val level = level ?: return
-        level.playSound(player, blockPos, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.3f, 7.0f/8.0f)
+        level.playSound(player, blockPos, SoundEvents.ANVIL_LAND, SoundSource.BLOCKS, 0.3f, 7.0f / 8.0f)
     }
 
     fun doBlockTick() {
@@ -158,7 +158,13 @@ abstract class ObservationSourceContainerBlockEntity(
                 this.container = it
             })
             container.setup()
-            container.setCascadeUpdates(!level.isClientSide)
+            if (!level.isClientSide) {
+                (level as ServerLevel).server.useInstrumentManagerWhenAvailable {
+                    container.setCascadeUpdates(true)
+                }
+            } else {
+                container.setCascadeUpdates(false)
+            }
             val onLevelCallback = this.onLevelCallback
             if (onLevelCallback != null) {
                 onLevelCallback(level)
