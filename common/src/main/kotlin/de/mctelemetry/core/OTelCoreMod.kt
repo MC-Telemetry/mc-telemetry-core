@@ -15,6 +15,12 @@ import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManage
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
+import de.mctelemetry.core.network.instrumentsync.A2AInstrumentAddedPayload
+import de.mctelemetry.core.network.instrumentsync.A2AInstrumentRemovedPayload
+import de.mctelemetry.core.network.instrumentsync.C2SAllInstrumentRequestPayload
+import de.mctelemetry.core.network.instrumentsync.S2CAllInstrumentsPayload
+import de.mctelemetry.core.network.instrumentsync.S2CReservedNameAddedPayload
+import de.mctelemetry.core.network.instrumentsync.S2CReservedNameRemovedPayload
 import de.mctelemetry.core.network.instrumentsync.SyncSubscriptions
 import de.mctelemetry.core.network.observations.container.observationrequest.C2SObservationsRequestPayload
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerServer
@@ -75,6 +81,12 @@ object OTelCoreMod {
             })
         }
         ObservationSourceContainerBlock.RightClickBlockListener.register()
+        A2AInstrumentAddedPayload.register()
+        A2AInstrumentRemovedPayload.register()
+        C2SAllInstrumentRequestPayload.register()
+        S2CAllInstrumentsPayload.register()
+        S2CReservedNameAddedPayload.register()
+        S2CReservedNameRemovedPayload.register()
         ObservationRequestManagerServer.registerListeners()
         S2CObservationsPayload.register()
         C2SObservationsRequestPayload.register()

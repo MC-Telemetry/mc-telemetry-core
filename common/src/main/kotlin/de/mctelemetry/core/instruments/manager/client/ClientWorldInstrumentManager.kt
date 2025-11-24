@@ -299,7 +299,7 @@ class ClientWorldInstrumentManager(
 
         override fun sendToServer() {
             NetworkManager.sendToServer(
-                A2AInstrumentAddedPayload(
+                A2AInstrumentAddedPayload.C2S(
                     build()
                 )
             )
@@ -327,7 +327,7 @@ class ClientWorldInstrumentManager(
 
     override fun requestInstrumentRemoval(name: String) {
         NetworkManager.sendToServer(
-            A2AInstrumentRemovedPayload(
+            A2AInstrumentRemovedPayload.C2S(
                 findLocal(name) ?: IWorldInstrumentDefinition.Record(
                     name = name,
                     description = "",
