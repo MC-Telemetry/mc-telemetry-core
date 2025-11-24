@@ -25,5 +25,34 @@ class RedstoneScraperBlockScreen : BaseUIModelScreen<FlowLayout>(
         ) as ButtonComponent).onPress {
             println("XML Button")
         }
+
+        val list = rootComponent.childById(
+            FlowLayout::class.java as Class<Component>,
+            "list"
+        ) as FlowLayout
+
+        list.child(
+            this.model.expandTemplate(
+                FlowLayout::class.java,
+                "list-row@${OTelCoreMod.MOD_ID}:source-listing",
+                mapOf("observation-source-name" to "Power 1", "observation-source-preview" to "12")
+            )
+        )
+
+        list.child(
+            this.model.expandTemplate(
+                FlowLayout::class.java,
+                "list-row@${OTelCoreMod.MOD_ID}:source-listing",
+                mapOf("observation-source-name" to "Power 2", "observation-source-preview" to "23")
+            )
+        )
+
+        list.child(
+            this.model.expandTemplate(
+                FlowLayout::class.java,
+                "list-row@${OTelCoreMod.MOD_ID}:source-listing",
+                mapOf("observation-source-name" to "Power 3", "observation-source-preview" to "34")
+            )
+        )
     }
 }
