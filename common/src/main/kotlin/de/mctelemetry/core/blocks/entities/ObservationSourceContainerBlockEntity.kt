@@ -182,7 +182,13 @@ abstract class ObservationSourceContainerBlockEntity(
                 this._container = it
             })
             container.setup()
-            container.setCascadeUpdates(!level.isClientSide)
+            if (!level.isClientSide) {
+                (level as ServerLevel).server.useInstrumentManagerWhenAvailable {
+                    container.setCascadeUpdates(true)
+                }
+            } else {
+                container.setCascadeUpdates(false)
+            }
             val onLevelCallback = this.onLevelCallback
             if (onLevelCallback != null) {
                 onLevelCallback(level)
