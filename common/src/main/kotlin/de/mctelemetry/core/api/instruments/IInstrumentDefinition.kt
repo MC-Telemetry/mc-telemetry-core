@@ -5,12 +5,11 @@ import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
-import net.minecraft.network.codec.StreamDecoder
-import net.minecraft.network.codec.StreamEncoder
 
 interface IInstrumentDefinition : IMetricDefinition {
 
     val attributes: Map<String, MappedAttributeKeyInfo<*, *>>
+    val supportsFloating: Boolean
 
     @JvmRecord
     data class Record(
@@ -18,6 +17,7 @@ interface IInstrumentDefinition : IMetricDefinition {
         override val description: String,
         override val unit: String,
         override val attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+        override val supportsFloating: Boolean,
     ) : IInstrumentDefinition {
 
 
@@ -34,11 +34,13 @@ interface IInstrumentDefinition : IMetricDefinition {
             description: String,
             unit: String,
             attributes: Collection<MappedAttributeKeyInfo<*, *>>,
+            supportsFloating: Boolean,
         ) : this(
             name,
             description,
             unit,
             attributes.associateBy { it.baseKey.key },
+            supportsFloating,
         )
 
         companion object {
@@ -50,17 +52,23 @@ interface IInstrumentDefinition : IMetricDefinition {
                     description = definition.description,
                     unit = definition.unit,
                     attributes = definition.attributes,
+                    supportsFloating = definition.supportsFloating,
                 )
             }
 
             operator fun invoke(
                 definition: IMetricDefinition,
                 attributes: Collection<MappedAttributeKeyInfo<*, *>>,
+                supportsFloating: Boolean,
             ): Record {
                 if (definition is Record) {
-                    if (definition.attributes.size == attributes.size && attributes.all {
+                    if (
+                        supportsFloating == definition.supportsFloating &&
+                        definition.attributes.size == attributes.size &&
+                        attributes.all {
                             definition.attributes[it.baseKey.key] == it
-                        }) {
+                        }
+                    ) {
                         return definition
                     }
                 }
@@ -69,6 +77,7 @@ interface IInstrumentDefinition : IMetricDefinition {
                     description = definition.description,
                     unit = definition.unit,
                     attributes = attributes,
+                    supportsFloating = supportsFloating,
                 )
             }
 
@@ -76,21 +85,44 @@ interface IInstrumentDefinition : IMetricDefinition {
                 assert(OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT <= UByte.MAX_VALUE.toInt())
             }
 
-            private val interfaceEncoder: StreamEncoder<RegistryFriendlyByteBuf, IInstrumentDefinition> =
-                StreamEncoder { bb, v ->
-                    val attributes = v.attributes
-                    val attributeCount = attributes.size.also {
-                        require(it >= 0 && it < OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT)
+            internal fun encodeInterface(bb: RegistryFriendlyByteBuf, v: IInstrumentDefinition) {
+                when (v) {
+                    is IWorldInstrumentDefinition -> {
+                        bb.writeByte(1)
+                        IWorldInstrumentDefinition.Record.encodeInterface(bb, v)
                     }
-                    bb.writeUtf(v.name, OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH)
-                    bb.writeUtf(v.description, OTelCoreModAPI.Limits.INSTRUMENT_DESCRIPTION_MAX_LENGTH)
-                    bb.writeUtf(v.unit, OTelCoreModAPI.Limits.INSTRUMENT_UNIT_MAX_LENGTH)
-                    bb.writeByte(attributeCount)
-                    for (attribute in attributes.values) {
-                        MappedAttributeKeyInfo.STREAM_CODEC.encode(bb, attribute)
+                    else -> {
+                        bb.writeByte(0)
+                        encodeAsSimpleRecord(bb, v)
                     }
                 }
-            private val recordDecoder: StreamDecoder<RegistryFriendlyByteBuf, Record> = StreamDecoder { bb ->
+            }
+
+            internal fun encodeAsSimpleRecord(bb: RegistryFriendlyByteBuf, v: IInstrumentDefinition) {
+                val attributes = v.attributes
+                val attributeCount = attributes.size.also {
+                    require(it >= 0 && it < OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT)
+                }
+                bb.writeUtf(v.name, OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH)
+                bb.writeUtf(v.description, OTelCoreModAPI.Limits.INSTRUMENT_DESCRIPTION_MAX_LENGTH)
+                bb.writeUtf(v.unit, OTelCoreModAPI.Limits.INSTRUMENT_UNIT_MAX_LENGTH)
+                bb.writeByte(attributeCount)
+                for (attribute in attributes.values) {
+                    MappedAttributeKeyInfo.STREAM_CODEC.encode(bb, attribute)
+                }
+                bb.writeBoolean(v.supportsFloating)
+            }
+
+            internal fun decodeInterface(bb: RegistryFriendlyByteBuf): IInstrumentDefinition {
+                val type = bb.readByte()
+                return when (type.toInt()) {
+                    0 -> decodeAsSimpleRecord(bb)
+                    1 -> IWorldInstrumentDefinition.Record.decodeInterface(bb)
+                    else -> throw IllegalArgumentException("Unknown type $type")
+                }
+            }
+
+            internal fun decodeAsSimpleRecord(bb: RegistryFriendlyByteBuf): Record {
                 val name = bb.readUtf(OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH)
                 val description = bb.readUtf(OTelCoreModAPI.Limits.INSTRUMENT_DESCRIPTION_MAX_LENGTH)
                 val unit = bb.readUtf(OTelCoreModAPI.Limits.INSTRUMENT_UNIT_MAX_LENGTH)
@@ -105,20 +137,13 @@ interface IInstrumentDefinition : IMetricDefinition {
                             require(existing == null) { "Duplicate attributes for ${attribute.baseKey.key}: Stored $existing, tried to add $attribute" }
                         }
                     }
-                Record(name, description, unit, attributes)
+                val supportsFloating = bb.readBoolean()
+                return Record(name, description, unit, attributes, supportsFloating)
             }
 
-            val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, Record> = StreamCodec.of(
-                // Record is subtype of IInstrumentDefinition, but StreamEncoder does not have `in` variance.
-                @Suppress("UNCHECKED_CAST")
-                (interfaceEncoder as StreamEncoder<RegistryFriendlyByteBuf, Record>),
-                recordDecoder,
-            )
             val INTERFACE_STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, IInstrumentDefinition> = StreamCodec.of(
-                interfaceEncoder,
-                // IInstrumentDefinition is supertype of Record, but StreamDecoder does not have `out` variance.
-                @Suppress("UNCHECKED_CAST")
-                (recordDecoder as StreamDecoder<RegistryFriendlyByteBuf, IInstrumentDefinition>),
+                ::encodeInterface,
+                ::decodeInterface,
             )
         }
     }

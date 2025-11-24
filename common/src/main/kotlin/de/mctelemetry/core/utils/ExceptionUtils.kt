@@ -83,8 +83,18 @@ inline fun <T> runWithExceptionCleanup(cleanup: () -> Unit, runCleanup: Boolean,
  *     throw exAccumulator
  * ```
  */
+@JvmName("exceptionAccumulator")
 operator fun Exception?.plus(other: Exception): Exception {
     if (this == null) return other
     this.addSuppressed(other)
+    return this
+}
+
+@JvmName("exceptionAccumulatorNullable")
+operator fun Exception?.plus(other: Exception?): Exception? {
+    if (this == null) return other
+    if (other != null) {
+        this.addSuppressed(other)
+    }
     return this
 }

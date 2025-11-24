@@ -1,15 +1,18 @@
-package de.mctelemetry.core.instruments.manager
+package de.mctelemetry.core.instruments.manager.server
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
-import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.instruments.builder.IWorldGaugeInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
+import de.mctelemetry.core.instruments.manager.GameInstrumentManager
+import de.mctelemetry.core.instruments.manager.InstrumentManagerBase
+import de.mctelemetry.core.instruments.manager.InstrumentManagerBaseRegistrationUnion
 import de.mctelemetry.core.persistence.DirtyCallbackMutableMap
 import de.mctelemetry.core.persistence.SavedDataConcurrentMap
 import de.mctelemetry.core.utils.Union2
@@ -28,13 +31,14 @@ import java.lang.AutoCloseable
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+import kotlin.collections.iterator
 
-internal class WorldInstrumentManager private constructor(
+internal class ServerWorldInstrumentManager private constructor(
     meter: Meter,
     override val gameInstruments: GameInstrumentManager,
     server: MinecraftServer,
     localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion>,
-) : InstrumentManagerBase.Child<WorldInstrumentManager.WorldGaugeInstrumentBuilder>(
+) : InstrumentManagerBase.Child<ServerWorldInstrumentManager.WorldGaugeInstrumentBuilder>(
     meter,
     gameInstruments,
     localInstruments,
@@ -58,9 +62,9 @@ internal class WorldInstrumentManager private constructor(
             gameInstruments: GameInstrumentManager,
             server: MinecraftServer,
             dataStorage: DimensionDataStorage = server.getLevel(ServerLevel.OVERWORLD)!!.dataStorage,
-        ): WorldInstrumentManager {
+        ): ServerWorldInstrumentManager {
             val saveData = dataStorage.computeIfAbsent(WorldInstrumentSavedData.Factory, WORLDMETRICS_KEY)!!
-            val manager = WorldInstrumentManager(meter, gameInstruments, server, saveData)
+            val manager = ServerWorldInstrumentManager(meter, gameInstruments, server, saveData)
             runWithExceptionCleanup(manager::close) {
                 for (registration in manager.localInstruments.values) {
                     val registrationValue = registration.value
@@ -139,7 +143,7 @@ internal class WorldInstrumentManager private constructor(
 
     internal class WorldGaugeInstrumentBuilder(
         name: String,
-        manager: WorldInstrumentManager,
+        manager: ServerWorldInstrumentManager,
     ) : GaugeInstrumentBuilder<WorldGaugeInstrumentBuilder>(
         name,
         @Suppress("UNCHECKED_CAST")
@@ -246,14 +250,14 @@ internal class WorldInstrumentManager private constructor(
                         buildMap {
                             tag.getList("attributes", Tag.TAG_COMPOUND.toInt()).forEach {
                                 val keyInfo =
-                                    MappedAttributeKeyInfo.load(it as CompoundTag, attributeKeyTypeHolderGetter)
+                                    MappedAttributeKeyInfo.Companion.load(it as CompoundTag, attributeKeyTypeHolderGetter)
                                 this@buildMap.put(keyInfo.baseKey.key, keyInfo)
                             }
                         }
                     } else {
                         emptyMap()
                     }
-                return name to Union2.of2(
+                return name to Union2.Companion.of2(
                     WorldMutableGaugeInstrumentRegistration(
                         name = name,
                         description = description,

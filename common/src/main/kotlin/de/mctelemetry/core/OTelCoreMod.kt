@@ -11,7 +11,7 @@ import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.ui.OTelCoreModMenuTypes
 import de.mctelemetry.core.commands.metrics.CommandMetrics
 import de.mctelemetry.core.instruments.builtin.BuiltinInstruments
-import de.mctelemetry.core.instruments.manager.InstrumentMetaManager
+import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
@@ -65,7 +65,7 @@ object OTelCoreMod {
 
     fun registerCallbacks() {
 
-        InstrumentMetaManager.register()
+        ServerInstrumentMetaManager.register()
         BuiltinInstruments.register()
         CommandRegistrationEvent.EVENT.register { evt, ctx, _ ->
             evt.root.addChild(buildCommand("mcotel") {

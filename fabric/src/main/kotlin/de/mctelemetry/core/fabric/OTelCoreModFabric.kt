@@ -5,6 +5,8 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.commands.types.ArgumentTypes
+import de.mctelemetry.core.fabric.instruments.manager.client.register
+import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import dev.architectury.platform.Platform
 import net.fabricmc.api.EnvType
@@ -38,6 +40,7 @@ object OTelCoreModFabric : ModInitializer {
             level.scheduleTick(blockEntity.blockPos, blockEntity.blockState.block, 1)
         }
         if (Platform.getEnv() == EnvType.CLIENT) {
+            ClientInstrumentMetaManager.register()
             ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
                 ObservationRequestManagerClient.onClientDisconnecting()
             }

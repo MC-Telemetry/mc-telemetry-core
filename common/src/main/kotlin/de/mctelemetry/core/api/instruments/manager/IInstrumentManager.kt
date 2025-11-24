@@ -9,12 +9,12 @@ interface IInstrumentManager : IInstrumentAvailabilityCallback<IMetricDefinition
     fun addGlobalCallback(callback: IInstrumentAvailabilityCallback<IMetricDefinition>): AutoCloseable
     fun addLocalCallback(callback: IInstrumentAvailabilityCallback<IInstrumentDefinition>): AutoCloseable
 
-    fun findGlobal(pattern: Regex): Sequence<IMetricDefinition>
+    fun findGlobal(pattern: Regex? = null): Sequence<IMetricDefinition>
     fun findGlobal(name: String): IMetricDefinition? {
         return findGlobal(Regex.fromLiteral(name)).firstOrNull()
     }
 
-    fun findLocal(pattern: Regex): Sequence<IInstrumentDefinition>
+    fun findLocal(pattern: Regex? = null): Sequence<IInstrumentDefinition>
     fun findLocal(name: String): IInstrumentDefinition? {
         return findLocal(Regex.fromLiteral(name)).firstOrNull()
     }
@@ -39,11 +39,11 @@ interface IInstrumentManager : IInstrumentAvailabilityCallback<IMetricDefinition
         ) {
         }
 
-        override fun findLocal(pattern: Regex): Sequence<IInstrumentRegistration> {
+        override fun findLocal(pattern: Regex?): Sequence<IInstrumentRegistration> {
             return emptySequence()
         }
 
-        override fun findGlobal(pattern: Regex): Sequence<IMetricDefinition> {
+        override fun findGlobal(pattern: Regex?): Sequence<IMetricDefinition> {
             return emptySequence()
         }
 

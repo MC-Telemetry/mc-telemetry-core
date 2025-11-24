@@ -1,12 +1,25 @@
 package de.mctelemetry.core.api.instruments.manager.client
 
+import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.builder.IRemoteWorldInstrumentDefinitionBuilder
+import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
 
 interface IClientWorldInstrumentManager : IClientInstrumentManager {
 
     fun gaugeInstrument(name: String): IRemoteWorldInstrumentDefinitionBuilder<*>
+
+    fun requestInstrumentRemoval(name: String)
+
+    fun requestFullUpdate()
+
+    suspend fun awaitFullUpdate()
+
+    interface IClientWorldInstrumentDefinition :
+            IClientInstrumentManager.IClientInstrumentDefinition,
+            IWorldInstrumentDefinition
+
 
     object Events {
 
@@ -38,7 +51,7 @@ interface IClientWorldInstrumentManager : IClientInstrumentManager {
 
     companion object {
 
-        var clientWorldInstrumentManager: IClientWorldInstrumentManager? = null
-            internal set
+        val clientWorldInstrumentManager: IClientWorldInstrumentManager?
+            get() = ClientInstrumentMetaManager.activeWorldManager
     }
 }

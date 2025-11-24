@@ -62,7 +62,10 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         return localInstruments.getOrElse(name.lowercase()) { return null }.value
     }
 
-    override fun findLocal(pattern: Regex): Sequence<IInstrumentRegistration> {
+    override fun findLocal(pattern: Regex?): Sequence<IInstrumentRegistration> {
+        if (pattern == null) {
+            return localInstruments.values.asSequence().map { it.value }
+        }
         if (RegexOption.LITERAL in pattern.options) {
             val local = findLocal(pattern.pattern)
             return if (local != null) sequenceOf(local) else emptySequence()
@@ -303,7 +306,10 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
             addGlobalCallback(InstrumentAvailabilityLogger(this, local = false))
         }
 
-        override fun findGlobal(pattern: Regex): Sequence<IMetricDefinition> {
+        override fun findGlobal(pattern: Regex?): Sequence<IMetricDefinition> {
+            if (pattern == null) {
+                return globalManagerMap.values.asSequence().distinct().flatMap { it.findLocal() }
+            }
             if (RegexOption.LITERAL in pattern.options) {
                 val result = findGlobal(pattern.pattern)
                 return if (result != null) sequenceOf(result) else emptySequence()
@@ -431,7 +437,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion> = ConcurrentHashMap(),
     ) : InstrumentManagerBase<GB>(meter, localInstruments) {
 
-        override fun findGlobal(pattern: Regex): Sequence<IMetricDefinition> {
+        override fun findGlobal(pattern: Regex?): Sequence<IMetricDefinition> {
             return parent.findGlobal(pattern)
         }
 
@@ -441,6 +447,10 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
 
         override fun addGlobalCallback(callback: IInstrumentAvailabilityCallback<IMetricDefinition>): AutoCloseable {
             return parent.addGlobalCallback(callback)
+        }
+
+        override fun nameAvailable(name: String): Boolean {
+            return super.nameAvailable(name) && parent.nameAvailable(name)
         }
 
         override fun instrumentAdded(
@@ -567,7 +577,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         override val description: String,
         override val unit: String,
         override val attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-        val supportsFloating: Boolean,
+        override val supportsFloating: Boolean,
     ) : IDoubleInstrumentRegistration, ILongInstrumentRegistration {
 
         constructor(builder: GaugeInstrumentBuilder<*>, supportsFloating: Boolean) : this(

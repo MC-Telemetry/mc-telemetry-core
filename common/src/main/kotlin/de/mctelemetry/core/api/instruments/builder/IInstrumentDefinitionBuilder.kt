@@ -1,6 +1,7 @@
 package de.mctelemetry.core.api.instruments.builder
 
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import io.opentelemetry.api.common.AttributeKey
 import org.jetbrains.annotations.Contract
 
@@ -10,6 +11,15 @@ interface IInstrumentDefinitionBuilder<out B : IInstrumentDefinitionBuilder<B>> 
     var attributes: List<MappedAttributeKeyInfo<*, *>>
     var description: String
     var unit: String
+
+    @Contract("_ -> this", mutates= "this")
+    fun importInstrument(instrument: IInstrumentDefinition): B {
+        attributes = instrument.attributes.values.toList()
+        description = instrument.description
+        unit = instrument.unit
+        @Suppress("UNCHECKED_CAST")
+        return this as B
+    }
 
     @Contract("_ -> this", mutates = "this")
     fun addAttribute(attributeKey: MappedAttributeKeyInfo<*, *>): B {

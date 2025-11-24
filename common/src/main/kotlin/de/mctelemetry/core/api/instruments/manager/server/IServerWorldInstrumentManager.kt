@@ -4,12 +4,13 @@ package de.mctelemetry.core.api.instruments.manager.server
 
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.builder.IWorldGaugeInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
-import de.mctelemetry.core.instruments.manager.InstrumentMetaManager
+import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
 import net.minecraft.server.MinecraftServer
@@ -27,7 +28,7 @@ interface IServerWorldInstrumentManager : IMutableInstrumentManager {
         return super.findLocalMutable(name) as IWorldMutableInstrumentRegistration<*>?
     }
 
-    override fun findLocalMutable(pattern: Regex): Sequence<IWorldMutableInstrumentRegistration<*>> {
+    override fun findLocalMutable(pattern: Regex?): Sequence<IWorldMutableInstrumentRegistration<*>> {
         return findLocal(pattern).filterIsInstance<IWorldMutableInstrumentRegistration<*>>()
     }
 
@@ -54,10 +55,8 @@ interface IServerWorldInstrumentManager : IMutableInstrumentManager {
     }
 
     interface IWorldMutableInstrumentRegistration<out R : IWorldMutableInstrumentRegistration<R>> :
-            IInstrumentRegistration.Mutable<R> {
-
-        val persistent: Boolean
-    }
+            IInstrumentRegistration.Mutable<R>,
+            IWorldInstrumentDefinition
 
     object Events {
 
@@ -90,10 +89,10 @@ interface IServerWorldInstrumentManager : IMutableInstrumentManager {
     companion object {
 
         val MinecraftServer.instrumentManager: IServerWorldInstrumentManager?
-            get() = InstrumentMetaManager.worldInstrumentManagerForServer(this)
+            get() = ServerInstrumentMetaManager.worldInstrumentManagerForServer(this)
 
         fun MinecraftServer.useInstrumentManagerWhenAvailable(callback: (IServerWorldInstrumentManager) -> Unit): AutoCloseable {
-            return InstrumentMetaManager.whenWorldInstrumentManagerAvailable(this, callback)
+            return ServerInstrumentMetaManager.whenWorldInstrumentManagerAvailable(this, callback)
         }
     }
 }
