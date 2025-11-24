@@ -1,9 +1,10 @@
-package de.mctelemetry.core.instruments.manager
+package de.mctelemetry.core.instruments.manager.server
 
 import com.mojang.datafixers.util.Either
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
+import de.mctelemetry.core.instruments.manager.GameInstrumentManager
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import dev.architectury.event.events.common.LifecycleEvent
@@ -16,7 +17,7 @@ import java.util.concurrent.ConcurrentMap
 import kotlin.jvm.optionals.getOrElse
 import kotlin.jvm.optionals.getOrNull
 
-object InstrumentMetaManager {
+object ServerInstrumentMetaManager {
 
     fun register() {
         LifecycleEvent.SETUP.register(::onSetup)
@@ -27,7 +28,7 @@ object InstrumentMetaManager {
     }
 
     private lateinit var gameInstrumentManager: GameInstrumentManager
-    private val serverMetricsManagers: ConcurrentMap<MinecraftServer, Either<WorldInstrumentManager, Deque<(WorldInstrumentManager) -> Unit>>> =
+    private val serverMetricsManagers: ConcurrentMap<MinecraftServer, Either<ServerWorldInstrumentManager, Deque<(ServerWorldInstrumentManager) -> Unit>>> =
         ConcurrentHashMap(1)
 
     private fun onSetup() {
@@ -39,7 +40,8 @@ object InstrumentMetaManager {
     }
 
     private fun onServerStarting(server: MinecraftServer) {
-        var existingCallbackOnlyEntry: Either<WorldInstrumentManager,Deque<(WorldInstrumentManager) -> Unit>>? = null
+        var existingCallbackOnlyEntry: Either<ServerWorldInstrumentManager, Deque<(ServerWorldInstrumentManager) -> Unit>>? =
+            null
         val serverManagerEntry = serverMetricsManagers.compute(server) { server, previous ->
             if (previous != null) {
                 if (previous.left().isPresent) return@compute previous
@@ -47,16 +49,18 @@ object InstrumentMetaManager {
             } else {
                 existingCallbackOnlyEntry = null
             }
-            Either.left(WorldInstrumentManager.withPersistentStorage(
-                gameInstrumentManager.meter,
-                gameInstrumentManager,
-                server,
-            ))
+            Either.left(
+                ServerWorldInstrumentManager.withPersistentStorage(
+                    gameInstrumentManager.meter,
+                    gameInstrumentManager,
+                    server,
+                )
+            )
         }!!
         val serverManager = serverManagerEntry.left().get()
         runWithExceptionCleanup(cleanup = {
             val entry = existingCallbackOnlyEntry
-            if(entry == null){
+            if (entry == null) {
                 serverMetricsManagers.remove(server, serverManagerEntry)
             } else {
                 serverMetricsManagers.replace(server, serverManagerEntry, entry)
@@ -66,11 +70,12 @@ object InstrumentMetaManager {
             serverManager.start()
             runWithExceptionCleanup(cleanup = { serverManager.stop() })
             {
-                IServerWorldInstrumentManager.Events.LOADING.invoker().worldInstrumentManagerLoading(serverManager, server)
+                IServerWorldInstrumentManager.Events.LOADING.invoker()
+                    .worldInstrumentManagerLoading(serverManager, server)
             }
         }
         val callbacks = existingCallbackOnlyEntry?.right()?.getOrNull()
-        if(callbacks != null) {
+        if (callbacks != null) {
             do {
                 val element = callbacks.pollFirst() ?: break
                 try {
@@ -78,8 +83,7 @@ object InstrumentMetaManager {
                 } catch (ex: RuntimeException) {
                     OTelCoreMod.logger.error("Exception during WorldInstrumentManager-Callback", ex)
                 }
-            }
-            while (true)
+            } while (true)
         }
     }
 
@@ -113,27 +117,28 @@ object InstrumentMetaManager {
             exceptionAccumulator = ex
         }
         try {
-            IServerWorldInstrumentManager.Events.UNLOADED.invoker().worldInstrumentManagerUnloaded(serverManager, server)
+            IServerWorldInstrumentManager.Events.UNLOADED.invoker()
+                .worldInstrumentManagerUnloaded(serverManager, server)
         } catch (ex: Exception) {
-            exceptionAccumulator += ex
+            exceptionAccumulator + ex
         }
         if (exceptionAccumulator != null) {
             throw exceptionAccumulator
         }
     }
 
-    internal fun worldInstrumentManagerForServer(server: MinecraftServer): WorldInstrumentManager? {
+    internal fun worldInstrumentManagerForServer(server: MinecraftServer): ServerWorldInstrumentManager? {
         return serverMetricsManagers[server]?.left()?.getOrNull()
     }
 
     internal fun whenWorldInstrumentManagerAvailable(
         server: MinecraftServer,
-        callback: (WorldInstrumentManager) -> Unit,
+        callback: (ServerWorldInstrumentManager) -> Unit,
     ): AutoCloseable {
         var closer: AutoCloseable? = null
         val newValue = serverMetricsManagers.compute(server) { _, previous ->
             if (previous == null) {
-                val queue = ConcurrentLinkedDeque<(WorldInstrumentManager) -> Unit>()
+                val queue = ConcurrentLinkedDeque<(ServerWorldInstrumentManager) -> Unit>()
                 queue.add(callback)
                 closer = AutoCloseable { queue.removeFirstOccurrence(callback) }
                 Either.right(queue)

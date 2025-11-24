@@ -37,7 +37,8 @@ data class ObservationSourceConfiguration(
                 name = instrumentName,
                 description = "",
                 unit = "",
-                attributes = mapOf()
+                attributes = mapOf(),
+                supportsFloating = true,
             )
             return ObservationSourceConfiguration(
                 instrument,
