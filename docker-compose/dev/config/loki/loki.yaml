@@ -1,0 +1,49 @@
+auth_enabled: false
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9095
+  grpc_server_max_recv_msg_size: 104857600
+
+ruler:
+  enable_api: true
+
+ingester:
+  wal:
+    enabled: true
+    dir: /var/lib/loki/wal
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /var/lib/loki/tsdb/tsdb-index
+    cache_location: /var/lib/loki/tsdb/tsdb-cache
+  filesystem:
+    directory: /var/lib/loki/store
+
+common:
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+  replication_factor: 1
+  path_prefix: /tmp/loki
+
+schema_config:
+  configs:
+    - from: 2025-11-11
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+      chunks:
+        prefix: chunk_
+
+limits_config:
+  ingestion_burst_size_mb: 50
+  ingestion_rate_mb: 10
+  per_stream_rate_limit_burst: 32M
+  per_stream_rate_limit: 8M
+
+analytics:
+  reporting_enabled: false

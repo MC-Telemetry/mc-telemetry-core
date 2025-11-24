@@ -1,0 +1,21 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    uid: docker-prometheus-datasource
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: 1s
+      httpMethod: POST
+      manageAlerts: true
+      allowAsRecordingRulesTarget: true
+      prometheusType: Prometheus
+      prometheusVersion: 3.7.3
+      cacheLevel: 'Low'
+      disableRecordingRules: false
+      incrementalQuerying: true
+      incrementalQueryOverlapWindow: 5m

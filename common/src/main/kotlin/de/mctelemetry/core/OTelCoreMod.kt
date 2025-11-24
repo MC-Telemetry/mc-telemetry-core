@@ -73,24 +73,6 @@ object OTelCoreMod {
         ObservationSourceContainerBlock.RightClickBlockListener.register()
     }
 
-    fun setupMetricAccessor() {
-        logger.debug {
-            SimpleMessageFactory.INSTANCE.newMessage(
-                "ClassLoader during mod class loading: {}",
-                OTelCoreMod::class.java.classLoader
-            )
-        }
-        val metricsAccessor = IMetricsAccessor.GLOBAL
-        logger.debug("MetricsAccessor during mod class loading: {}", metricsAccessor)
-        if (metricsAccessor != null) {
-            logger.info("Performing initial metrics collection, may throw errors which can be safely ignored (probably?)")
-            metricsAccessor.collect()
-            logger.info("Initial metric collection done, any errors following this should be treated as errors again")
-        } else {
-            logger.debug("Could not find MetricsAccessor during Mod-Init.")
-        }
-    }
-
     fun registerContent() {
         TABS.register()
 
@@ -101,7 +83,6 @@ object OTelCoreMod {
 
     fun init() {
         registerCallbacks()
-        setupMetricAccessor()
         registerContent()
     }
 

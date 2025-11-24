@@ -56,7 +56,7 @@ object ScrapeInfoCommandCommonTest {
 
     @Suppress("unused")
     @JvmStatic
-    @GameTest
+    @GameTest(required = false) // execution requires IMetricsAccessor, which currently has no implementations
     fun normalSucceeds(helper: GameTestHelper) {
         helper.runCommand(
             "mcotel scrape info",
@@ -83,7 +83,7 @@ object ScrapeInfoCommandCommonTest {
 
     @Suppress("unused")
     @JvmStatic
-    @GameTest
+    @GameTest(required = false) // execution requires IMetricsAccessor, which currently has no implementations
     fun filterForMetricReturns1(helper: GameTestHelper) {
         helper.runCommand(
             "mcotel scrape info jvm.class.loaded",
@@ -113,7 +113,7 @@ object ScrapeInfoCommandCommonTest {
 
     @Suppress("unused")
     @JvmStatic
-    @GameTest
+    @GameTest(required = false) // execution requires IMetricsAccessor, which currently has no implementations
     fun filterForMissingMetricFails(helper: GameTestHelper) {
         helper.assertThrows<NoSuchElementException> {
             helper.runCommand(
