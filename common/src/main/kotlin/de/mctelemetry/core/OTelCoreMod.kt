@@ -15,6 +15,7 @@ import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManage
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
+import de.mctelemetry.core.network.instrumentsync.SyncSubscriptions
 import de.mctelemetry.core.network.observations.container.observationrequest.C2SObservationsRequestPayload
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerServer
 import de.mctelemetry.core.network.observations.container.observationrequest.S2CObservationsPayload
@@ -78,6 +79,7 @@ object OTelCoreMod {
         S2CObservationsPayload.register()
         C2SObservationsRequestPayload.register()
         C2SObservationSourceSettingsUpdatePayload.register()
+        SyncSubscriptions.register()
     }
 
     fun registerContent() {
