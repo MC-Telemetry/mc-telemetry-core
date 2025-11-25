@@ -26,29 +26,43 @@ internal class StyleBuilder(
     override var isItalic: Boolean?
         get() = style.isItalic
         set(value) {
-            style.withItalic(value)
+            style = style.withItalic(value)
         }
     override var isUnderlined: Boolean?
         get() = style.isUnderlined
-        set(value) {style = style.withUnderlined(value)}
+        set(value) {
+            style = style.withUnderlined(value)
+        }
     override var isStrikethrough: Boolean?
         get() = style.isStrikethrough
-        set(value) {style = style.withStrikethrough(value)}
+        set(value) {
+            style = style.withStrikethrough(value)
+        }
     override var isObfuscated: Boolean?
         get() = style.isObfuscated
-        set(value) {style = style.withObfuscated(value)}
+        set(value) {
+            style = style.withObfuscated(value)
+        }
     override var clickEvent: ClickEvent?
         get() = style.clickEvent
-        set(value) {style = style.withClickEvent(value)}
+        set(value) {
+            style = style.withClickEvent(value)
+        }
     override var hoverEvent: HoverEvent?
         get() = style.hoverEvent
-        set(value) {style = style.withHoverEvent(value)}
+        set(value) {
+            style = style.withHoverEvent(value)
+        }
     override var insertion: String?
         get() = style.insertion
-        set(value) {style = style.withInsertion(value)}
+        set(value) {
+            style = style.withInsertion(value)
+        }
     override var font: ResourceLocation?
         get() = style.font
-        set(value) {style = style.withFont(value)}
+        set(value) {
+            style = style.withFont(value)
+        }
 
     override fun isEmpty(): Boolean {
         return style.isEmpty

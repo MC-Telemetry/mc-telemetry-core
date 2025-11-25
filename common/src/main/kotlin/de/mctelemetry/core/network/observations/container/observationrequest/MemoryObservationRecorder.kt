@@ -23,6 +23,10 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
         }
     }
 
+    override fun onNewSource(source: IObservationSource<*, *>) {
+        mapForSource(source)
+    }
+
     fun clear() {
         backingMap.clear()
     }

@@ -264,6 +264,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
         val lookup = source.createAttributeLookup(context, parentLookup)
         unusedAttributesSet.clear()
         mapping.findUnusedAttributes(lookup.keys, unusedAttributesSet)
+        recorder.onNewSource(source)
         source.observe(context, recorder, lookup, unusedAttributesSet)
     }
 }

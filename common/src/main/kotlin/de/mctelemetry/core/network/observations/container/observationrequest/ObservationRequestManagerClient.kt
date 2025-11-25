@@ -89,21 +89,21 @@ class ObservationRequestManagerClient() : AutoCloseable {
 
     private sealed class PendingRequest : AutoCloseable {
 
-        abstract fun onResult(observations: S2CObservationsPayloadObservationType): PendingRequest?
+        abstract fun onResult(observations: ObservationSourceObservationMap): PendingRequest?
 
-        abstract suspend fun awaitNext(): S2CObservationsPayloadObservationType
+        abstract suspend fun awaitNext(): ObservationSourceObservationMap
 
         abstract fun closeWithoutCallback()
 
-        class Single(val value: CompletableDeferred<S2CObservationsPayloadObservationType> = CompletableDeferred()) :
+        class Single(val value: CompletableDeferred<ObservationSourceObservationMap> = CompletableDeferred()) :
                 PendingRequest() {
 
-            override fun onResult(observations: S2CObservationsPayloadObservationType): Nothing? {
+            override fun onResult(observations: ObservationSourceObservationMap): Nothing? {
                 value.complete(observations)
                 return null
             }
 
-            override suspend fun awaitNext(): S2CObservationsPayloadObservationType = value.await()
+            override suspend fun awaitNext(): ObservationSourceObservationMap = value.await()
 
             override fun close() {
                 value.cancel()
@@ -118,7 +118,7 @@ class ObservationRequestManagerClient() : AutoCloseable {
 
         class Subscription<T>(
             private val removeCallbackArgs: T,
-            nextDeferred: CompletableDeferred<S2CObservationsPayloadObservationType>? = null,
+            nextDeferred: CompletableDeferred<ObservationSourceObservationMap>? = null,
             private val removeCallback: (T) -> Unit,
         ) : PendingRequest() {
 
@@ -129,10 +129,10 @@ class ObservationRequestManagerClient() : AutoCloseable {
 
             private val internalUsage: MutableStateFlow<Int> = MutableStateFlow(0)
 
-            private val nextDeferred: MutableStateFlow<CompletableDeferred<S2CObservationsPayloadObservationType>?> =
+            private val nextDeferred: MutableStateFlow<CompletableDeferred<ObservationSourceObservationMap>?> =
                 MutableStateFlow(nextDeferred)
 
-            private val flowDeferred: CompletableDeferred<MutableStateFlow<S2CObservationsPayloadObservationType>> =
+            private val flowDeferred: CompletableDeferred<MutableStateFlow<ObservationSourceObservationMap>> =
                 CompletableDeferred(scopeJob)
 
             private val closedRef: AtomicBoolean = AtomicBoolean(false)
@@ -146,7 +146,7 @@ class ObservationRequestManagerClient() : AutoCloseable {
                 }
             }
 
-            suspend fun getStateFlow(): StateFlow<S2CObservationsPayloadObservationType> {
+            suspend fun getStateFlow(): StateFlow<ObservationSourceObservationMap> {
                 subLogger.trace("Requested StateFlow from SubscriptionRequest for {}", removeCallbackArgs)
                 ensureNotClosed()
                 currentCoroutineContext().ensureActive()
@@ -249,7 +249,7 @@ class ObservationRequestManagerClient() : AutoCloseable {
             }
 
             @Suppress("OPT_IN_USAGE")
-            override fun onResult(observations: S2CObservationsPayloadObservationType): Subscription<*> {
+            override fun onResult(observations: ObservationSourceObservationMap): Subscription<*> {
                 subLogger.trace("Received result for Subscription for {}", removeCallbackArgs)
                 do {
                     val deferred = nextDeferred.value ?: break
@@ -309,10 +309,10 @@ class ObservationRequestManagerClient() : AutoCloseable {
                 return this
             }
 
-            fun deferredForNext(): Deferred<S2CObservationsPayloadObservationType> {
+            fun deferredForNext(): Deferred<ObservationSourceObservationMap> {
                 val currentDeferred = nextDeferred.value
                 if (currentDeferred != null) return currentDeferred
-                val nextSubmission = CompletableDeferred<S2CObservationsPayloadObservationType>(scopeJob)
+                val nextSubmission = CompletableDeferred<ObservationSourceObservationMap>(scopeJob)
                 val storedValue = nextDeferred.getAndUpdate {
                     it ?: nextSubmission
                 }
@@ -324,7 +324,7 @@ class ObservationRequestManagerClient() : AutoCloseable {
                 }
             }
 
-            override suspend fun awaitNext(): S2CObservationsPayloadObservationType {
+            override suspend fun awaitNext(): ObservationSourceObservationMap {
                 return deferredForNext().await()
             }
 
@@ -414,7 +414,7 @@ class ObservationRequestManagerClient() : AutoCloseable {
     }
 
 
-    suspend fun requestSingleObservation(pos: GlobalPos): S2CObservationsPayloadObservationType {
+    suspend fun requestSingleObservation(pos: GlobalPos): ObservationSourceObservationMap {
         if (closedRef.get()) throw IllegalStateException("Already closed")
         val request = pendingRequests.compute(pos) { _, oldRequest ->
             if (closedRef.get()) throw IllegalStateException("Already closed")
@@ -436,7 +436,7 @@ class ObservationRequestManagerClient() : AutoCloseable {
     suspend fun requestObservations(
         pos: GlobalPos,
         updateIntervalTicks: UInt,
-    ): StateFlow<S2CObservationsPayloadObservationType> {
+    ): StateFlow<ObservationSourceObservationMap> {
         if (closedRef.get()) throw IllegalStateException("Already closed")
         val subscription: PendingRequest.Subscription<*> = pendingRequests.compute(pos) { _, old ->
             if (closedRef.get()) throw IllegalStateException("Already closed")

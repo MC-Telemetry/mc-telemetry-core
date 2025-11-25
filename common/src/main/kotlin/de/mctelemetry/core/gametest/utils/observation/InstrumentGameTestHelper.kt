@@ -28,6 +28,7 @@ import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState.Companion.asException
 import de.mctelemetry.core.observations.model.ObservationSourceState
+import de.mctelemetry.core.utils.ArgLazy
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
@@ -39,15 +40,11 @@ import net.minecraft.gametest.framework.GameTestAssertPosException
 import net.minecraft.gametest.framework.GameTestHelper
 import net.minecraft.gametest.framework.GameTestSequence
 import net.minecraft.world.level.block.entity.BlockEntity
-import java.lang.ref.WeakReference
-import java.util.Collections
-import java.util.WeakHashMap
 import kotlin.collections.get
 import kotlin.collections.iterator
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
-import kotlin.reflect.KProperty
 import kotlin.streams.asSequence
 
 class InstrumentGameTestHelper(
@@ -454,28 +451,6 @@ class InstrumentGameTestHelper(
                     pos,
                     tick,
                 )
-            }
-        }
-
-        private class ArgLazy<T, R : Any>(val block: (T) -> R) {
-
-            private val map: MutableMap<T, WeakReference<R>> = Collections.synchronizedMap(WeakHashMap())
-            operator fun getValue(thisRef: T, property: KProperty<*>): R {
-                var result: R? = map[thisRef]?.get()
-                if (result != null) return result
-                // store strong reference with [result], as otherwise the WeakReference returned by `compute` could already
-                // have been cleared by the time it returns.
-                map.compute(thisRef) { key, value ->
-                    val preResult = value?.get()
-                    if (preResult == null) {
-                        result = block(key)
-                        return@compute WeakReference(result)
-                    } else {
-                        result = preResult
-                        value
-                    }
-                }
-                return result!!
             }
         }
 

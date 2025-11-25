@@ -13,11 +13,11 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
-typealias S2CObservationsPayloadObservationType = Map<IObservationSource<*, *>, RecordedObservations>
+typealias ObservationSourceObservationMap = Map<IObservationSource<*, *>, RecordedObservations>
 
 data class S2CObservationsPayload(
     val blockPos: GlobalPos,
-    val observations: S2CObservationsPayloadObservationType,
+    val observations: ObservationSourceObservationMap,
     val serverTick: Long?,
 ) : CustomPacketPayload {
 

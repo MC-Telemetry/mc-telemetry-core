@@ -2,11 +2,9 @@ package de.mctelemetry.core.blocks
 
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
-import de.mctelemetry.core.ui.RedstoneScraperBlockScreen
+import de.mctelemetry.core.ui.screens.RedstoneScraperBlockScreen
 import dev.architectury.event.EventResult
 import dev.architectury.event.events.common.InteractionEvent
-import dev.architectury.platform.Platform
-import dev.architectury.utils.Env
 import net.minecraft.Util
 import net.minecraft.client.Minecraft
 import net.minecraft.core.BlockPos
@@ -91,9 +89,9 @@ abstract class ObservationSourceContainerBlock(properties: Properties) : BaseEnt
                 return EventResult.pass()
             }
 
-            if (Platform.getEnvironment() == Env.CLIENT) {
+            if (player.level().isClientSide) {
                 Minecraft.getInstance().execute {
-                    Minecraft.getInstance().setScreen(RedstoneScraperBlockScreen())
+                    Minecraft.getInstance().setScreen(RedstoneScraperBlockScreen(blockEntity))
                 }
             }
 
