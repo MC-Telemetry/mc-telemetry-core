@@ -42,8 +42,6 @@ data class DemoObservationSource(
 )
 
 data class DemoObservationSourceAttribute(var name: String)
-data class DemoMetric(var name: String, var attributes: List<DemoMetricAttribute>)
-data class DemoMetricAttribute(var name: String)
 
 @Environment(EnvType.CLIENT)
 class RedstoneScraperBlockScreen(
@@ -73,12 +71,6 @@ class RedstoneScraperBlockScreen(
         DemoObservationSource("mcotelcore:redstone_scraper.comparator", "12", listOf()),
         DemoObservationSource("mcotelcore:redstone_scraper.direct_power", "23", listOf()),
         DemoObservationSource("mcotelcore:redstone_scraper.power", "34", listOf()),
-    )
-
-    val metrics = listOf(
-        DemoMetric("srs.redstone.value", listOf()),
-        DemoMetric("cae.limestone.output", listOf()),
-        DemoMetric("cae.portal.duration", listOf()),
     )
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -155,7 +147,7 @@ class RedstoneScraperBlockScreen(
 
             val editButton: ButtonComponent = template.childWidgetByIdOrThrow("observation-source-edit")
             editButton.onPress {
-                Minecraft.getInstance().setScreen(RedstoneScraperBlockScreenDetails(this, row, metrics))
+                Minecraft.getInstance().setScreen(RedstoneScraperBlockScreenDetails(this, row))
             }
         }
     }

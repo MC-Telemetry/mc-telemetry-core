@@ -22,7 +22,7 @@ import net.minecraft.resources.ResourceLocation
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
 
-open class MappedAttributeKeyInfo<T : Any, B: Any>(
+open class MappedAttributeKeyInfo<T : Any, B : Any>(
     val baseKey: AttributeKey<B>,
     val type: IMappedAttributeKeyType<T, B>,
 ) {
@@ -171,6 +171,18 @@ open class MappedAttributeKeyInfo<T : Any, B: Any>(
             if (data != null) {
                 saveTag.put("data", data)
             }
+        }
+    }
+
+    override fun toString(): String {
+        val additional = saveAdditional()
+        val typeId: String = type.id.location().let {
+            if (it.namespace == ResourceLocation.DEFAULT_NAMESPACE) it.path else it.toString()
+        }
+        return if (additional != null) {
+            "${baseKey.key}#$typeId$additional"
+        } else {
+            "${baseKey.key}#$typeId"
         }
     }
 

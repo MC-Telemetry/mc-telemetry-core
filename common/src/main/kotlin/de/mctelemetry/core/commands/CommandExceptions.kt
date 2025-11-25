@@ -14,7 +14,7 @@ object CommandExceptions {
 
     val METRIC_NAME_EMPTY = SimpleCommandExceptionType(TranslationKeys.Errors.metricNameEmpty())
     val METRIC_NAME_INVALID_CHAR = Dynamic2CommandExceptionType { a, b ->
-        TranslationKeys.Errors.metricNameInvalidChar(a as Char, b as Int)
+        TranslationKeys.Errors.metricNameInvalidChar(a as String, b as Int)
     }
     val METRIC_NAME_BAD_START = SimpleCommandExceptionType(TranslationKeys.Errors.metricNameBadStart())
     val METRIC_NAME_BAD_END = SimpleCommandExceptionType(TranslationKeys.Errors.metricNameBadEnd())
@@ -23,7 +23,7 @@ object CommandExceptions {
     fun metricNameEmpty(reader: ImmutableStringReader? = null): CommandSyntaxException =
         METRIC_NAME_EMPTY.createWithNullableContext(reader)
     fun metricNameInvalidChar(char: Char, index: Int, reader: ImmutableStringReader?=null): CommandSyntaxException =
-        METRIC_NAME_INVALID_CHAR.createWithNullableContext(reader, char, index)
+        METRIC_NAME_INVALID_CHAR.createWithNullableContext(reader, char.toString(), index)
     fun metricNameBadStart(reader: ImmutableStringReader? = null): CommandSyntaxException =
         METRIC_NAME_BAD_START.createWithNullableContext(reader)
     fun metricNameBadEnd(reader: ImmutableStringReader? = null): CommandSyntaxException =

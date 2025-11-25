@@ -16,6 +16,19 @@ interface IClientWorldInstrumentManager : IClientInstrumentManager {
 
     suspend fun awaitFullUpdate()
 
+
+    override fun findGlobal(name: String): IClientInstrumentManager.IClientInstrumentDefinition? {
+        return findGlobal(Regex.fromLiteral(name)).firstOrNull()
+    }
+
+    override fun findGlobal(pattern: Regex?): Sequence<IClientInstrumentManager.IClientInstrumentDefinition>
+
+    override fun findLocal(name: String): IClientWorldInstrumentDefinition? {
+        return findLocal(Regex.fromLiteral(name)).firstOrNull()
+    }
+
+    override fun findLocal(pattern: Regex?): Sequence<IClientWorldInstrumentDefinition>
+
     interface IClientWorldInstrumentDefinition :
             IClientInstrumentManager.IClientInstrumentDefinition,
             IWorldInstrumentDefinition

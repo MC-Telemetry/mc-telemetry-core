@@ -35,7 +35,7 @@ object TranslationKeys {
                 "Metric name must not be empty"
             )
 
-        fun metricNameInvalidChar(char: Char, index: Int): MutableComponent =
+        fun metricNameInvalidChar(char: String, index: Int): MutableComponent =
             Component.translatableWithFallback(
                 ERRORS_METRIC_NAME_INVALID_CHAR,
                 $$"Metric name has invalid character at index %2$c: %1$d",

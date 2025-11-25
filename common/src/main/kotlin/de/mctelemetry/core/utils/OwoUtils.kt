@@ -2,7 +2,9 @@ package de.mctelemetry.core.utils
 
 import io.wispforest.owo.ui.base.BaseParentComponent
 import io.wispforest.owo.ui.core.Component
+import io.wispforest.owo.util.Observable
 import net.minecraft.client.gui.components.AbstractWidget
+import kotlin.reflect.KProperty
 
 inline operator fun <reified T : Component> BaseParentComponent.get(id: String): T? {
     return this.childById(id)
@@ -27,4 +29,12 @@ inline fun <reified T: AbstractWidget> BaseParentComponent.childWidgetById(id: S
 
 inline fun <reified T : AbstractWidget> BaseParentComponent.childWidgetByIdOrThrow(id: String): T {
     return this.childWidgetById(id) ?: throw NoSuchElementException("Could not find a ${T::class.java.simpleName} with id $id in $this")
+}
+
+operator fun <T> Observable<T>.getValue(thisObj: Any, property: KProperty<*>): T {
+    return get()
+}
+
+operator fun <T> Observable<T>.setValue(thisObj: Any, property: KProperty<*>, value: T) {
+    set(value)
 }
