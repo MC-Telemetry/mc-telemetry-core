@@ -1,12 +1,12 @@
 package de.mctelemetry.core.observations.scrapers.redstone
 
-import de.mctelemetry.core.api.metrics.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.metrics.IMappedAttributeValueLookup
-import de.mctelemetry.core.api.metrics.IObservationRecorder
-import de.mctelemetry.core.api.metrics.IObservationSource
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
-import de.mctelemetry.core.api.metrics.invoke
+import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
+import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.observations.IObservationRecorder
+import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos

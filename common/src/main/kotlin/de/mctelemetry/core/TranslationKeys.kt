@@ -1,8 +1,8 @@
 package de.mctelemetry.core
 
-import de.mctelemetry.core.api.metrics.IInstrumentDefinition
-import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 

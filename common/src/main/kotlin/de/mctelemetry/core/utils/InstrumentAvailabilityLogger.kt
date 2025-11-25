@@ -1,16 +1,24 @@
 package de.mctelemetry.core.utils
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.IMetricDefinition
-import de.mctelemetry.core.api.metrics.managar.IInstrumentAvailabilityCallback
-import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
+import de.mctelemetry.core.api.IMetricDefinition
+import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
+import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import org.apache.logging.log4j.Level
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 
 internal class InstrumentAvailabilityLogger(
     val context: Any,
     val local: Boolean,
     val level: Level = Level.TRACE,
 ) : IInstrumentAvailabilityCallback<IMetricDefinition> {
+
+    companion object {
+
+        private val subLogger: Logger =
+            LogManager.getLogger("${OTelCoreMod.MOD_ID}.${InstrumentAvailabilityLogger::class.java.simpleName}")
+    }
 
     override fun instrumentAdded(
         manager: IInstrumentManager,
@@ -19,7 +27,7 @@ internal class InstrumentAvailabilityLogger(
     ) {
         if (local) {
             if (context === manager) {
-                OTelCoreMod.logger.log(
+                subLogger.log(
                     level,
                     "Local instrumentAdded-{} for {} of {}",
                     phase,
@@ -27,7 +35,7 @@ internal class InstrumentAvailabilityLogger(
                     manager,
                 )
             } else {
-                OTelCoreMod.logger.log(
+                subLogger.log(
                     level,
                     "Local instrumentAdded-{} for {} of {} in {}",
                     phase,
@@ -38,7 +46,7 @@ internal class InstrumentAvailabilityLogger(
             }
         } else {
             if (context === manager) {
-                OTelCoreMod.logger.log(
+                subLogger.log(
                     level,
                     "Global instrumentAdded-{} for {} of {}",
                     phase,
@@ -46,7 +54,7 @@ internal class InstrumentAvailabilityLogger(
                     manager,
                 )
             } else {
-                OTelCoreMod.logger.log(
+                subLogger.log(
                     level,
                     "Global instrumentAdded-{} for {} of {} in {}",
                     phase,
@@ -65,7 +73,7 @@ internal class InstrumentAvailabilityLogger(
     ) {
         if (local) {
             if (context === manager) {
-                OTelCoreMod.logger.log(
+                subLogger.log(
                     level,
                     "Local instrumentRemoved-{} for {} of {}",
                     phase,
@@ -73,7 +81,7 @@ internal class InstrumentAvailabilityLogger(
                     manager,
                 )
             } else {
-                OTelCoreMod.logger.log(
+                subLogger.log(
                     level,
                     "Local instrumentRemoved-{} for {} of {} in {}",
                     phase,
@@ -84,7 +92,7 @@ internal class InstrumentAvailabilityLogger(
             }
         } else {
             if (context === manager) {
-                OTelCoreMod.logger.log(
+                subLogger.log(
                     level,
                     "Global instrumentRemoved-{} for {} of {}",
                     phase,
@@ -92,7 +100,7 @@ internal class InstrumentAvailabilityLogger(
                     manager,
                 )
             } else {
-                OTelCoreMod.logger.log(
+                subLogger.log(
                     level,
                     "Global instrumentRemoved-{} for {} of {} in {}",
                     phase,

@@ -2,10 +2,16 @@ package de.mctelemetry.core.fabric
 
 import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.commands.types.ArgumentTypes
+import de.mctelemetry.core.fabric.instruments.manager.client.register
+import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
+import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
+import dev.architectury.platform.Platform
+import net.fabricmc.api.EnvType
 import net.fabricmc.api.ModInitializer
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder
@@ -25,13 +31,22 @@ object OTelCoreModFabric : ModInitializer {
 
     private fun registerCallbacks() {
         ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register { blockEntity, level ->
-            if(blockEntity !is ObservationSourceContainerBlockEntity) return@register
+            if (blockEntity !is ObservationSourceContainerBlockEntity) return@register
             OTelCoreMod.logger.trace(
                 "Detected BlockEntityLoad-Event for {}, scheduling tick at {}",
                 blockEntity,
                 blockEntity.blockPos
             )
             level.scheduleTick(blockEntity.blockPos, blockEntity.blockState.block, 1)
+        }
+        if (Platform.getEnv() == EnvType.CLIENT) {
+            ClientInstrumentMetaManager.register()
+            ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
+                ObservationRequestManagerClient.onClientDisconnecting()
+            }
+            ClientPlayConnectionEvents.INIT.register { _, _ ->
+                ObservationRequestManagerClient.onClientConnecting()
+            }
         }
     }
 

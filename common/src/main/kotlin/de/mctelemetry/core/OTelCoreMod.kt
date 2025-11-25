@@ -1,20 +1,30 @@
 package de.mctelemetry.core
 
 import com.mojang.serialization.Lifecycle
-import de.mctelemetry.core.api.metrics.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
-import de.mctelemetry.core.api.metrics.NativeAttributeKeyTypes
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.items.OTelCoreModItems
-import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
 import de.mctelemetry.core.commands.metrics.CommandMetrics
-import de.mctelemetry.core.metrics.builtin.BuiltinInstruments
-import de.mctelemetry.core.metrics.manager.InstrumentMetaManager
-import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.instruments.builtin.BuiltinInstruments
+import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
+import de.mctelemetry.core.network.instrumentsync.A2AInstrumentAddedPayload
+import de.mctelemetry.core.network.instrumentsync.A2AInstrumentRemovedPayload
+import de.mctelemetry.core.network.instrumentsync.C2SAllInstrumentRequestPayload
+import de.mctelemetry.core.network.instrumentsync.S2CAllInstrumentsPayload
+import de.mctelemetry.core.network.instrumentsync.S2CReservedNameAddedPayload
+import de.mctelemetry.core.network.instrumentsync.S2CReservedNameRemovedPayload
+import de.mctelemetry.core.network.instrumentsync.SyncSubscriptions
+import de.mctelemetry.core.network.observations.container.observationrequest.C2SObservationsRequestPayload
+import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerServer
+import de.mctelemetry.core.network.observations.container.observationrequest.S2CObservationsPayload
+import de.mctelemetry.core.network.observations.container.settings.C2SObservationSourceSettingsUpdatePayload
 import de.mctelemetry.core.observations.ObservationSources
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
@@ -32,7 +42,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.world.item.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import org.apache.logging.log4j.message.SimpleMessageFactory
 import java.util.Optional
 
 object OTelCoreMod {
@@ -62,7 +71,7 @@ object OTelCoreMod {
 
     fun registerCallbacks() {
 
-        InstrumentMetaManager.register()
+        ServerInstrumentMetaManager.register()
         BuiltinInstruments.register()
         CommandRegistrationEvent.EVENT.register { evt, ctx, _ ->
             evt.root.addChild(buildCommand("mcotel") {
@@ -71,6 +80,17 @@ object OTelCoreMod {
             })
         }
         ObservationSourceContainerBlock.RightClickBlockListener.register()
+        A2AInstrumentAddedPayload.register()
+        A2AInstrumentRemovedPayload.register()
+        C2SAllInstrumentRequestPayload.register()
+        S2CAllInstrumentsPayload.register()
+        S2CReservedNameAddedPayload.register()
+        S2CReservedNameRemovedPayload.register()
+        ObservationRequestManagerServer.registerListeners()
+        S2CObservationsPayload.register()
+        C2SObservationsRequestPayload.register()
+        C2SObservationSourceSettingsUpdatePayload.register()
+        SyncSubscriptions.register()
     }
 
     fun registerContent() {
