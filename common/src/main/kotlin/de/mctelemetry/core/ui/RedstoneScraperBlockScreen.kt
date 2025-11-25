@@ -1,10 +1,11 @@
 package de.mctelemetry.core.ui
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.utils.childByIdOrThrow
+import de.mctelemetry.core.utils.childWidgetByIdOrThrow
 import io.wispforest.owo.ui.base.BaseUIModelScreen
 import io.wispforest.owo.ui.component.ButtonComponent
 import io.wispforest.owo.ui.container.FlowLayout
-import io.wispforest.owo.ui.core.Component
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.Minecraft
@@ -44,10 +45,7 @@ class RedstoneScraperBlockScreen : BaseUIModelScreen<FlowLayout>(
     )
 
     override fun build(rootComponent: FlowLayout) {
-        val list = rootComponent.childById(
-            FlowLayout::class.java as Class<Component>,
-            "list"
-        ) as FlowLayout
+        val list: FlowLayout = rootComponent.childByIdOrThrow("list")
 
         for (row in sources) {
             val template = model.expandTemplate(
@@ -58,10 +56,7 @@ class RedstoneScraperBlockScreen : BaseUIModelScreen<FlowLayout>(
 
             list.child(template)
 
-            val editButton = template.childById(
-                ButtonComponent::class.java as Class<Component>,
-                "observation-source-edit"
-            ) as ButtonComponent
+            val editButton: ButtonComponent = template.childWidgetByIdOrThrow("observation-source-edit")
             editButton.onPress {
                 Minecraft.getInstance().setScreen(RedstoneScraperBlockScreenDetails(this, row, metrics))
             }
