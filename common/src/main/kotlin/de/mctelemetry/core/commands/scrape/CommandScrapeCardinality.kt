@@ -33,16 +33,16 @@ class CommandScrapeCardinality(private val metricsAccessor: IMetricsAccessor?) {
 
     companion object {
 
-        fun analyzeCardinality(labelData: Iterable<Map<String, String>>): Map<String, Int>? {
-            val values: MutableMap<String, MutableSet<String>> = mutableMapOf()
+        fun <K,V> analyzeCardinality(labelData: Iterable<Map<K, V>>, missingValue: V?=null): Map<K, Int>? {
+            val values: MutableMap<K, MutableSet<V?>> = mutableMapOf()
             var hasData = false
             for (labels in labelData) {
                 (values.keys - labels.keys).forEach { missingKey ->
-                    values.getValue(missingKey).add("")
+                    values.getValue(missingKey).add(missingValue)
                 }
                 if (hasData) {
                     (labels.keys - values.keys).forEach { newKey ->
-                        values.getOrPut(newKey, ::mutableSetOf).add("")
+                        values.getOrPut(newKey, ::mutableSetOf).add(missingValue)
                     }
                 }
                 labels.forEach { (labelKey, labelValue) ->
@@ -109,7 +109,7 @@ class CommandScrapeCardinality(private val metricsAccessor: IMetricsAccessor?) {
             }
         val cardinalities: Map<String, Pair<Map<String, Int>, Long>> =
             data.mapValues { (_, value: MetricDataReadback) ->
-                val cardinality = analyzeCardinality(value.data.keys)
+                val cardinality = analyzeCardinality(value.data.keys, "")
                 if (cardinality == null) return@mapValues emptyMap<String, Int>() to 0L
                 return@mapValues cardinality to try {
                     (cardinality.values.fold(1L) { acc, i ->

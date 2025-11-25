@@ -1,11 +1,13 @@
 package de.mctelemetry.core.api.attributes
 
 @JvmInline
-value class MappedAttributeKeyMap<out T : Any> private constructor(val map: Map<MappedAttributeKeyInfo<*, *>, T>) : IMappedAttributeValueLookup {
+value class MappedAttributeKeyMap<out T : Any> private constructor(val map: Map<MappedAttributeKeyInfo<*, *>, T>) :
+        IMappedAttributeValueLookup,
+        Collection<MappedAttributeKeyValue<*, *>> {
 
     constructor() : this(emptyMap())
 
-    constructor(info: MappedAttributeKeyInfo<T,*>, value: T) : this(mapOf(info to value))
+    constructor(info: MappedAttributeKeyInfo<T, *>, value: T) : this(mapOf(info to value))
 
     constructor(entries: Collection<MappedAttributeKeyValue<T, *>>) : this(entries.associate { it.pair })
 
@@ -20,10 +22,43 @@ value class MappedAttributeKeyMap<out T : Any> private constructor(val map: Map<
     }
 
     override fun <T2 : Any> prepareLookup(info: MappedAttributeKeyInfo<T2, *>): ((MappedAttributeKeyInfo<T2, *>) -> T2)? {
-        if(info !in map) return null
+        if (info !in map) return null
         return this::getOrThrow
     }
 
     override val keys: Set<MappedAttributeKeyInfo<*, *>>
         get() = map.keys
+
+    override fun contains(element: MappedAttributeKeyValue<*, *>): Boolean {
+        return map[element.key] == element.value
+    }
+
+    override fun containsAll(elements: Collection<MappedAttributeKeyValue<*, *>>): Boolean {
+        return elements.all(this::contains)
+    }
+
+    override fun isEmpty(): Boolean {
+        return map.isEmpty()
+    }
+
+    override fun iterator(): Iterator<MappedAttributeKeyValue<T, *>> = IteratorImpl(map.iterator())
+
+    private class IteratorImpl<out T : Any>(private val baseIterator: Iterator<Map.Entry<MappedAttributeKeyInfo<*, *>, T>>) :
+            Iterator<MappedAttributeKeyValue<T, *>> {
+
+        override fun hasNext(): Boolean {
+            return baseIterator.hasNext()
+        }
+
+        override fun next(): MappedAttributeKeyValue<T, *> {
+            return baseIterator.next().let {
+                // type matches because values of containing map are restricted by constructor
+                @Suppress("UNCHECKED_CAST")
+                MappedAttributeKeyValue(it.key, it.value) as MappedAttributeKeyValue<T, *>
+            }
+        }
+    }
+
+    override val size: Int
+        get() = map.size
 }

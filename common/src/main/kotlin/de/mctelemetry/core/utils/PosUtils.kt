@@ -5,6 +5,7 @@ import net.minecraft.core.GlobalPos
 import net.minecraft.core.Vec3i
 import net.minecraft.resources.ResourceKey
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.phys.Vec3
 
 
@@ -20,3 +21,14 @@ operator fun Vec3i.component3(): Int = z
 operator fun Vec3.component1(): Double = x
 operator fun Vec3.component2(): Double = y
 operator fun Vec3.component3(): Double = y
+
+val BlockEntity.globalPos: GlobalPos?
+    get() = level?.let {
+        GlobalPos(it.dimension(), blockPos)
+    }
+
+val BlockEntity.globalPosOrThrow: GlobalPos
+    get() = GlobalPos(
+        (level ?: throw NullPointerException("Entity $this not part of a level")).dimension(),
+        blockPos
+    )

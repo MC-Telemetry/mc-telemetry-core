@@ -1,4 +1,4 @@
-package de.mctelemetry.core.ui
+package de.mctelemetry.core.ui.screens
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow

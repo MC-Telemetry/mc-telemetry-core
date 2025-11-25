@@ -56,8 +56,17 @@ fun <T : Any, R : Any> IMappedAttributeKeyType<T, *>.convertTo(supertype: IMappe
         ?: supertype.convertDirectlyFrom(this, value)
 }
 
+
+fun <T : Any, R : Any> MappedAttributeKeyValue<T, *>.convertTo(supertype: IMappedAttributeKeyType<R, *>): R? {
+    return (info.type as IMappedAttributeKeyType<T, *>).convertTo(supertype, value)
+}
+
 fun <T : Any, R : Any> IMappedAttributeKeyType<R, *>.convertFrom(subtype: IMappedAttributeKeyType<T, *>, value: T): R? {
     return subtype.convertTo(this, value)
+}
+
+fun <T : Any, R : Any> IMappedAttributeKeyType<R, *>.convertFrom(subtypeValue: MappedAttributeKeyValue<T, *>): R? {
+    return subtypeValue.convertTo(this)
 }
 
 private fun IMappedAttributeKeyType<*, *>.canConvertFormatTo(supertype: IMappedAttributeKeyType<*, *>): Boolean {
@@ -75,6 +84,9 @@ private fun <T : Any, R : Any> IMappedAttributeKeyType<T, *>.convertFormatTo(
         null
 }
 
-operator fun <T : Any, B : Any> IMappedAttributeKeyType<T, B>.invoke(name: String, savedData: CompoundTag?=null): MappedAttributeKeyInfo<T, B> {
+operator fun <T : Any, B : Any> IMappedAttributeKeyType<T, B>.invoke(
+    name: String,
+    savedData: CompoundTag? = null,
+): MappedAttributeKeyInfo<T, B> {
     return create(name, savedData)
 }

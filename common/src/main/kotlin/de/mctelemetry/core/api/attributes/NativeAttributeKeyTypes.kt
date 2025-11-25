@@ -122,6 +122,10 @@ object NativeAttributeKeyTypes {
         }
 
         override fun format(value: String): String = value
+
+        fun MappedAttributeKeyValue<*,*>.convertValueToString(): String {
+            return convertTo(StringType)!!
+        }
     }
 
     object BooleanType : IMappedAttributeKeyType<Boolean, Boolean> {

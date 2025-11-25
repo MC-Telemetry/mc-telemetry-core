@@ -18,6 +18,8 @@ sealed interface IObservationRecorder {
             source: IObservationSource<*, *>,
         ) = if (supportsFloating) observe(double, attributes, source)
         else observe(long, attributes, source)
+
+        fun onNewSource(source: IObservationSource<*, *>) {}
     }
 
     interface Resolved : IObservationRecorder {
@@ -32,5 +34,7 @@ sealed interface IObservationRecorder {
             source: IObservationSource<*, *>? = null,
         ) = if (supportsFloating) observe(double, attributes, source)
         else observe(long, attributes, source)
+
+        fun onNewSource(source: IObservationSource<*, *>) {}
     }
 }
