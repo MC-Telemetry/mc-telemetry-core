@@ -1,11 +1,14 @@
 package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.IObservationSource
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
-import de.mctelemetry.core.api.metrics.managar.IInstrumentManager
-import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
-import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.useInstrumentManagerWhenAvailable
+import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.useInstrumentManagerWhenAvailable
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
@@ -18,6 +21,9 @@ import net.minecraft.core.SectionPos
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
 import net.minecraft.nbt.Tag
+import net.minecraft.network.protocol.Packet
+import net.minecraft.network.protocol.game.ClientGamePacketListener
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
@@ -25,6 +31,7 @@ import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
@@ -39,7 +46,7 @@ abstract class ObservationSourceContainerBlockEntity(
     blockState: BlockState,
 ) : BlockEntity(blockEntityType, blockPos, blockState) {
 
-    private var container: BlockEntityObservationSourceContainer? = null
+    private var _container: BlockEntityObservationSourceContainer? = null
         set(value) {
             val oldValue = field
             if (oldValue === value) return
@@ -48,12 +55,18 @@ abstract class ObservationSourceContainerBlockEntity(
             }
             field = value
         }
+    val container: ObservationSourceContainer<*>
+        get() = _container ?: throw IllegalStateException("Container has not been initialized yet")
+    val containerIfInitialized: ObservationSourceContainer<*>?
+        get() = _container
 
     private var setupRun = false
     private var onLevelCallback: ((Level) -> Unit)? = null
 
-    internal val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>?
-        get() = container?.observationStates
+    val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>
+        get() = (_container ?: throw IllegalStateException("Container has not been initialized yet")).observationStates
+    val observationStatesIfInitialized: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>?
+        get() = _container?.observationStates
 
     protected val blockEntityType: BlockEntityType<*>
         get() = super.type
@@ -63,13 +76,13 @@ abstract class ObservationSourceContainerBlockEntity(
     override fun loadAdditional(compoundTag: CompoundTag, provider: HolderLookup.Provider) {
         super.loadAdditional(compoundTag, provider)
         val observationSourceLookup = provider.lookupOrThrow(OTelCoreModAPI.ObservationSources)
-        val container = this.container ?: (BlockEntityObservationSourceContainer(
+        val container = this._container ?: (BlockEntityObservationSourceContainer(
             observationSourceLookup
                 .listElements()
                 .map(Holder<IObservationSource<*, *>>::value)
                 .toList()
         ).also {
-            this.container = it
+            this._container = it
         })
         val level = level
         if (level == null) {
@@ -78,7 +91,7 @@ abstract class ObservationSourceContainerBlockEntity(
             require(onLevelCallback == null) { "onLevelCallback already set" }
             onLevelCallback = callback
         } else if (level.isClientSide) {
-            container.loadStatesFromTag(compoundTag, provider, IInstrumentManager.ReadonlyEmpty)
+            container.loadStatesFromTag(compoundTag, provider, null)
         } else {
             level as ServerLevel
             val manager = level.server.instrumentManager
@@ -93,11 +106,22 @@ abstract class ObservationSourceContainerBlockEntity(
 
     override fun saveAdditional(compoundTag: CompoundTag, provider: HolderLookup.Provider) {
         super.saveAdditional(compoundTag, provider)
-        container?.saveStatesToTag(compoundTag)
+        _container?.saveStatesToTag(compoundTag)
+    }
+
+    override fun getUpdateTag(provider: HolderLookup.Provider): CompoundTag {
+        val updateTag: CompoundTag = super.getUpdateTag(provider)
+        _container?.saveStatesToTag(updateTag)
+        return updateTag
+    }
+
+    override fun getUpdatePacket(): Packet<ClientGamePacketListener?>? {
+        return ClientboundBlockEntityDataPacket.create(this)
     }
 
     private fun updateState() {
-        val container = container ?: return
+        if (level?.isClientSide == true) return
+        val container = _container ?: return
         var targetState: ObservationSourceErrorState.Type? = null
         for (state in container.observationStates.values) {
             targetState = when (state.errorState) {
@@ -132,7 +156,7 @@ abstract class ObservationSourceContainerBlockEntity(
     }
 
     fun percussiveMaintenance(player: Player? = null) {
-        observationStates?.values?.forEach {
+        observationStates.values.forEach {
             it.resetErrorState()
         }
         updateState()
@@ -151,11 +175,11 @@ abstract class ObservationSourceContainerBlockEntity(
         runWithExceptionCleanup(cleanup = {
             setupRun = false
         }) {
-            val container = this.container ?: (BlockEntityObservationSourceContainer(
+            val container = this._container ?: (BlockEntityObservationSourceContainer(
                 level.registryAccess()
                     .registryOrThrow(OTelCoreModAPI.ObservationSources),
             ).also {
-                this.container = it
+                this._container = it
             })
             container.setup()
             if (!level.isClientSide) {
@@ -197,6 +221,7 @@ abstract class ObservationSourceContainerBlockEntity(
         val level = level!!
         if (!level.isClientSide) {
             if (level.isLoaded(blockPos)) {
+                level.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS)
                 level.scheduleTick(blockPos, blockState.block, 1)
             } else {
                 updateState()
@@ -212,7 +237,7 @@ abstract class ObservationSourceContainerBlockEntity(
 
     override fun setRemoved() {
         super.setRemoved()
-        val oldContainer = container
+        val oldContainer = _container
         try {
             if (oldContainer != null) {
                 for (state in oldContainer.observationStates.values) {
@@ -221,7 +246,7 @@ abstract class ObservationSourceContainerBlockEntity(
                 oldContainer.close()
             }
         } finally {
-            container = null
+            _container = null
         }
     }
 
@@ -262,6 +287,10 @@ abstract class ObservationSourceContainerBlockEntity(
             get() {
                 val level = level
                     ?: throw NullPointerException("BlockEntity not assigned to a level: ${this@ObservationSourceContainerBlockEntity}")
+                if (level.isClientSide) {
+                    return IClientWorldInstrumentManager.clientWorldInstrumentManager
+                        ?: throw NullPointerException("Instrument manager not initialized for client")
+                }
                 val server = level.server ?: throw NullPointerException("Level not bound to a server: $level")
                 return server.instrumentManager
                     ?: throw NullPointerException("Instrument manager not available for server: $server")
@@ -310,7 +339,7 @@ abstract class ObservationSourceContainerBlockEntity(
         fun loadStatesFromTag(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
-            instrumentManager: IInstrumentManager,
+            instrumentManager: IMutableInstrumentManager?,
         ) {
             loadAndApplyToStateTags(compoundTag, holderLookupProvider) { state, tag ->
                 val data = tag.getCompound("data")
@@ -331,7 +360,7 @@ abstract class ObservationSourceContainerBlockEntity(
             return { level ->
                 if (level.isClientSide) {
                     for (delayedCallback in delayedMap.values) {
-                        delayedCallback.invoke(IInstrumentManager.ReadonlyEmpty)
+                        delayedCallback.invoke(null)
                     }
                 } else {
                     (level as ServerLevel).server.useInstrumentManagerWhenAvailable { manager ->

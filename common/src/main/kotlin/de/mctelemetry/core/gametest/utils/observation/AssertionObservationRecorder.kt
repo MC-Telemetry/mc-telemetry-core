@@ -1,7 +1,7 @@
 package de.mctelemetry.core.gametest.utils.observation
 
-import de.mctelemetry.core.api.metrics.IObservationRecorder
-import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationRecorder
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.gametest.utils.assertFalseC
 import de.mctelemetry.core.gametest.utils.assertTrueC
 import de.mctelemetry.core.gametest.utils.assertValueEqualC

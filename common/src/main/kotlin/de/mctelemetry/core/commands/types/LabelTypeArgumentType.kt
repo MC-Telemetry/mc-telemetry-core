@@ -2,8 +2,8 @@ package de.mctelemetry.core.commands.types
 
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.OTelCoreModAPI
 import net.minecraft.commands.CommandBuildContext
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.arguments.ResourceArgument

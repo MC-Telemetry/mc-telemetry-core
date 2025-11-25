@@ -5,7 +5,7 @@ import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.commands.types.LabelStringValueMapArgumentType
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
+import de.mctelemetry.core.api.instruments.manager.IMetricsAccessor
 import de.mctelemetry.core.commands.types.get
 import de.mctelemetry.core.commands.types.getValue
 import de.mctelemetry.core.metrics.exporters.MetricValueReadback

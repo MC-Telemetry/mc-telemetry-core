@@ -1,7 +1,7 @@
 package de.mctelemetry.core.commands.scrape
 
 import com.mojang.brigadier.tree.CommandNode
-import de.mctelemetry.core.api.metrics.managar.IMetricsAccessor
+import de.mctelemetry.core.api.instruments.manager.IMetricsAccessor
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
 import net.minecraft.commands.CommandSourceStack

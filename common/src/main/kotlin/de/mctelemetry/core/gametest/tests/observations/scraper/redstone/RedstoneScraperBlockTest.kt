@@ -161,7 +161,7 @@ object RedstoneScraperBlockTest {
             helper.assertBlockEntityDataC<ObservationSourceContainerBlockEntity>(
                 BasePos,
                 { "Expected to be in a warning state" }) {
-                val states = helper.assertNotNullC(it.observationStates, "observationStates")
+                val states = helper.assertNotNullC(it.observationStatesIfInitialized, "observationStates")
                 helper.assertFalseC(states.isEmpty(), "Expected observationStates to not be empty")
                 states.forEach { (source, state) ->
                     helper.assertValueEqualC(

@@ -2,12 +2,15 @@ package de.mctelemetry.core.neoforge
 
 import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.commands.types.ArgumentTypes
-import de.mctelemetry.core.api.metrics.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
+import de.mctelemetry.core.neoforge.instruments.manager.client.register
+import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import net.minecraft.Util
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.commands.synchronization.ArgumentTypeInfos
@@ -15,10 +18,12 @@ import net.minecraft.core.WritableRegistry
 import net.minecraft.core.registries.Registries
 import net.minecraft.world.level.chunk.status.ChunkStatus
 import net.neoforged.fml.common.Mod
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent
 import net.neoforged.neoforge.event.level.ChunkEvent
 import net.neoforged.neoforge.registries.DeferredRegister
 import net.neoforged.neoforge.registries.NewRegistryEvent
 import net.neoforged.neoforge.registries.RegistryBuilder
+import thedarkcolour.kotlinforforge.neoforge.forge.DIST
 import thedarkcolour.kotlinforforge.neoforge.forge.FORGE_BUS
 import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
 
@@ -51,7 +56,15 @@ object OTelCoreModNeoForge {
 
     private fun registerCallbacks() {
         MOD_BUS.addListener(::createRegistries)
-
+        if (DIST.isClient) {
+            ClientInstrumentMetaManager.register()
+            FORGE_BUS.addListener { event: ClientPlayerNetworkEvent.LoggingIn ->
+                ObservationRequestManagerClient.onClientConnecting()
+            }
+            FORGE_BUS.addListener { event: ClientPlayerNetworkEvent.LoggingOut ->
+                ObservationRequestManagerClient.onClientDisconnecting()
+            }
+        }
         FORGE_BUS.addListener(ChunkEvent.Load::class.java) { event ->
             if (event.chunk.highestGeneratedStatus.isOrAfter(ChunkStatus.FULL)) {
                 event.chunk.findBlocks({ state ->

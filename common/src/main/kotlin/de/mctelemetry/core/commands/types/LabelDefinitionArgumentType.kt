@@ -4,9 +4,9 @@ import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.metrics.IMappedAttributeKeyType
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.metrics.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.utils.Validators
 import net.minecraft.commands.CommandBuildContext
 import net.minecraft.commands.CommandSourceStack

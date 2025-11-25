@@ -4,9 +4,9 @@ import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.tree.CommandNode
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.metrics.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.metrics.managar.IWorldInstrumentManager.Companion.instrumentManager
-import de.mctelemetry.core.api.metrics.managar.gaugeWorldInstrument
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.gaugeWorldInstrument
 import de.mctelemetry.core.commands.types.LabelDefinitionArgumentType
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
 import de.mctelemetry.core.commands.types.getValue
