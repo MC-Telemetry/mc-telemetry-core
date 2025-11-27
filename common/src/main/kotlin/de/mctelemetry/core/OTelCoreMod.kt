@@ -30,9 +30,11 @@ import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
 import dev.architectury.event.events.common.CommandRegistrationEvent
+import dev.architectury.platform.Platform
 import dev.architectury.registry.CreativeTabRegistry
 import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
+import dev.architectury.utils.Env
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.metrics.Meter
 import net.minecraft.core.RegistrationInfo
@@ -97,7 +99,9 @@ object OTelCoreMod {
     fun registerContent() {
         TABS.register()
 
-        SuggestingTextBoxComponent.register()
+        if (Platform.getEnvironment() == Env.CLIENT) {
+            SuggestingTextBoxComponent.register()
+        }
 
         OTelCoreModBlocks.init()
         OTelCoreModBlockEntityTypes.init()
@@ -110,7 +114,8 @@ object OTelCoreMod {
     }
 
     fun registerAttributeTypes(registry: WritableRegistry<IMappedAttributeKeyType<*, *>>?) {
-        val attributeTypes: List<IMappedAttributeKeyType<*, *>> = NativeAttributeKeyTypes.ALL + BuiltinAttributeKeyTypes.ALL
+        val attributeTypes: List<IMappedAttributeKeyType<*, *>> =
+            NativeAttributeKeyTypes.ALL + BuiltinAttributeKeyTypes.ALL
         if (registry == null) {
             DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.AttributeTypeMappings).apply {
                 for (nativeType in attributeTypes) {
