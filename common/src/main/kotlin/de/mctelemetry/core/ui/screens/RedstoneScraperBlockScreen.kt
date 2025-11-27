@@ -1,6 +1,7 @@
 package de.mctelemetry.core.ui.screens
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
@@ -122,7 +123,10 @@ class RedstoneScraperBlockScreen(
             val template = model.expandTemplate(
                 FlowLayout::class.java,
                 "list-row@${OTelCoreMod.MOD_ID}:source-listing",
-                mapOf("observation-source-name" to source.id.location().toString())
+                mapOf()
+            )
+            template.childByIdOrThrow<LabelComponent>("observation-source-name").text(
+                TranslationKeys.ObservationSources[source]
             )
             list.child(template)
 
