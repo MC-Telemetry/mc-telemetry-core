@@ -56,7 +56,8 @@ class RedstoneScraperBlockScreen(
         OTelCoreMod.logger.trace("Opened new coroutine scope for {}", this)
     }
 
-    private val observationValuePreviews: MutableMap<IObservationSource<*,*>, ObservationValuePreviewDataComponent> = mutableMapOf()
+    private val observationValuePreviews: MutableMap<IObservationSource<*, *>, ObservationValuePreviewDataComponent> =
+        mutableMapOf()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun currentValue(): ObservationSourceObservationMap? {
@@ -73,8 +74,19 @@ class RedstoneScraperBlockScreen(
     private fun acceptObservations(observationBundle: ObservationSourceObservationMap) {
         for ((source, observations) in observationBundle) {
             val preview = observationValuePreviews.getOrElse(source) {
-                OTelCoreMod.logger.warn("Could not find matching value preview for received observation source {}", source)
-                continue
+                if (observationValuePreviews.isEmpty()) {
+                    OTelCoreMod.logger.trace(
+                        "No value previews initialized while applying data for observation source {}, skipping further data",
+                        source
+                    )
+                    return
+                } else {
+                    OTelCoreMod.logger.warn(
+                        "Could not find matching value preview for received observation source {}",
+                        source
+                    )
+                    continue
+                }
             }
             preview.value = observations
         }
@@ -144,7 +156,7 @@ class RedstoneScraperBlockScreen(
         }
 
         observationFlowRef.get()?.let { observationFlow ->
-            if(!observationFlow.isCompleted) return@let
+            if (!observationFlow.isCompleted) return@let
             scope.launch {
                 acceptObservations(observationFlow.await().value)
             }
