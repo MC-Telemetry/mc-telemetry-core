@@ -60,7 +60,6 @@
             <flow-layout direction="horizontal">
                 <children>
                     <label id="observation-source-name">
-                        <text>{{observation-source-name}}</text>
                         <sizing>
                             <horizontal method="fill">68</horizontal>
                         </sizing>

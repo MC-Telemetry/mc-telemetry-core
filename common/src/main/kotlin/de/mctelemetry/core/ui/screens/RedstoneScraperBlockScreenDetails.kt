@@ -1,6 +1,7 @@
 package de.mctelemetry.core.ui.screens
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
@@ -157,7 +158,7 @@ class RedstoneScraperBlockScreenDetails(
         }
 
         val observationSourceNameLabel = rootComponent.childByIdOrThrow<LabelComponent>("observation-source-name")
-        observationSourceNameLabel.text(buildComponent(source.id.location().toString()) {})
+        observationSourceNameLabel.text(TranslationKeys.ObservationSources[source])
 
         val metricNameTextBox = rootComponent.childWidgetByIdOrThrow<SuggestingTextBoxComponent>("metric-name")
         instrumentNameObservable.observe {
