@@ -14,10 +14,10 @@ interface IInstrumentDefinition : IMetricDefinition {
     @JvmRecord
     data class Record(
         override val name: String,
-        override val description: String,
-        override val unit: String,
-        override val attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-        override val supportsFloating: Boolean,
+        override val description: String = "",
+        override val unit: String = "",
+        override val attributes: Map<String, MappedAttributeKeyInfo<*, *>> = emptyMap(),
+        override val supportsFloating: Boolean = false,
     ) : IInstrumentDefinition {
 
 
@@ -31,10 +31,10 @@ interface IInstrumentDefinition : IMetricDefinition {
 
         constructor(
             name: String,
-            description: String,
-            unit: String,
+            description: String = "",
+            unit: String = "",
             attributes: Collection<MappedAttributeKeyInfo<*, *>>,
-            supportsFloating: Boolean,
+            supportsFloating: Boolean = false,
         ) : this(
             name,
             description,

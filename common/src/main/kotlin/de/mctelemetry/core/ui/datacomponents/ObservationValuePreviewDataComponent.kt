@@ -8,7 +8,6 @@ import de.mctelemetry.core.network.observations.container.observationrequest.Rec
 import de.mctelemetry.core.network.observations.container.observationrequest.RecordedObservations
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder
 import de.mctelemetry.core.utils.dsl.components.append
-import de.mctelemetry.core.utils.dsl.components.onHoverShowText
 import de.mctelemetry.core.utils.dsl.components.style
 import io.wispforest.owo.ui.component.LabelComponent
 import net.minecraft.network.chat.Component
@@ -28,47 +27,54 @@ class ObservationValuePreviewDataComponent(
         updateComponentValue(null)
     }
 
+    private data class TextTooltipPair(val textComponent: Component, val tooltipComponent: Component? = null)
+
     private fun updateComponentValue(value: RecordedObservations?) {
-        if (value == null) {
-            label.text(pendingValueComponent)
+        val (textComponent, tooltipComponent) = if (value == null) {
+            pendingValueComponentPair
         } else {
             val (_, observationMap) = value
             val cardinalities =
                 CommandScrapeCardinality.analyzeCardinality(observationMap.values.map { it.attributes.map })
             if (cardinalities == null) {
-                label.text(noValueComponent)
+                noValueComponentPair
             } else {
                 // analyzeCardinality returns non-null -> observationMap not empty
                 val cardinalitiesWithoutCommon = cardinalities.filterValues { it > 1 }
                 if (cardinalitiesWithoutCommon.isEmpty()) {
-                    label.text(directComponentForValue(observationMap.values.first()))
+                    directComponentForValue(observationMap.values.first())
                 } else {
-                    label.text(
-                        componentForMultipleValues(
-                            observationMap.values,
-                            cardinalities,
-                            cardinalitiesWithoutCommon,
-                        )
+                    componentForMultipleValues(
+                        observationMap.values,
+                        cardinalities,
+                        cardinalitiesWithoutCommon,
                     )
                 }
             }
+        }
+        label.text(textComponent)
+        if (tooltipComponent != null) {
+            label.tooltip(tooltipComponent)
+        } else {
+            label.tooltip(emptyList<Component>())
         }
     }
 
     companion object {
 
-        private val pendingValueComponent = IComponentDSLBuilder.buildComponent("???") {
-            style {
-                isObfuscated = true
-                onHoverShowText("Pending observation-data") //TODO: use translatable component
-            }
-        }
+        private val pendingValueComponentPair = TextTooltipPair(
+            IComponentDSLBuilder.buildComponent("???") {
+                style {
+                    isObfuscated = true
+                }
+            },
+            IComponentDSLBuilder.buildComponent("Pending observation-data") {}//TODO: use translatable component
+        )
 
-        private val noValueComponent = IComponentDSLBuilder.buildComponent("∅") {
-            style {
-                onHoverShowText("No observations") //TODO: use translatable component
-            }
-        }
+        private val noValueComponentPair = TextTooltipPair(
+            IComponentDSLBuilder.buildComponent("∅") {},
+            IComponentDSLBuilder.buildComponent("No observations") {}//TODO: use translatable component
+        )
 
         private fun attributeMapListing(
             map: MappedAttributeKeyMap<*>,
@@ -112,7 +118,7 @@ class ObservationValuePreviewDataComponent(
                     }
                 } else {
                     if (value.hasDouble) {
-                        append(String.format("%.2f",value.doubleValue))
+                        append(String.format("%.2f", value.doubleValue))
                     } else if (value.hasLong) {
                         append(value.longValue.toString())
                     }
@@ -163,16 +169,14 @@ class ObservationValuePreviewDataComponent(
             }
         }
 
-        private fun directComponentForValue(value: RecordedObservationPoint): Component {
-            return IComponentDSLBuilder.buildComponent {
-                append(valueComponent(value, details = false))
-                style {
-                    onHoverShowText {
-                        append(valueComponent(value, details = true))
-                        append(attributeMapListing(value.attributes))
-                    }
+        private fun directComponentForValue(value: RecordedObservationPoint): TextTooltipPair {
+            return TextTooltipPair(
+                textComponent = valueComponent(value, details = false),
+                tooltipComponent = IComponentDSLBuilder.buildComponent {
+                    append(valueComponent(value, details = true))
+                    append(attributeMapListing(value.attributes))
                 }
-            }
+            )
         }
 
         private fun componentForMultipleValues(
@@ -180,8 +184,8 @@ class ObservationValuePreviewDataComponent(
             cardinalities: Map<MappedAttributeKeyInfo<*, *>, Int>,
             cardinalitiesWithoutCommon: Map<MappedAttributeKeyInfo<*, *>, Int>,
             tooltipValuePointLimit: Int = 10,
-        ): Component {
-            return IComponentDSLBuilder.buildComponent {
+        ): TextTooltipPair {
+            val textComponent = IComponentDSLBuilder.buildComponent {
                 append("[")
                 for ((idx, cardinality) in cardinalities.values.withIndex()) {
                     if (idx != 0) {
@@ -190,35 +194,34 @@ class ObservationValuePreviewDataComponent(
                     append(cardinality.toString())
                 }
                 append("]")
-                style {
-                    onHoverShowText {
-                        val commonAttributeKeys: Set<MappedAttributeKeyInfo<*, *>>
-                        if (cardinalitiesWithoutCommon.size != cardinalities.size) {
-                            val commonAttributeValues: MappedAttributeKeyMap<*> = MappedAttributeKeyMap(
-                                values.first().attributes.filter { it.info !in cardinalitiesWithoutCommon }
-                            )
-                            commonAttributeKeys = commonAttributeValues.keys
-                            append(
-                                attributeMapListing(
-                                    commonAttributeValues,
-                                    baseContent = "Common attributes:"
-                                )
-                            )
-                            append("\n")
-                        } else {
-                            commonAttributeKeys = emptySet()
-                        }
-                        append(
-                            linearAttributeValuesListing(
-                                values,
-                                commonAttributes = commonAttributeKeys,
-                                limit = tooltipValuePointLimit,
-                                baseContent = "Values:"
-                            )
-                        )
-                    }
-                }
             }
+            val tooltipComponent = IComponentDSLBuilder.buildComponent {
+                val commonAttributeKeys: Set<MappedAttributeKeyInfo<*, *>>
+                if (cardinalitiesWithoutCommon.size != cardinalities.size) {
+                    val commonAttributeValues: MappedAttributeKeyMap<*> = MappedAttributeKeyMap(
+                        values.first().attributes.filter { it.info !in cardinalitiesWithoutCommon }
+                    )
+                    commonAttributeKeys = commonAttributeValues.keys
+                    append(
+                        attributeMapListing(
+                            commonAttributeValues,
+                            baseContent = "Common attributes:"
+                        )
+                    )
+                    append("\n")
+                } else {
+                    commonAttributeKeys = emptySet()
+                }
+                append(
+                    linearAttributeValuesListing(
+                        values,
+                        commonAttributes = commonAttributeKeys,
+                        limit = tooltipValuePointLimit,
+                        baseContent = "Values:"
+                    )
+                )
+            }
+            return TextTooltipPair(textComponent, tooltipComponent)
         }
     }
 }

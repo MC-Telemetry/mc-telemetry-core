@@ -16,11 +16,11 @@ interface IWorldInstrumentDefinition : IInstrumentDefinition {
     @JvmRecord
     data class Record(
         override val name: String,
-        override val description: String,
-        override val unit: String,
-        override val attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-        override val supportsFloating: Boolean,
-        override val persistent: Boolean,
+        override val description: String = "",
+        override val unit: String = "",
+        override val attributes: Map<String, MappedAttributeKeyInfo<*, *>> = emptyMap(),
+        override val supportsFloating: Boolean = false,
+        override val persistent: Boolean = false,
     ) : IWorldInstrumentDefinition {
 
 
@@ -34,11 +34,11 @@ interface IWorldInstrumentDefinition : IInstrumentDefinition {
 
         constructor(
             name: String,
-            description: String,
-            unit: String,
+            description: String = "",
+            unit: String = "",
             attributes: Collection<MappedAttributeKeyInfo<*, *>>,
-            supportsFloating: Boolean,
-            persistent: Boolean,
+            supportsFloating: Boolean = false,
+            persistent: Boolean = false,
         ) : this(
             name,
             description,
@@ -110,13 +110,16 @@ interface IWorldInstrumentDefinition : IInstrumentDefinition {
             internal fun encodeInterface(bb: RegistryFriendlyByteBuf, v: IWorldInstrumentDefinition) {
                 encodeAsWorldRecord(bb, v)
             }
+
             internal fun encodeAsWorldRecord(bb: RegistryFriendlyByteBuf, v: IWorldInstrumentDefinition) {
                 IInstrumentDefinition.Record.encodeAsSimpleRecord(bb, v)
                 bb.writeBoolean(v.persistent)
             }
+
             internal fun decodeInterface(bb: RegistryFriendlyByteBuf): IWorldInstrumentDefinition {
                 return decodeAsWorldRecord(bb)
             }
+
             internal fun decodeAsWorldRecord(bb: RegistryFriendlyByteBuf): IWorldInstrumentDefinition {
                 val baseRecord = IInstrumentDefinition.Record.decodeAsSimpleRecord(bb)
                 val persistent = bb.readBoolean()

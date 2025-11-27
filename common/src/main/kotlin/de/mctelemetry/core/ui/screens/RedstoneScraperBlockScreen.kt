@@ -1,6 +1,7 @@
 package de.mctelemetry.core.ui.screens
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
@@ -34,15 +35,6 @@ import net.minecraft.core.GlobalPos
 import net.minecraft.resources.ResourceLocation
 import java.util.concurrent.atomic.AtomicReference
 
-data class DemoObservationSource(
-    var name: String,
-    var value: String,
-    var attributes: List<DemoObservationSourceAttribute>,
-    var metric: String = "",
-)
-
-data class DemoObservationSourceAttribute(var name: String)
-
 @Environment(EnvType.CLIENT)
 class RedstoneScraperBlockScreen(
     private val globalPos: GlobalPos,
@@ -65,13 +57,7 @@ class RedstoneScraperBlockScreen(
         OTelCoreMod.logger.trace("Opened new coroutine scope for {}", this)
     }
 
-    private val observationValuePreviews: MutableMap<String, ObservationValuePreviewDataComponent> = mutableMapOf()
-
-    val sources = listOf(
-        DemoObservationSource("mcotelcore:redstone_scraper.comparator", "12", listOf()),
-        DemoObservationSource("mcotelcore:redstone_scraper.direct_power", "23", listOf()),
-        DemoObservationSource("mcotelcore:redstone_scraper.power", "34", listOf()),
-    )
+    private val observationValuePreviews: MutableMap<IObservationSource<*,*>, ObservationValuePreviewDataComponent> = mutableMapOf()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun currentValue(): ObservationSourceObservationMap? {
@@ -93,8 +79,7 @@ class RedstoneScraperBlockScreen(
             observationFlow
                 .onEach { observationBundle ->
                     for ((source, observations) in observationBundle) {
-                        val key = source.id.location().toString()
-                        val preview = observationValuePreviews.getOrElse(key) { continue }
+                        val preview = observationValuePreviews.getOrElse(source) { continue }
                         preview.value = observations
                     }
                 }
@@ -133,21 +118,21 @@ class RedstoneScraperBlockScreen(
     override fun build(rootComponent: FlowLayout) {
         val list: FlowLayout = rootComponent.childByIdOrThrow("list")
 
-        for (row in sources) {
+        for ((source, state) in observationSourceContainer.observationStates) {
             val template = model.expandTemplate(
                 FlowLayout::class.java,
                 "list-row@${OTelCoreMod.MOD_ID}:source-listing",
-                mapOf("observation-source-name" to row.name, "observation-source-value" to row.value)
+                mapOf("observation-source-name" to source.id.location().toString())
             )
             list.child(template)
 
-            observationValuePreviews[row.name] = ObservationValuePreviewDataComponent(
+            observationValuePreviews[source] = ObservationValuePreviewDataComponent(
                 template.childByIdOrThrow<LabelComponent>("observation-source-value")
             )
 
             val editButton: ButtonComponent = template.childWidgetByIdOrThrow("observation-source-edit")
             editButton.onPress {
-                Minecraft.getInstance().setScreen(RedstoneScraperBlockScreenDetails(this, row))
+                Minecraft.getInstance().setScreen(RedstoneScraperBlockScreenDetails(this, globalPos, state))
             }
         }
     }
