@@ -53,11 +53,38 @@
                         </mcotelcore.suggesting-text-box>
 
                         <scroll direction="vertical">
-                            <flow-layout direction="vertical" id="list">
+                            <flow-layout direction="vertical" id="attribute-mapping">
                                 <children>
-                                    <label>
-                                        <text>test</text>
-                                    </label>
+                                    <grid-layout rows="2" columns="2">
+                                        <children>
+                                            <label row="0" column="0">
+                                                <text>1,1</text>
+                                                <horizontal-text-alignment>center</horizontal-text-alignment>
+                                                <vertical-text-alignment>center</vertical-text-alignment>
+                                            </label>
+                                            <label row="0" column="1">
+                                                <text>1,2</text>
+                                                <horizontal-text-alignment>center</horizontal-text-alignment>
+                                                <vertical-text-alignment>center</vertical-text-alignment>
+                                            </label>
+                                            <label row="1" column="0">
+                                                <text>2,1</text>
+                                                <horizontal-text-alignment>center</horizontal-text-alignment>
+                                                <vertical-text-alignment>center</vertical-text-alignment>
+                                            </label>
+                                            <label row="1" column="1">
+                                                <text>2,2</text>
+                                                <horizontal-text-alignment>center</horizontal-text-alignment>
+                                                <vertical-text-alignment>center</vertical-text-alignment>
+                                            </label>
+                                        </children>
+                                        <horizontal-alignment>center</horizontal-alignment>
+                                        <vertical-alignment>center</vertical-alignment>
+                                        <sizing>
+                                            <horizontal method="fill">100</horizontal>
+                                            <vertical method="fill">100</vertical>
+                                        </sizing>
+                                    </grid-layout>
                                 </children>
 
                                 <padding>

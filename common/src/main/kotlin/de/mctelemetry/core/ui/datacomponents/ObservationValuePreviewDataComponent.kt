@@ -201,7 +201,7 @@ class ObservationValuePreviewDataComponent(
                     val commonAttributeValues: MappedAttributeKeyMap<*> = MappedAttributeKeyMap(
                         values.first().attributes.filter { it.info !in cardinalitiesWithoutCommon }
                     )
-                    commonAttributeKeys = commonAttributeValues.keys
+                    commonAttributeKeys = commonAttributeValues.attributeKeys
                     append(
                         attributeMapListing(
                             commonAttributeValues,

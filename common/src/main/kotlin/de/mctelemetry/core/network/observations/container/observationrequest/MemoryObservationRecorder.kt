@@ -32,7 +32,7 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
     }
 
     override fun observe(value: Double, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>) {
-        val attributeValues = attributes.keys.map {
+        val attributeValues = attributes.attributeKeys.map {
             MappedAttributeKeyValue(
                 it,
                 attributes[it] ?: throw NoSuchElementException("Could not find $it in $attributes")
@@ -43,7 +43,7 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
     }
 
     override fun observe(value: Long, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>) {
-        val attributeValues = attributes.keys.map {
+        val attributeValues = attributes.attributeKeys.map {
             MappedAttributeKeyValue(
                 it,
                 attributes[it] ?: throw NoSuchElementException("Could not find $it in $attributes")
@@ -59,7 +59,7 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
         attributes: IMappedAttributeValueLookup,
         source: IObservationSource<*, *>,
     ) {
-        val attributeValues = attributes.keys.map {
+        val attributeValues = attributes.attributeKeys.map {
             MappedAttributeKeyValue(
                 it,
                 attributes[it] ?: throw NoSuchElementException("Could not find $it in $attributes")

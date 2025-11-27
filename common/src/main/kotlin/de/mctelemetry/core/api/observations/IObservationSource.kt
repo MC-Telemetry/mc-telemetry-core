@@ -1,5 +1,6 @@
 package de.mctelemetry.core.api.observations
 
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
 import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import net.minecraft.resources.ResourceKey
@@ -7,6 +8,8 @@ import net.minecraft.resources.ResourceKey
 interface IObservationSource<C, A : IMappedAttributeValueLookup> {
 
     val id: ResourceKey<IObservationSource<*, *>>
+
+    val keys: IMappedAttributeKeySet
 
     val contextType: Class<C>
 

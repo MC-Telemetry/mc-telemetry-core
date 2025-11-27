@@ -4,6 +4,8 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
+import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
@@ -17,14 +19,22 @@ import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
 import de.mctelemetry.core.utils.childByIdOrThrow
+import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import de.mctelemetry.core.utils.getValue
 import de.mctelemetry.core.utils.setValue
 import dev.architectury.networking.NetworkManager
 import io.wispforest.owo.ui.base.BaseUIModelScreen
 import io.wispforest.owo.ui.component.ButtonComponent
+import io.wispforest.owo.ui.component.Components
 import io.wispforest.owo.ui.component.LabelComponent
 import io.wispforest.owo.ui.component.TextBoxComponent
+import io.wispforest.owo.ui.container.Containers
 import io.wispforest.owo.ui.container.FlowLayout
+import io.wispforest.owo.ui.container.GridLayout
+import io.wispforest.owo.ui.container.ScrollContainer
+import io.wispforest.owo.ui.core.HorizontalAlignment
+import io.wispforest.owo.ui.core.Sizing
+import io.wispforest.owo.ui.core.VerticalAlignment
 import io.wispforest.owo.util.Observable
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
@@ -33,6 +43,7 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.core.GlobalPos
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.CommonColors
+import org.w3c.dom.Text
 import java.util.regex.PatternSyntaxException
 
 @Environment(EnvType.CLIENT)
@@ -84,8 +95,11 @@ class RedstoneScraperBlockScreenDetails(
             if (it != null && this.instrumentName != it.name)
                 this.instrumentName = it.name
         }
+
     }
 
+    val sourceAttributes: IMappedAttributeKeySet
+        get() = source.keys
     val instrumentAttributes: Map<String, MappedAttributeKeyInfo<*, *>>?
         get() = instrument?.attributes
     val mappingObservable: Observable<ObservationAttributeMapping> = Observable.of(mapping)
@@ -196,5 +210,29 @@ class RedstoneScraperBlockScreenDetails(
             onMetricNameTextBoxTextChanged(instrumentName)
         else
             metricNameTextBox.text(instrumentName)
+
+        test(rootComponent)
+    }
+
+    fun test(rootComponent: FlowLayout) {
+        val layout = rootComponent.childByIdOrThrow<FlowLayout>("attribute-mapping")
+        layout.clearChildren()
+
+        val grid = Containers.grid(Sizing.fill(100), Sizing.fill(100), 5, 5)
+
+        grid.horizontalAlignment(HorizontalAlignment.CENTER)
+        grid.verticalAlignment(VerticalAlignment.CENTER)
+
+        for (x in 1..5) {
+            for (y in 1..5) {
+                val label = Components.label(buildComponent {
+                    +"$x,$y"
+                })
+
+                grid.child(label, x - 1, y - 1)
+            }
+        }
+
+        layout.child(grid)
     }
 }
