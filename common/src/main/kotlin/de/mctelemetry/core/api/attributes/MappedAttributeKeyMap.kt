@@ -26,7 +26,7 @@ value class MappedAttributeKeyMap<out T : Any> private constructor(val map: Map<
         return this::getOrThrow
     }
 
-    override val keys: Set<MappedAttributeKeyInfo<*, *>>
+    override val attributeKeys: Set<MappedAttributeKeyInfo<*, *>>
         get() = map.keys
 
     override fun contains(element: MappedAttributeKeyValue<*, *>): Boolean {

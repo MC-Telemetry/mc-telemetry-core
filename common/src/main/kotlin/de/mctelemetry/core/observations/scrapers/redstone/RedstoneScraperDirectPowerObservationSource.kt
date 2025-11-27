@@ -6,6 +6,7 @@ import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
 import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.Direction
@@ -25,6 +26,8 @@ object RedstoneScraperDirectPowerObservationSource : IObservationSource<BlockEnt
 
     private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
     private val DIR_KEY = BuiltinAttributeKeyTypes.DirectionType("dir")
+
+    override val keys: IMappedAttributeKeySet = IMappedAttributeKeySet(POS_KEY, DIR_KEY)
 
     override fun createAttributeLookup(
         context: BlockEntity,

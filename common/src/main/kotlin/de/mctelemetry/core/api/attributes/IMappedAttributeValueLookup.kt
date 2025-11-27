@@ -1,10 +1,8 @@
 package de.mctelemetry.core.api.attributes
 
-interface IMappedAttributeValueLookup {
+interface IMappedAttributeValueLookup : IMappedAttributeKeySet {
 
     operator fun <T : Any> get(info: MappedAttributeKeyInfo<T, *>): T?
-
-    val keys: Set<MappedAttributeKeyInfo<*, *>>
 
     fun <T : Any> prepareLookup(info: MappedAttributeKeyInfo<T, *>): ((MappedAttributeKeyInfo<T, *>) -> T)?
 
@@ -12,7 +10,7 @@ interface IMappedAttributeValueLookup {
 
         private val Empty = object : IMappedAttributeValueLookup {
             override fun <T : Any> get(info: MappedAttributeKeyInfo<T, *>): T? = null
-            override val keys: Set<MappedAttributeKeyInfo<*, *>> = emptySet()
+            override val attributeKeys: Set<MappedAttributeKeyInfo<*, *>> = emptySet()
             override fun <T : Any> prepareLookup(info: MappedAttributeKeyInfo<T, *>): ((MappedAttributeKeyInfo<T, *>) -> T)? =
                 null
         }
@@ -28,9 +26,9 @@ interface IMappedAttributeValueLookup {
         constructor(pair: Pair<MappedAttributeKeyInfo<T, *>, T?>, parent: IMappedAttributeValueLookup = empty()) :
                 this(pair.first, pair.second, parent)
 
-        override val keys: Set<MappedAttributeKeyInfo<*, *>> by lazy {
+        override val attributeKeys: Set<MappedAttributeKeyInfo<*, *>> by lazy {
             if (parent === Empty) setOf(key)
-            else parent.keys + key
+            else parent.attributeKeys + key
         }
 
         override fun <T : Any> get(info: MappedAttributeKeyInfo<T, *>): T? {
@@ -81,9 +79,9 @@ interface IMappedAttributeValueLookup {
             }.toMutableMap(), parent)
         }
 
-        override val keys: Set<MappedAttributeKeyInfo<*, *>> by lazy {
+        override val attributeKeys: Set<MappedAttributeKeyInfo<*, *>> by lazy {
             if (parent === Empty) data.keys
-            else data.keys.union(parent.keys)
+            else data.keys.union(parent.attributeKeys)
         }
 
         override fun <T : Any> get(info: MappedAttributeKeyInfo<T, *>): T? {

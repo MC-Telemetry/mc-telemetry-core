@@ -6,6 +6,7 @@ import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
 import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.BlockPos
@@ -30,6 +31,8 @@ object RedstoneScraperComparatorObservationSource : IObservationSource<BlockEnti
     override val contextType: Class<BlockEntity> = BlockEntity::class.java
 
     private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
+
+    override val keys: IMappedAttributeKeySet = IMappedAttributeKeySet(POS_KEY)
 
     override fun createAttributeLookup(
         context: BlockEntity,
