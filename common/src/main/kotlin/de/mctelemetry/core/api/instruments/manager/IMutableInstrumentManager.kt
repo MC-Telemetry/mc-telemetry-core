@@ -55,7 +55,7 @@ interface IMutableInstrumentManager : IInstrumentManager {
 
     override fun findLocal(pattern: Regex?): Sequence<IInstrumentRegistration>
     override fun findLocal(name: String): IInstrumentRegistration? {
-        return findLocal(Regex.fromLiteral(name)).firstOrNull()
+        return findLocal(Regex("^"+Regex.escape(name)+"$")).firstOrNull()
     }
 
     fun findLocalMutable(pattern: Regex?=null): Sequence<IInstrumentRegistration.Mutable<*>> {
@@ -63,7 +63,7 @@ interface IMutableInstrumentManager : IInstrumentManager {
     }
 
     fun findLocalMutable(name: String): IInstrumentRegistration.Mutable<*>? {
-        return findLocalMutable(Regex.fromLiteral(name)).firstOrNull()
+        return findLocalMutable(Regex("^"+Regex.escape(name)+"$")).firstOrNull()
     }
 
     fun gaugeInstrument(name: String): IGaugeInstrumentBuilder<*>

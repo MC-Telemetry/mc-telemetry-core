@@ -137,11 +137,8 @@ class ClientWorldInstrumentManager(
         if (pattern == null) return dataLock.readLock().withLock {
             instruments.values.toList()
         }.asSequence()
-        if (RegexOption.LITERAL in pattern.options) {
-            return sequenceOf(findLocal(pattern.pattern) ?: return emptySequence())
-        }
         return dataLock.readLock().withLock {
-            instruments.values.filter { pattern.matches(it.name) }.toList()
+            instruments.values.filter { pattern.containsMatchIn(it.name) }.toList()
         }.asSequence()
     }
 
@@ -183,7 +180,7 @@ class ClientWorldInstrumentManager(
         }
         populationJob.get().complete()
         return populatedInitial.compareAndSet(false, true).also {
-            if(exceptionAccumulator != null) throw exceptionAccumulator
+            if (exceptionAccumulator != null) throw exceptionAccumulator
         }
     }
 
@@ -231,8 +228,7 @@ class ClientWorldInstrumentManager(
     fun addReceivedInstrument(instrument: IWorldInstrumentDefinition) {
         val clientInstrument: IClientWorldInstrumentManager.IClientWorldInstrumentDefinition =
             instrument as? IClientWorldInstrumentManager.IClientWorldInstrumentDefinition
-                ?: object : IClientWorldInstrumentManager.IClientWorldInstrumentDefinition,
-                        IWorldInstrumentDefinition by instrument {}
+                ?: IWorldInstrumentDefinition.Record(instrument)
         var exceptionAccumulator: Exception? = forEachCollectExceptions(globalCallbacks) {
             it.instrumentAdded(this, clientInstrument, IInstrumentAvailabilityCallback.Phase.PRE)
         }

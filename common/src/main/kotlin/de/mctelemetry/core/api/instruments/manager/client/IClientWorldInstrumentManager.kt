@@ -5,7 +5,10 @@ import de.mctelemetry.core.api.instruments.builder.IRemoteWorldInstrumentDefinit
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
+import net.fabricmc.api.EnvType
+import net.fabricmc.api.Environment
 
+@Environment(EnvType.CLIENT)
 interface IClientWorldInstrumentManager : IClientInstrumentManager {
 
     fun gaugeInstrument(name: String): IRemoteWorldInstrumentDefinitionBuilder<*>
@@ -18,13 +21,13 @@ interface IClientWorldInstrumentManager : IClientInstrumentManager {
 
 
     override fun findGlobal(name: String): IClientInstrumentManager.IClientInstrumentDefinition? {
-        return findGlobal(Regex.fromLiteral(name)).firstOrNull()
+        return findGlobal(Regex("^"+Regex.escape(name)+"$")).firstOrNull()
     }
 
     override fun findGlobal(pattern: Regex?): Sequence<IClientInstrumentManager.IClientInstrumentDefinition>
 
     override fun findLocal(name: String): IClientWorldInstrumentDefinition? {
-        return findLocal(Regex.fromLiteral(name)).firstOrNull()
+        return findLocal(Regex("^"+Regex.escape(name)+"$")).firstOrNull()
     }
 
     override fun findLocal(pattern: Regex?): Sequence<IClientWorldInstrumentDefinition>

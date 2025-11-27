@@ -3,6 +3,9 @@ package de.mctelemetry.core.api.instruments
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
+import net.fabricmc.api.EnvType
+import net.fabricmc.api.EnvironmentInterface
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 
@@ -12,13 +15,17 @@ interface IInstrumentDefinition : IMetricDefinition {
     val supportsFloating: Boolean
 
     @JvmRecord
+    @EnvironmentInterface(
+        value = EnvType.CLIENT,
+        itf = IClientInstrumentManager.IClientInstrumentDefinition::class
+    )
     data class Record(
         override val name: String,
         override val description: String = "",
         override val unit: String = "",
         override val attributes: Map<String, MappedAttributeKeyInfo<*, *>> = emptyMap(),
         override val supportsFloating: Boolean = false,
-    ) : IInstrumentDefinition {
+    ) : IInstrumentDefinition, IClientInstrumentManager.IClientInstrumentDefinition {
 
 
         init {

@@ -3,6 +3,7 @@ package de.mctelemetry.core.ui.screens
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.IMetricDefinition
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
@@ -16,7 +17,6 @@ import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
 import de.mctelemetry.core.utils.childByIdOrThrow
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import de.mctelemetry.core.utils.getValue
 import de.mctelemetry.core.utils.setValue
 import dev.architectury.networking.NetworkManager
@@ -98,28 +98,26 @@ class RedstoneScraperBlockScreenDetails(
         }
 
         private fun findMatchingMetrics(name: String): List<IClientInstrumentManager.IClientInstrumentDefinition> {
-            return if (name.startsWith('~')) {
-                IClientWorldInstrumentManager.clientWorldInstrumentManager!!.findGlobal(
-                    try {
-                        name.substring(1).toRegex()
-                    } catch (_: PatternSyntaxException) {
-                        return emptyList()
-                    }
-                ).sortedBy { it.name }.toList()
+            val searchRegex = if (name.startsWith('~')) {
+                try {
+                    name.substring(1).toRegex()
+                } catch (_: PatternSyntaxException) {
+                    return emptyList()
+                }
             } else {
-                val literalRegex = Regex.escape(name).toRegex(RegexOption.IGNORE_CASE)
-                IClientWorldInstrumentManager.clientWorldInstrumentManager!!.findGlobal(
-                    (Regex.escape(name) + ".*").toRegex(RegexOption.IGNORE_CASE)
-                ).mapNotNull {
-                    (literalRegex.find(it.name) ?: return@mapNotNull null) to it
-                }.sortedWith(
-                    compareBy<Pair<MatchResult, IMetricDefinition>> { (match, _) ->
-                        match.range.first
-                    }.thenBy { (_, instrument) ->
-                        instrument.name
-                    }
-                ).mapTo(mutableListOf()) { it.second }
+                Regex.escape(name).toRegex(RegexOption.IGNORE_CASE)
             }
+            return IClientWorldInstrumentManager.clientWorldInstrumentManager!!.findGlobal(
+                searchRegex
+            ).mapNotNull {
+                (searchRegex.find(it.name) ?: return@mapNotNull null) to it
+            }.sortedWith(
+                compareBy<Pair<MatchResult, IMetricDefinition>> { (match, _) ->
+                    match.range.first
+                }.thenBy { (_, instrument) ->
+                    instrument.name
+                }
+            ).mapTo(mutableListOf()) { it.second }
         }
     }
 
@@ -130,7 +128,7 @@ class RedstoneScraperBlockScreenDetails(
         )
     }
 
-    private fun sendToServer(allowDelete: Boolean=true) {
+    private fun sendToServer(allowDelete: Boolean = true) {
         NetworkManager.sendToServer(
             C2SObservationSourceSettingsUpdatePayload(
                 globalPos,
@@ -161,6 +159,7 @@ class RedstoneScraperBlockScreenDetails(
         observationSourceNameLabel.text(TranslationKeys.ObservationSources[source])
 
         val metricNameTextBox = rootComponent.childWidgetByIdOrThrow<SuggestingTextBoxComponent>("metric-name")
+        metricNameTextBox.setMaxLength(OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH)
         instrumentNameObservable.observe {
             if (it == metricNameTextBox.value) return@observe
             val cursorPosition = metricNameTextBox.cursorPosition
