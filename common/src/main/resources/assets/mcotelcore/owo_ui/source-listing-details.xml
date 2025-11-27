@@ -55,34 +55,67 @@
                         <scroll direction="vertical">
                             <flow-layout direction="vertical" id="attribute-mapping">
                                 <children>
-                                    <grid-layout rows="2" columns="2">
+                                    <grid-layout rows="2" columns="3">
                                         <children>
                                             <label row="0" column="0">
-                                                <text>1,1</text>
-                                                <horizontal-text-alignment>center</horizontal-text-alignment>
-                                                <vertical-text-alignment>center</vertical-text-alignment>
+                                                <text>instr_met_1</text>
                                             </label>
-                                            <label row="0" column="1">
-                                                <text>1,2</text>
-                                                <horizontal-text-alignment>center</horizontal-text-alignment>
-                                                <vertical-text-alignment>center</vertical-text-alignment>
+                                            <collapsible row="0" column="1">
+                                                <children>
+                                                    <dropdown row="1" column="1">
+                                                        <entries>
+                                                            <button>
+                                                                <text>source_met_1</text>
+                                                            </button>
+                                                            <button>
+                                                                <text>source_met_2</text>
+                                                            </button>
+                                                            <button>
+                                                                <text>source_met_3</text>
+                                                            </button>
+                                                            <button>
+                                                                <text>source_met_4</text>
+                                                            </button>
+                                                        </entries>
+                                                    </dropdown>
+                                                </children>
+                                                <text>Select</text>
+                                            </collapsible>
+                                            <label row="0" column="2">
+                                                <text>Optional</text>
                                             </label>
                                             <label row="1" column="0">
-                                                <text>2,1</text>
-                                                <horizontal-text-alignment>center</horizontal-text-alignment>
-                                                <vertical-text-alignment>center</vertical-text-alignment>
+                                                <text>instr_met_2</text>
                                             </label>
-                                            <label row="1" column="1">
-                                                <text>2,2</text>
-                                                <horizontal-text-alignment>center</horizontal-text-alignment>
-                                                <vertical-text-alignment>center</vertical-text-alignment>
+                                            <collapsible row="1" column="1">
+                                                <children>
+                                                    <dropdown row="1" column="1">
+                                                        <entries>
+                                                            <button>
+                                                                <text>source_met_1</text>
+                                                            </button>
+                                                            <button>
+                                                                <text>source_met_2</text>
+                                                            </button>
+                                                            <button>
+                                                                <text>source_met_3</text>
+                                                            </button>
+                                                            <button>
+                                                                <text>source_met_4</text>
+                                                            </button>
+                                                        </entries>
+                                                    </dropdown>
+                                                </children>
+                                                <text>Select</text>
+                                            </collapsible>
+                                            <label row="1" column="2">
+                                                <text>Optional</text>
                                             </label>
                                         </children>
                                         <horizontal-alignment>center</horizontal-alignment>
                                         <vertical-alignment>center</vertical-alignment>
                                         <sizing>
                                             <horizontal method="fill">100</horizontal>
-                                            <vertical method="fill">100</vertical>
                                         </sizing>
                                     </grid-layout>
                                 </children>

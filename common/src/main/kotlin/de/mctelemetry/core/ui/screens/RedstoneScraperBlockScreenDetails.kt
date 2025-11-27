@@ -15,6 +15,7 @@ import de.mctelemetry.core.network.observations.container.settings.C2SObservatio
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceState
+import de.mctelemetry.core.ui.components.SelectBoxComponent
 import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
@@ -33,6 +34,7 @@ import io.wispforest.owo.ui.container.FlowLayout
 import io.wispforest.owo.ui.container.GridLayout
 import io.wispforest.owo.ui.container.ScrollContainer
 import io.wispforest.owo.ui.core.HorizontalAlignment
+import io.wispforest.owo.ui.core.Insets
 import io.wispforest.owo.ui.core.Sizing
 import io.wispforest.owo.ui.core.VerticalAlignment
 import io.wispforest.owo.util.Observable
@@ -84,6 +86,8 @@ class RedstoneScraperBlockScreenDetails(
         Observable.of(findMatchingMetric(instrumentName))
     var instrument by instrumentObservable
 
+    private var layout: FlowLayout? = null
+
     init {
         instrumentNameObservable.observe {
             findMatchingMetric(it).let { foundInstrument ->
@@ -94,6 +98,8 @@ class RedstoneScraperBlockScreenDetails(
         instrumentObservable.observe {
             if (it != null && this.instrumentName != it.name)
                 this.instrumentName = it.name
+
+            test()
         }
 
     }
@@ -166,6 +172,7 @@ class RedstoneScraperBlockScreenDetails(
     override fun build(rootComponent: FlowLayout) {
         val backButton = rootComponent.childWidgetByIdOrThrow<ButtonComponent>("back")
         backButton.onPress {
+            sendToServer(allowDelete = true)
             Minecraft.getInstance().setScreen(parent)
         }
 
@@ -211,28 +218,46 @@ class RedstoneScraperBlockScreenDetails(
         else
             metricNameTextBox.text(instrumentName)
 
-        test(rootComponent)
+        layout = rootComponent.childByIdOrThrow<FlowLayout>("attribute-mapping")
+        test()
     }
 
-    fun test(rootComponent: FlowLayout) {
-        val layout = rootComponent.childByIdOrThrow<FlowLayout>("attribute-mapping")
-        layout.clearChildren()
+    fun test() {
+        val l = layout ?: return
 
-        val grid = Containers.grid(Sizing.fill(100), Sizing.fill(100), 5, 5)
+        val observationSourceAttributes = sourceAttributes.attributeKeys
+        val instrumentAttributes = instrumentAttributes?.values?.toList() ?: emptyList()
 
-        grid.horizontalAlignment(HorizontalAlignment.CENTER)
-        grid.verticalAlignment(VerticalAlignment.CENTER)
+        l.clearChildren()
 
-        for (x in 1..5) {
-            for (y in 1..5) {
-                val label = Components.label(buildComponent {
-                    +"$x,$y"
-                })
+        for (observationSourceAttribute in observationSourceAttributes) {
+            val row = Containers.horizontalFlow(Sizing.fill(100), Sizing.content())
+            row.verticalAlignment(VerticalAlignment.CENTER)
+            row.padding(Insets.of(4))
 
-                grid.child(label, x - 1, y - 1)
+            val attributeName = Components.label(buildComponent { +observationSourceAttribute.baseKey.key })
+            attributeName.horizontalSizing(Sizing.fill(50))
+            row.child(attributeName)
+
+            val attributeMapping = SelectBoxComponent(instrumentAttributes, mapping.mapping.firstNotNullOfOrNull { (instrument,source) ->
+                if(source == observationSourceAttribute) instrument
+                else null
+            }) { old, new ->
+                if(new != null) {
+                    mapping = ObservationAttributeMapping(
+                        mapping.mapping + (new to observationSourceAttribute)
+                    )
+                } else if(old != null) {
+                    mapping = ObservationAttributeMapping(
+                        mapping.mapping - old
+                    )
+                }
+                println(new)
             }
-        }
+            attributeMapping.horizontalSizing(Sizing.fill(50))
+            row.child(attributeMapping)
 
-        layout.child(grid)
+            l.child(row)
+        }
     }
 }
