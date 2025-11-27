@@ -66,7 +66,6 @@
                         </sizing>
                     </label>
                     <label id="observation-source-value">
-                        <text>{{observation-source-value}}</text>
                         <sizing>
                             <horizontal method="fill">20</horizontal>
                         </sizing>

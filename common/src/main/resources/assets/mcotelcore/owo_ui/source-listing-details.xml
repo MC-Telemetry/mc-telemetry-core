@@ -42,7 +42,7 @@
                             </margins>
                         </flow-layout>
 
-                        <text-box id="metric-name">
+                        <mcotelcore.suggesting-text-box id="metric-name">
                             <sizing>
                                 <vertical method="content">1</vertical>
                                 <horizontal method="fill">60</horizontal>
@@ -50,7 +50,7 @@
                             <margins>
                                 <bottom>5</bottom>
                             </margins>
-                        </text-box>
+                        </mcotelcore.suggesting-text-box>
 
                         <scroll direction="vertical">
                             <flow-layout direction="vertical" id="list">
