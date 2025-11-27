@@ -5,9 +5,12 @@ import io.wispforest.owo.ui.component.TextBoxComponent
 import io.wispforest.owo.ui.core.Component
 import io.wispforest.owo.ui.core.Sizing
 import io.wispforest.owo.ui.parsing.UIParsing
+import net.fabricmc.api.EnvType
+import net.fabricmc.api.Environment
 import net.minecraft.resources.ResourceLocation
 import org.lwjgl.glfw.GLFW
 
+@Environment(EnvType.CLIENT)
 class SuggestingTextBoxComponent(horizontalSizing: Sizing) : TextBoxComponent(horizontalSizing) {
 
 
