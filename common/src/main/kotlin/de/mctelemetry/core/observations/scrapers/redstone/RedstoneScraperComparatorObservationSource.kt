@@ -6,7 +6,6 @@ import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
 import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.BlockPos
@@ -21,7 +20,7 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.LecternBlockEntity
 import net.minecraft.world.level.block.state.BlockState
 
-object RedstoneScraperComparatorObservationSource : IObservationSource<BlockEntity, IMappedAttributeValueLookup.PairLookup<GlobalPos>> {
+object RedstoneScraperComparatorObservationSource : IObservationSource.SingleAttribute<BlockEntity, GlobalPos> {
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
@@ -32,17 +31,7 @@ object RedstoneScraperComparatorObservationSource : IObservationSource<BlockEnti
 
     private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
 
-    override val keys: IMappedAttributeKeySet = IMappedAttributeKeySet(POS_KEY)
-
-    override fun createAttributeLookup(
-        context: BlockEntity,
-        attributes: IMappedAttributeValueLookup,
-    ): IMappedAttributeValueLookup.PairLookup<GlobalPos> {
-        return IMappedAttributeValueLookup.PairLookup(
-            POS_KEY to null,
-            attributes
-        )
-    }
+    override val attributeKey: MappedAttributeKeyInfo<GlobalPos, *> = POS_KEY
 
     override fun observe(
         context: BlockEntity,

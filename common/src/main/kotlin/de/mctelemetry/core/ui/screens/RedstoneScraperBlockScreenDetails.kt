@@ -5,7 +5,6 @@ import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
@@ -31,9 +30,6 @@ import io.wispforest.owo.ui.component.LabelComponent
 import io.wispforest.owo.ui.component.TextBoxComponent
 import io.wispforest.owo.ui.container.Containers
 import io.wispforest.owo.ui.container.FlowLayout
-import io.wispforest.owo.ui.container.GridLayout
-import io.wispforest.owo.ui.container.ScrollContainer
-import io.wispforest.owo.ui.core.HorizontalAlignment
 import io.wispforest.owo.ui.core.Insets
 import io.wispforest.owo.ui.core.Sizing
 import io.wispforest.owo.ui.core.VerticalAlignment
@@ -45,7 +41,6 @@ import net.minecraft.client.gui.screens.Screen
 import net.minecraft.core.GlobalPos
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.CommonColors
-import org.w3c.dom.Text
 import java.util.regex.PatternSyntaxException
 
 @Environment(EnvType.CLIENT)
@@ -55,6 +50,7 @@ class RedstoneScraperBlockScreenDetails(
     val sourceState: ObservationSourceState,
     instrumentName: String,
     mapping: ObservationAttributeMapping = sourceState.configuration?.mapping ?: ObservationAttributeMapping.empty(),
+    val sourceAttributes: IMappedAttributeKeySet = sourceState.source.attributes
 ) : BaseUIModelScreen<FlowLayout>(
     FlowLayout::class.java, DataSource.asset(
         ResourceLocation.fromNamespaceAndPath(
@@ -68,12 +64,14 @@ class RedstoneScraperBlockScreenDetails(
         position: GlobalPos,
         sourceState: ObservationSourceState,
         configuration: ObservationSourceConfiguration? = sourceState.configuration,
+        sourceAttributes: IMappedAttributeKeySet = sourceState.source.attributes,
     ) : this(
         parent,
         position,
         sourceState,
         configuration?.instrument?.name.orEmpty(),
         configuration?.mapping ?: ObservationAttributeMapping.empty(),
+        sourceAttributes,
     )
 
     val source: IObservationSource<*, *>
@@ -104,8 +102,6 @@ class RedstoneScraperBlockScreenDetails(
 
     }
 
-    val sourceAttributes: IMappedAttributeKeySet
-        get() = source.keys
     val instrumentAttributes: Map<String, MappedAttributeKeyInfo<*, *>>?
         get() = instrument?.attributes
     val mappingObservable: Observable<ObservationAttributeMapping> = Observable.of(mapping)
