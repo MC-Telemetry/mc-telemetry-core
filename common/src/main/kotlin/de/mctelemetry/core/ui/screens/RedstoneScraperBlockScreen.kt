@@ -26,9 +26,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.plus
+import kotlinx.coroutines.launch
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.Minecraft
@@ -72,19 +70,24 @@ class RedstoneScraperBlockScreen(
         return false
     }
 
+    private fun acceptObservations(observationBundle: ObservationSourceObservationMap) {
+        for ((source, observations) in observationBundle) {
+            val preview = observationValuePreviews.getOrElse(source) {
+                OTelCoreMod.logger.warn("Could not find matching value preview for received observation source {}", source)
+                continue
+            }
+            preview.value = observations
+        }
+    }
+
     private fun configureFlow(): Deferred<StateFlow<ObservationSourceObservationMap>> {
         observationFlowRef.get()?.let { return it }
         val observationManager = ObservationRequestManagerClient.getActiveManager()
         val deferred = scope.async(start = CoroutineStart.LAZY) {
             val observationFlow = observationManager.requestObservations(globalPos, 20u)
-            observationFlow
-                .onEach { observationBundle ->
-                    for ((source, observations) in observationBundle) {
-                        val preview = observationValuePreviews.getOrElse(source) { continue }
-                        preview.value = observations
-                    }
-                }
-                .launchIn(scope + CoroutineName("${RedstoneScraperBlockScreen::class.java.simpleName}(${globalPos.toShortString()}).uiUpdater"))
+            scope.launch(CoroutineName("${RedstoneScraperBlockScreen::class.java.simpleName}(${globalPos.toShortString()}).uiUpdater")) {
+                observationFlow.collect(::acceptObservations)
+            }
             observationFlow
         }
         runWithExceptionCleanup(deferred::cancel) {
@@ -137,6 +140,13 @@ class RedstoneScraperBlockScreen(
             val editButton: ButtonComponent = template.childWidgetByIdOrThrow("observation-source-edit")
             editButton.onPress {
                 Minecraft.getInstance().setScreen(RedstoneScraperBlockScreenDetails(this, globalPos, state))
+            }
+        }
+
+        observationFlowRef.get()?.let { observationFlow ->
+            if(!observationFlow.isCompleted) return@let
+            scope.launch {
+                acceptObservations(observationFlow.await().value)
             }
         }
     }

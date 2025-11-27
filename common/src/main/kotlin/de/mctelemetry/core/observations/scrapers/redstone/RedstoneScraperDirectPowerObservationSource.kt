@@ -15,7 +15,7 @@ import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.level.block.entity.BlockEntity
 
-object RedstoneScraperDirectPowerObservationSource : IObservationSource<BlockEntity, IMappedAttributeValueLookup.MapLookup> {
+object RedstoneScraperDirectPowerObservationSource : IObservationSource.MultiAttribute<BlockEntity> {
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
@@ -27,19 +27,7 @@ object RedstoneScraperDirectPowerObservationSource : IObservationSource<BlockEnt
     private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
     private val DIR_KEY = BuiltinAttributeKeyTypes.DirectionType("dir")
 
-    override val keys: IMappedAttributeKeySet = IMappedAttributeKeySet(POS_KEY, DIR_KEY)
-
-    override fun createAttributeLookup(
-        context: BlockEntity,
-        attributes: IMappedAttributeValueLookup,
-    ): IMappedAttributeValueLookup.MapLookup {
-        return IMappedAttributeValueLookup.MapLookup(
-            mapOf(
-                POS_KEY to null,
-                DIR_KEY to null,
-            ), attributes
-        )
-    }
+    override val attributes: IMappedAttributeKeySet = IMappedAttributeKeySet(POS_KEY, DIR_KEY)
 
     override fun observe(
         context: BlockEntity,
