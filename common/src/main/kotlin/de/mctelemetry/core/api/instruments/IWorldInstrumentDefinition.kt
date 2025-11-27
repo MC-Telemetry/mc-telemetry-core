@@ -2,6 +2,9 @@ package de.mctelemetry.core.api.instruments
 
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
+import net.fabricmc.api.EnvType
+import net.fabricmc.api.EnvironmentInterface
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import kotlin.collections.component1
@@ -14,6 +17,10 @@ interface IWorldInstrumentDefinition : IInstrumentDefinition {
 
 
     @JvmRecord
+    @EnvironmentInterface(
+        value = EnvType.CLIENT,
+        itf = IClientWorldInstrumentManager.IClientWorldInstrumentDefinition::class
+    )
     data class Record(
         override val name: String,
         override val description: String = "",
@@ -21,7 +28,7 @@ interface IWorldInstrumentDefinition : IInstrumentDefinition {
         override val attributes: Map<String, MappedAttributeKeyInfo<*, *>> = emptyMap(),
         override val supportsFloating: Boolean = false,
         override val persistent: Boolean = false,
-    ) : IWorldInstrumentDefinition {
+    ) : IWorldInstrumentDefinition, IClientWorldInstrumentManager.IClientWorldInstrumentDefinition {
 
 
         init {

@@ -66,15 +66,11 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         if (pattern == null) {
             return localInstruments.values.asSequence().map { it.value }
         }
-        if (RegexOption.LITERAL in pattern.options) {
-            val local = findLocal(pattern.pattern)
-            return if (local != null) sequenceOf(local) else emptySequence()
-        }
         val insensitivePattern = if (RegexOption.IGNORE_CASE in pattern.options) pattern else {
             Regex(pattern.pattern, pattern.options + RegexOption.IGNORE_CASE)
         }
         return localInstruments.asSequence().mapNotNull { (name, value) ->
-            if (!insensitivePattern.matches(name)) return@mapNotNull null
+            if (!insensitivePattern.containsMatchIn(name)) return@mapNotNull null
             value.value
         }
     }
@@ -310,15 +306,11 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
             if (pattern == null) {
                 return globalManagerMap.values.asSequence().distinct().flatMap { it.findLocal() }
             }
-            if (RegexOption.LITERAL in pattern.options) {
-                val result = findGlobal(pattern.pattern)
-                return if (result != null) sequenceOf(result) else emptySequence()
-            }
             val insensitivePattern = if (RegexOption.IGNORE_CASE in pattern.options) pattern else {
                 Regex(pattern.pattern, pattern.options + RegexOption.IGNORE_CASE)
             }
             return globalManagerMap.asSequence().mapNotNull { (name, value) ->
-                if (!insensitivePattern.matches(name)) return@mapNotNull null
+                if (!insensitivePattern.containsMatchIn(name)) return@mapNotNull null
                 value
             }.distinct().flatMap { it.findLocal(insensitivePattern) }
         }

@@ -134,7 +134,7 @@ class CommandMetricsList internal constructor(
         }
         return sendList(
             context,
-            instrumentManager.findGlobal(Regex(".+")),
+            instrumentManager.findGlobal(),
             "all"
         )
     }
@@ -146,7 +146,7 @@ class CommandMetricsList internal constructor(
         }
         return sendList(
             context,
-            instrumentManager.gameInstruments.findLocal(Regex(".+")),
+            instrumentManager.gameInstruments.findLocal(),
             "game"
         )
     }
@@ -158,7 +158,7 @@ class CommandMetricsList internal constructor(
         }
         return sendList(
             context,
-            instrumentManager.findLocal(Regex(".+")).filterNot {
+            instrumentManager.findLocal().filterNot {
                 (it is IServerWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
             },
             "world"
@@ -172,7 +172,7 @@ class CommandMetricsList internal constructor(
         }
         return sendList(
             context,
-            instrumentManager.findLocal(Regex(".+")).filter {
+            instrumentManager.findLocal().filter {
                 (it is IServerWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
             },
             "custom"

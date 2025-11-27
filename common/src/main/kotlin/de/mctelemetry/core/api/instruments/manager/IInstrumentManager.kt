@@ -11,12 +11,12 @@ interface IInstrumentManager : IInstrumentAvailabilityCallback<IMetricDefinition
 
     fun findGlobal(pattern: Regex? = null): Sequence<IMetricDefinition>
     fun findGlobal(name: String): IMetricDefinition? {
-        return findGlobal(Regex.fromLiteral(name)).firstOrNull()
+        return findGlobal(Regex("^"+Regex.escape(name)+"$")).firstOrNull()
     }
 
     fun findLocal(pattern: Regex? = null): Sequence<IInstrumentDefinition>
     fun findLocal(name: String): IInstrumentDefinition? {
-        return findLocal(Regex.fromLiteral(name)).firstOrNull()
+        return findLocal(Regex("^"+Regex.escape(name)+"$")).firstOrNull()
     }
 
     fun nameAvailable(name: String): Boolean {
