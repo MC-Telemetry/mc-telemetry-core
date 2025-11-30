@@ -87,9 +87,10 @@ open class ObservationSourceState(
         val configuration = configuration ?: return false
         if (configuration.instrument.name.isEmpty()) return false
         return when (errorState) {
-            ObservationSourceErrorState.Ok -> true
-            is ObservationSourceErrorState.Warnings -> true
-            is ObservationSourceErrorState.Errors -> false
+            ObservationSourceErrorState.NotConfigured -> false
+            ObservationSourceErrorState.Configured.Ok -> true
+            is ObservationSourceErrorState.Configured.Warnings -> true
+            is ObservationSourceErrorState.Configured.Errors -> false
         }
     }
 
@@ -265,15 +266,13 @@ open class ObservationSourceState(
         var errorState = errorStateBase
         val configuration = configuration
         if (configuration == null || configuration.instrument.name.isEmpty()) {
-            errorState = errorState
-                .withoutError(ObservationSourceErrorState.uninitializedError)
-                .withoutTranslatableError(TranslationKeys.Errors.ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND)
-                .withWarning(ObservationSourceErrorState.notConfiguredWarning)
+            errorState = ObservationSourceErrorState.NotConfigured
         } else {
-            errorState = errorState.withoutWarning(ObservationSourceErrorState.notConfiguredWarning)
+            val configuredErrorState = errorState as? ObservationSourceErrorState.Configured
+                ?: ObservationSourceErrorState.Configured.Ok
             if (instrumentSubRegistration == null) {
                 errorState = if (instrument == null) {
-                    errorState
+                    configuredErrorState
                         .withoutError(ObservationSourceErrorState.uninitializedError)
                         .withError(
                             TranslationKeys.Errors.observationsConfigurationInstrumentNotFound(
@@ -281,12 +280,12 @@ open class ObservationSourceState(
                             )
                         )
                 } else {
-                    errorState
+                    configuredErrorState
                         .withoutTranslatableError(TranslationKeys.Errors.ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND)
                         .withError(ObservationSourceErrorState.uninitializedError)
                 }
             } else {
-                errorState = errorState
+                errorState = configuredErrorState
                     .withoutError(ObservationSourceErrorState.uninitializedError)
                     .withoutTranslatableError(
                         TranslationKeys.Errors.ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND
@@ -297,7 +296,7 @@ open class ObservationSourceState(
     }
 
     fun resetErrorState(silent: Boolean = false): Boolean {
-        return updateDerivedErrorState(silent = silent, ObservationSourceErrorState.Ok)
+        return updateDerivedErrorState(silent = silent, ObservationSourceErrorState.Configured.Ok)
     }
 
     protected fun triggerOnDirty() {
@@ -380,36 +379,7 @@ open class ObservationSourceState(
     }
 
     protected open fun loadErrorState(tag: CompoundTag): ObservationSourceErrorState {
-        val errorStateTag = tag.getCompound("errorState")
-        if (errorStateTag == null) {
-            return ObservationSourceErrorState.Ok
-        } else {
-            val errorsTag = errorStateTag.get("errors") as? ListTag
-            val warningsTag = errorStateTag.get("warnings") as? ListTag
-            val errorComponents = errorsTag?.map {
-                val component = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, it).orThrow.first
-                if (component.contents == ObservationSourceErrorState.uninitializedError.contents)
-                    ObservationSourceErrorState.uninitializedError
-                else
-                    component
-            }
-            val warningComponents = warningsTag?.map {
-                val component = ComponentSerialization.CODEC.decode(NbtOps.INSTANCE, it).orThrow.first
-                if (component.contents == ObservationSourceErrorState.notConfiguredWarning.contents)
-                    ObservationSourceErrorState.notConfiguredWarning
-                else
-                    component
-            }
-            return if (errorComponents.isNullOrEmpty()) {
-                if (warningComponents.isNullOrEmpty()) {
-                    ObservationSourceErrorState.Ok
-                } else {
-                    ObservationSourceErrorState.Warnings(warningComponents)
-                }
-            } else {
-                ObservationSourceErrorState.Errors(errorComponents, warningComponents.orEmpty())
-            }
-        }
+        return ObservationSourceErrorState.fromTag(tag.getCompound("errorState"))
     }
 
     open fun saveToTag(tag: CompoundTag) {
@@ -421,25 +391,7 @@ open class ObservationSourceState(
     }
 
     protected open fun saveErrorState(tag: CompoundTag) {
-        val errorState = errorState
-        if (errorState != ObservationSourceErrorState.Ok) {
-            tag.put("errorState", CompoundTag().apply {
-                if (errorState.warnings.isNotEmpty()) {
-                    put("warnings", ListTag().apply {
-                        errorState.warnings.forEach {
-                            add(ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, it).orThrow)
-                        }
-                    })
-                }
-                if (errorState.errors.isNotEmpty()) {
-                    put("errors", ListTag().apply {
-                        errorState.errors.forEach {
-                            add(ComponentSerialization.CODEC.encodeStart(NbtOps.INSTANCE, it).orThrow)
-                        }
-                    })
-                }
-            })
-        }
+        errorState.saveToTag(tag)
     }
 
     interface InstrumentSubRegistrationFactory {

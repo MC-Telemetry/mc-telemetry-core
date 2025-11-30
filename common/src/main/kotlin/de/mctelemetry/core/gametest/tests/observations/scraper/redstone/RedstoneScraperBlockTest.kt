@@ -154,8 +154,8 @@ object RedstoneScraperBlockTest {
         helper.onEachTick {
             helper.assertBlockPresent(OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(), BasePos)
         }
-        helper.assertBlockStateC(BasePos, { "Expected to start in error state" }) {
-            it.getValue(ObservationSourceContainerBlock.ERROR) == ObservationSourceErrorState.Type.Errors
+        helper.assertBlockStateC(BasePos, { "Expected to start in NotConfigured state" }) {
+            it.getValue(ObservationSourceContainerBlock.ERROR) == ObservationSourceErrorState.Type.NotConfigured
         }
         fun validation() { // shared validation logic between "wait until this is true" and "assert this remains true"
             helper.assertBlockEntityDataC<ObservationSourceContainerBlockEntity>(

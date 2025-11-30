@@ -60,7 +60,7 @@ abstract class ObservationSourceContainerBlock(properties: Properties) : BaseEnt
 
     init {
         registerDefaultState(stateDefinition.any())
-        registerDefaultState(defaultBlockState().setValue(ERROR, ObservationSourceErrorState.Type.Errors))
+        registerDefaultState(defaultBlockState().setValue(ERROR, ObservationSourceErrorState.Type.NotConfigured))
     }
 
     companion object {
