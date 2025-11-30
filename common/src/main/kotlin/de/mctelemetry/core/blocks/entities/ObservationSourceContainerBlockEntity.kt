@@ -121,26 +121,26 @@ abstract class ObservationSourceContainerBlockEntity(
     private fun updateState() {
         if (level?.isClientSide == true) return
         val container = _container ?: return
-        var targetState: ObservationSourceErrorState.Type? = null
-        for (state in container.observationStates.values) {
-            targetState = when (state.errorState) {
-                ObservationSourceErrorState.Ok -> {
-                    targetState ?: ObservationSourceErrorState.Type.Ok
+        val targetState: ObservationSourceErrorState.Type =
+            container.observationStates.values.map { it.errorState.type }
+                .fold(ObservationSourceErrorState.Type.NotConfigured) { acc, type ->
+                    when (type) {
+                        ObservationSourceErrorState.Type.NotConfigured -> acc
+                        ObservationSourceErrorState.Type.Ok -> {
+                            if (acc == ObservationSourceErrorState.Type.NotConfigured)
+                                ObservationSourceErrorState.Type.Ok
+                            else
+                                acc
+                        }
+                        ObservationSourceErrorState.Type.Warnings -> {
+                            if (acc != ObservationSourceErrorState.Type.Errors)
+                                ObservationSourceErrorState.Type.Warnings
+                            else
+                                ObservationSourceErrorState.Type.Errors
+                        }
+                        ObservationSourceErrorState.Type.Errors -> ObservationSourceErrorState.Type.Errors
+                    }
                 }
-                is ObservationSourceErrorState.Warnings -> {
-                    if (state.errorState.warnings.singleOrNull() === ObservationSourceErrorState.notConfiguredWarning)
-                        continue
-                    if (targetState == ObservationSourceErrorState.Type.Errors || targetState == null)
-                        continue
-                    ObservationSourceErrorState.Type.Warnings
-                }
-                is ObservationSourceErrorState.Errors -> {
-                    targetState = ObservationSourceErrorState.Type.Errors
-                    break
-                }
-            }
-        }
-        targetState = targetState ?: ObservationSourceErrorState.Type.Warnings
         val currentState = blockState.getValue(ObservationSourceContainerBlock.ERROR)
         if (currentState != targetState) {
             level!!.setBlock(

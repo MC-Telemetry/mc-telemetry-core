@@ -181,7 +181,9 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
                     )
                 }
             } catch (e: RuntimeException) {
-                state.errorState = state.errorState.withException(e)
+                if (e is GameTestAssertException || e is GameTestTimeoutException) throw e
+                state.errorState = (state.errorState as? ObservationSourceErrorState.Configured
+                    ?: ObservationSourceErrorState.Configured.Ok).withException(e)
             }
         }
     }
@@ -243,13 +245,15 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
             val mapping = configuration.mapping
             val validationError = mapping.validate(instrument.attributes.values)
             if (validationError != null) {
-                state.errorState = state.errorState.withError(validationError)
+                state.errorState = (state.errorState as? ObservationSourceErrorState.Configured
+                    ?: ObservationSourceErrorState.Configured.Ok).withError(validationError)
                 return
             }
             observationBlock(mapping)
         } catch (e: RuntimeException) {
             if (e is GameTestAssertException || e is GameTestTimeoutException) throw e
-            state.errorState = state.errorState.withException(e)
+            state.errorState = (state.errorState as? ObservationSourceErrorState.Configured
+                ?: ObservationSourceErrorState.Configured.Ok).withException(e)
         }
     }
 

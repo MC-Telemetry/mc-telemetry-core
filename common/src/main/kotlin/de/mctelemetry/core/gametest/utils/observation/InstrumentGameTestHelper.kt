@@ -526,10 +526,14 @@ internal fun <T : Any> GameTestHelper.withConfiguredStartupSequence(
                 val errorStateValue = state.getValue(ObservationSourceContainerBlock.ERROR)
                 if (errorStateValue != ObservationSourceErrorState.Type.Ok) {
                     val problems = entity.observationStatesIfInitialized.orEmpty()
-                        .mapValues { (_, value) ->
-                            value.errorState.withoutWarning(ObservationSourceErrorState.notConfiguredWarning)
-                        }
-                        .filterValues { it != ObservationSourceErrorState.Ok }
+                        .mapNotNull { (source, value) ->
+                            source to when (val errorState = value.errorState) {
+                                ObservationSourceErrorState.NotConfigured,
+                                ObservationSourceErrorState.Configured.Ok,
+                                    -> return@mapNotNull null
+                                else -> errorState as ObservationSourceErrorState.Configured
+                            }
+                        }.toMap()
                     if (problems.isEmpty()) {
                         failC("Unexpected error state without stored errors/warnings: $errorStateValue", blockPos)
                     }
