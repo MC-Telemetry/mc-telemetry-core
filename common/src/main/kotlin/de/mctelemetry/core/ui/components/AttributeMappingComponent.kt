@@ -45,7 +45,7 @@ class AttributeMappingComponent(
                 null,
                 "None"
             )
-        ) + instrumentAttributes.map { attribute ->
+        ) + observationSourceAttributes.map { attribute ->
             SelectBoxComponentEntry(
                 attribute,
                 attribute.baseKey.key
@@ -54,20 +54,17 @@ class AttributeMappingComponent(
 
         clearChildren()
 
-        for (observationSourceAttribute in observationSourceAttributes) {
+        for (instrumentationSourceAttribute in instrumentAttributes) {
             val row = Containers.horizontalFlow(Sizing.fill(100), Sizing.content())
             row.verticalAlignment(VerticalAlignment.CENTER)
             row.padding(Insets.of(4))
 
-            val nameComponent = buildComponent { +observationSourceAttribute.baseKey.key }
+            val nameComponent = buildComponent { +instrumentationSourceAttribute.baseKey.key }
             val attributeName = Components.label(nameComponent)
             attributeName.horizontalSizing(Sizing.fill(40))
             row.child(attributeName)
 
-            val selected = mapping.mapping.firstNotNullOfOrNull { (instrument, source) ->
-                if (source == observationSourceAttribute) instrument
-                else null
-            }
+            val selected = mapping.mapping[instrumentationSourceAttribute]
 
             val valueCol = Containers.verticalFlow(Sizing.fill(60), Sizing.content())
 
@@ -78,11 +75,11 @@ class AttributeMappingComponent(
                     options.firstOrNull { it.value == selected } ?: options.first()) { old, new ->
                     if (new.value != null) {
                         mapping = ObservationAttributeMapping(
-                            mapping.mapping + (new.value to observationSourceAttribute)
+                            mapping.mapping + (instrumentationSourceAttribute to new.value)
                         )
                     } else if (old.value != null) {
                         mapping = ObservationAttributeMapping(
-                            mapping.mapping - old.value
+                            mapping.mapping - instrumentationSourceAttribute
                         )
                     }
                     println(new)
