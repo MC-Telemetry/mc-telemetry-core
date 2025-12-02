@@ -196,6 +196,9 @@ tasks.sourcesJar {
     val commonSources = project(":common").tasks.getByName<Jar>("sourcesJar")
     dependsOn(commonSources)
     from(commonSources.archiveFile.map { zipTree(it) })
+    filesMatching("mcotelcore.accesswidener") {
+        this.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
 }
 
 components.getByName("java") {
