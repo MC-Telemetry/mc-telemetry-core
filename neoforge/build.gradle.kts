@@ -1,3 +1,4 @@
+import net.fabricmc.loom.configuration.ide.RunConfigSettings
 import java.nio.file.Paths
 import java.util.Properties
 
@@ -7,6 +8,7 @@ plugins {
 
 val MOD_ID: String = rootProject.property("mod_id").toString()
 val otelVersion: String = rootProject.property("otel_version") as String
+val kobserveVersion: String = rootProject.property("kobserve_version") as String
 val relocatePrefix = (rootProject.property("relocate_prefix") as String)
 
 architectury {
@@ -46,7 +48,7 @@ loom {
                 rootProject.layout.projectDirectory.file("dev.otel.properties")
             )
         }
-        create("clientWithDocker") {
+        create("clientWithDocker", Action<RunConfigSettings> {
             client()
             inherit(this@runs["client"])
             configName = "Minecraft Client + Docker"
@@ -54,8 +56,8 @@ loom {
                 "OTEL_JAVAAGENT_CONFIGURATION_FILE",
                 rootProject.layout.projectDirectory.file("docker.otel.properties")
             )
-        }
-        create("gameTestServer") {
+        })
+        create("gameTestServer", Action<RunConfigSettings> {
             server()
             runDir = "gameTestRun"
 
@@ -74,7 +76,7 @@ loom {
             property("neoforge.enabledGameTestNamespaces", MOD_ID)
             property("neoforge.enableGameTest", "true")
             property("neoforge.gameTestServer", "true")
-        }
+        })
     }
 }
 
@@ -143,9 +145,15 @@ dependencies {
     shadowBundle("io.opentelemetry:opentelemetry-api:$otelVersion")
 
     // KObserve
-    api("io.github.pixix4:KObserve:1.0.0-beta")
-    common("io.github.pixix4:KObserve:1.0.0-beta")
-    shadowBundle("io.github.pixix4:KObserve:1.0.0-beta")
+    implementation("io.github.pixix4:KObserve:$kobserveVersion") {
+        isTransitive = false
+    }
+    common("io.github.pixix4:KObserve:$kobserveVersion") {
+        isTransitive = false
+    }
+    shadowBundle("io.github.pixix4:KObserve:$kobserveVersion") {
+        isTransitive = false
+    }
 }
 
 tasks.named("configureLaunch") {
@@ -205,6 +213,8 @@ tasks.shadowJar {
             this.exclude("io.opentelemetry.**")
             this.exclude("io.prometheus.**")
             this.exclude("org.apache.**")
+            this.exclude("org.slf4j.**")
+            this.exclude("org.w3c.**")
         }
     }
     archiveClassifier.set("dev-shadow")
