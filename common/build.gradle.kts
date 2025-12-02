@@ -20,4 +20,7 @@ dependencies {
 
     // opentelemetry
     compileOnly("io.opentelemetry:opentelemetry-api:${rootProject.property("otel_version")}")
+
+    // KObserve
+    compileOnly("io.github.pixix4:KObserve:1.0.0-beta")
 }
