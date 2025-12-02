@@ -35,6 +35,7 @@ import dev.architectury.registry.CreativeTabRegistry
 import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
 import dev.architectury.utils.Env
+import io.github.pixix4.kobserve.property.constObservable
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.metrics.Meter
 import net.minecraft.core.RegistrationInfo
@@ -61,6 +62,8 @@ object OTelCoreMod {
     val OTEL_TAB: RegistrySupplier<CreativeModeTab>
 
     init {
+        val con = constObservable(15)
+
         OTEL_TAB = TABS.register(
             "mcotelcore_tab",
             {

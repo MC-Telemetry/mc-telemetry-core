@@ -5,7 +5,6 @@ import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
@@ -14,26 +13,20 @@ import de.mctelemetry.core.network.observations.container.settings.C2SObservatio
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceState
-import de.mctelemetry.core.ui.components.SelectBoxComponent
+import de.mctelemetry.core.ui.components.AttributeMappingComponent
 import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
 import de.mctelemetry.core.utils.childByIdOrThrow
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
-import de.mctelemetry.core.utils.getValue
-import de.mctelemetry.core.utils.setValue
 import dev.architectury.networking.NetworkManager
+import io.github.pixix4.kobserve.base.ObservableProperty
+import io.github.pixix4.kobserve.property.mapBinding
+import io.github.pixix4.kobserve.property.property
 import io.wispforest.owo.ui.base.BaseUIModelScreen
 import io.wispforest.owo.ui.component.ButtonComponent
-import io.wispforest.owo.ui.component.Components
 import io.wispforest.owo.ui.component.LabelComponent
 import io.wispforest.owo.ui.component.TextBoxComponent
-import io.wispforest.owo.ui.container.Containers
 import io.wispforest.owo.ui.container.FlowLayout
-import io.wispforest.owo.ui.core.Insets
-import io.wispforest.owo.ui.core.Sizing
-import io.wispforest.owo.ui.core.VerticalAlignment
-import io.wispforest.owo.util.Observable
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.Minecraft
@@ -77,35 +70,34 @@ class RedstoneScraperBlockScreenDetails(
     val source: IObservationSource<*, *>
         get() = sourceState.source
 
-    private val instrumentNameObservable: Observable<String> = Observable.of(instrumentName)
+    private val instrumentNameObservable: ObservableProperty<String> = property(instrumentName)
     var instrumentName by instrumentNameObservable
 
-    val instrumentObservable: Observable<IInstrumentDefinition?> =
-        Observable.of(findMatchingMetric(instrumentName))
+    val instrumentObservable: ObservableProperty<IInstrumentDefinition?> = property(findMatchingMetric(instrumentName))
     var instrument by instrumentObservable
 
     private var layout: FlowLayout? = null
 
     init {
-        instrumentNameObservable.observe {
+        instrumentNameObservable.onChange {
+            val it = instrumentName
             findMatchingMetric(it).let { foundInstrument ->
                 if (instrument != foundInstrument)
                     instrument = foundInstrument
             }
         }
-        instrumentObservable.observe {
+        instrumentObservable.onChange {
+            val it = instrument
             if (it != null && this.instrumentName != it.name)
                 this.instrumentName = it.name
 
             test()
         }
-
     }
 
-    val instrumentAttributes: Map<String, MappedAttributeKeyInfo<*, *>>?
-        get() = instrument?.attributes
-    val mappingObservable: Observable<ObservationAttributeMapping> = Observable.of(mapping)
-    var mapping by mappingObservable
+    val instrumentAttributesObservable = instrumentObservable.mapBinding { it?.attributes }
+    val mappingProperty: ObservableProperty<ObservationAttributeMapping> = property(mapping)
+    var mapping by mappingProperty
 
     companion object {
 
@@ -177,8 +169,9 @@ class RedstoneScraperBlockScreenDetails(
 
         val metricNameTextBox = rootComponent.childWidgetByIdOrThrow<SuggestingTextBoxComponent>("metric-name")
         metricNameTextBox.setMaxLength(OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH)
-        instrumentNameObservable.observe {
-            if (it == metricNameTextBox.value) return@observe
+        instrumentNameObservable.onChange {
+            val it = instrumentName
+            if (it == metricNameTextBox.value) return@onChange
             val cursorPosition = metricNameTextBox.cursorPosition
             metricNameTextBox.text(it)
             metricNameTextBox.moveCursorTo(cursorPosition, false)
@@ -221,39 +214,7 @@ class RedstoneScraperBlockScreenDetails(
     fun test() {
         val l = layout ?: return
 
-        val observationSourceAttributes = sourceAttributes.attributeKeys
-        val instrumentAttributes = instrumentAttributes?.values?.toList() ?: emptyList()
-
         l.clearChildren()
-
-        for (observationSourceAttribute in observationSourceAttributes) {
-            val row = Containers.horizontalFlow(Sizing.fill(100), Sizing.content())
-            row.verticalAlignment(VerticalAlignment.CENTER)
-            row.padding(Insets.of(4))
-
-            val attributeName = Components.label(buildComponent { +observationSourceAttribute.baseKey.key })
-            attributeName.horizontalSizing(Sizing.fill(50))
-            row.child(attributeName)
-
-            val attributeMapping = SelectBoxComponent(instrumentAttributes, mapping.mapping.firstNotNullOfOrNull { (instrument,source) ->
-                if(source == observationSourceAttribute) instrument
-                else null
-            }) { old, new ->
-                if(new != null) {
-                    mapping = ObservationAttributeMapping(
-                        mapping.mapping + (new to observationSourceAttribute)
-                    )
-                } else if(old != null) {
-                    mapping = ObservationAttributeMapping(
-                        mapping.mapping - old
-                    )
-                }
-                println(new)
-            }
-            attributeMapping.horizontalSizing(Sizing.fill(50))
-            row.child(attributeMapping)
-
-            l.child(row)
-        }
+        l.child(AttributeMappingComponent(sourceAttributes, instrumentAttributesObservable, mappingProperty))
     }
 }

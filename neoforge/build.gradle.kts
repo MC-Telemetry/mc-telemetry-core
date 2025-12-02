@@ -141,6 +141,11 @@ dependencies {
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
     common("io.opentelemetry:opentelemetry-api:$otelVersion")
     shadowBundle("io.opentelemetry:opentelemetry-api:$otelVersion")
+
+    // KObserve
+    api("io.github.pixix4:KObserve:1.0.0-beta")
+    common("io.github.pixix4:KObserve:1.0.0-beta")
+    shadowBundle("io.github.pixix4:KObserve:1.0.0-beta")
 }
 
 tasks.named("configureLaunch") {
