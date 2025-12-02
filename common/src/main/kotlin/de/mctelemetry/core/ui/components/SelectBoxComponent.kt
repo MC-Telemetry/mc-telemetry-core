@@ -58,9 +58,9 @@ class SelectBoxComponent<T>(
                 }) {
                     val oldValue = selected
                     selected = opt
-                    onChange(oldValue, opt)
-                    rebuild()
                     closeOverlay()
+                    rebuild()
+                    onChange(oldValue, opt)
                 } as Component).apply {
                     horizontalSizing(Sizing.expand())
                 }

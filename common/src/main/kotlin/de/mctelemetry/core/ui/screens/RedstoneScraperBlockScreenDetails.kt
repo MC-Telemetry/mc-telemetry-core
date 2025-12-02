@@ -73,27 +73,8 @@ class RedstoneScraperBlockScreenDetails(
     private val instrumentNameObservable: ObservableProperty<String> = property(instrumentName)
     var instrumentName by instrumentNameObservable
 
-    val instrumentObservable: ObservableProperty<IInstrumentDefinition?> = property(findMatchingMetric(instrumentName))
-    var instrument by instrumentObservable
-
-    private var layout: FlowLayout? = null
-
-    init {
-        instrumentNameObservable.onChange {
-            val it = instrumentName
-            findMatchingMetric(it).let { foundInstrument ->
-                if (instrument != foundInstrument)
-                    instrument = foundInstrument
-            }
-        }
-        instrumentObservable.onChange {
-            val it = instrument
-            if (it != null && this.instrumentName != it.name)
-                this.instrumentName = it.name
-
-            test()
-        }
-    }
+    val instrumentObservable = instrumentNameObservable.mapBinding { findMatchingMetric(it) }
+    val instrument by instrumentObservable
 
     val instrumentAttributesObservable = instrumentObservable.mapBinding { it?.attributes }
     val mappingProperty: ObservableProperty<ObservationAttributeMapping> = property(mapping)
@@ -178,27 +159,24 @@ class RedstoneScraperBlockScreenDetails(
         }
         fun onMetricNameTextBoxTextChanged(text: String) {
             instrumentName = text
+
             val candidates = findMatchingMetrics(text)
             val exactMatch = candidates.firstOrNull { it.name == text }
             if (exactMatch != null) {
                 metricNameTextBox.setTextColor(TextBoxComponent.DEFAULT_TEXT_COLOR) // exact match found
                 metricNameTextBox.updateSuggestions(emptyList())
-                instrument = exactMatch
             } else if (candidates.isNotEmpty()) {
                 metricNameTextBox.updateSuggestions(candidates.map { it.name })
                 if (metricNameTextBox.suggestionIndex < 0) {
                     metricNameTextBox.suggestionIndex = 0
                 }
                 metricNameTextBox.setTextColor(CommonColors.YELLOW) // partial matches found
-                instrument = null
             } else if (Validators.validateOTelName(text) == null) {
                 metricNameTextBox.updateSuggestions(emptyList())
                 metricNameTextBox.setTextColor(CommonColors.GRAY) // metric not found, but valid
-                instrument = null
             } else {
                 metricNameTextBox.updateSuggestions(emptyList())
                 metricNameTextBox.setTextColor(CommonColors.RED) // metric not found and name invalid
-                instrument = null
             }
         }
         metricNameTextBox.onChanged().subscribe(::onMetricNameTextBoxTextChanged)
@@ -207,14 +185,7 @@ class RedstoneScraperBlockScreenDetails(
         else
             metricNameTextBox.text(instrumentName)
 
-        layout = rootComponent.childByIdOrThrow<FlowLayout>("attribute-mapping")
-        test()
-    }
-
-    fun test() {
-        val l = layout ?: return
-
-        l.clearChildren()
-        l.child(AttributeMappingComponent(sourceAttributes, instrumentAttributesObservable, mappingProperty))
+        val layout = rootComponent.childByIdOrThrow<FlowLayout>("attribute-mapping")
+        layout.child(AttributeMappingComponent(sourceAttributes, instrumentAttributesObservable, mappingProperty))
     }
 }
