@@ -31,6 +31,7 @@ interface IGameTestHelperFinalizer : MutableCollection<IGameTestHelperFinalizer.
         }
     }
 
+    @Suppress("DEPRECATION")
     @Deprecated("This declaration is redundant in Kotlin and might be removed soon")
     override fun <T : Any?> toArray(generator: IntFunction<Array<out T?>?>): Array<out T?>? {
         return super.toArray(generator)

@@ -1,5 +1,4 @@
 @file:Suppress("NOTHING_TO_INLINE", "WRONG_INVOCATION_KIND", "unused")
-@file:OptIn(ExperimentalContracts::class)
 
 package de.mctelemetry.core.gametest.utils
 
@@ -14,7 +13,6 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.BlockState
 import net.minecraft.world.level.block.state.properties.Property
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 

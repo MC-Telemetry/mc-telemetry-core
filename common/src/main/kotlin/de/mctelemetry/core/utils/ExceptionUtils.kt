@@ -1,6 +1,5 @@
 package de.mctelemetry.core.utils
 
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
@@ -13,7 +12,6 @@ import kotlin.contracts.contract
  *
  * If [block] completes successfully, its value is returned and [cleanup] is not run.
  */
-@OptIn(ExperimentalContracts::class)
 inline fun <T> runWithExceptionCleanup(cleanup: () -> Unit, block: () -> T): T {
     contract {
         callsInPlace(cleanup, InvocationKind.AT_MOST_ONCE)
@@ -40,7 +38,6 @@ inline fun <T> runWithExceptionCleanup(cleanup: () -> Unit, block: () -> T): T {
  *
  * If [block] completes successfully, its value is returned and [cleanup] is not run, even if [runCleanup] is `true`.
  */
-@OptIn(ExperimentalContracts::class)
 inline fun <T> runWithExceptionCleanup(cleanup: () -> Unit, runCleanup: Boolean, block: () -> T): T {
     contract {
         callsInPlace(cleanup, InvocationKind.AT_MOST_ONCE)

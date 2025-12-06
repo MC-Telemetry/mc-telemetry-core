@@ -1,7 +1,6 @@
 package de.mctelemetry.core.network.instrumentsync
 
 import de.mctelemetry.core.api.IMetricDefinition
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
@@ -12,7 +11,6 @@ import dev.architectury.event.events.common.PlayerEvent
 import dev.architectury.networking.NetworkManager
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
 class SyncSubscriptions(private val server: MinecraftServer) : IInstrumentAvailabilityCallback<IMetricDefinition> {
@@ -37,7 +35,6 @@ class SyncSubscriptions(private val server: MinecraftServer) : IInstrumentAvaila
         }
     }
 
-    @OptIn(ExperimentalContracts::class)
     private fun isSynchronizedInstrument(manager: IInstrumentManager, instrument: IMetricDefinition): Boolean {
         contract {
             returns(true) implies (instrument is IWorldInstrumentDefinition && manager is IServerWorldInstrumentManager)

@@ -1,10 +1,7 @@
-@file:OptIn(ExperimentalContracts::class)
-
 package de.mctelemetry.core.utils
 
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.Component
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
