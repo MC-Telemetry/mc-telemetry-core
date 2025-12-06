@@ -15,7 +15,6 @@ import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentSkipListSet
 import kotlin.collections.iterator
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
@@ -227,7 +226,6 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
         }
     }
 
-    @OptIn(ExperimentalContracts::class)
     protected inline fun withValidMapping(
         state: ObservationSourceState,
         forceObservation: Boolean = false,

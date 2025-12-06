@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalContracts::class)
-
 package de.mctelemetry.core.api.instruments.manager.server
 
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
@@ -14,7 +12,6 @@ import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManage
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
 import net.minecraft.server.MinecraftServer
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
