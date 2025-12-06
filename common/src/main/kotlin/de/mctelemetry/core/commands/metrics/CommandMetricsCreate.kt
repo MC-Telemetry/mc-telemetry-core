@@ -1,12 +1,14 @@
 package de.mctelemetry.core.commands.metrics
 
-import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.tree.CommandNode
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.gaugeWorldInstrument
+import de.mctelemetry.core.commands.types.EnumArgumentType
+import de.mctelemetry.core.commands.types.EnumArgumentType.Companion.getValue
+import de.mctelemetry.core.commands.types.InstrumentExportType
 import de.mctelemetry.core.commands.types.LabelDefinitionArgumentType
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
 import de.mctelemetry.core.commands.types.getValue
@@ -26,7 +28,7 @@ class CommandMetricsCreate internal constructor(
     val command = buildCommand("create") {
         requires { it.hasPermission(2) }
         "gauge" {
-            argument("float", BoolArgumentType.bool()) {
+            argument("type", EnumArgumentType(InstrumentExportType::class.java)) {
                 argument("name", MetricNameArgumentType) {
                     executes(::commandMetricsCreateGauge)
                     var labelNode: CommandNode<CommandSourceStack>? = null
@@ -49,7 +51,7 @@ class CommandMetricsCreate internal constructor(
         if (instrumentManager == null) {
             source.sendFailureAndThrow(TranslationKeys.Errors.worldInstrumentManagerMissing())
         }
-        val isFloat: Boolean = context.getArgument("float", Boolean::class.java)
+        val exportType: InstrumentExportType = context.getValue("type")
         val name: String = context.getValue("name", MetricNameArgumentType)
         val labels: List<MappedAttributeKeyInfo<*, *>> = generateSequence(1) { it + 1 }.map {
             LabelDefinitionArgumentType.get(context, "label$it")
@@ -60,10 +62,9 @@ class CommandMetricsCreate internal constructor(
                 addAttribute(label)
             }
         }.let {
-            if (isFloat) {
-                it.registerMutableOfDouble()
-            } else {
-                it.registerMutableOfLong()
+            when(exportType){
+                InstrumentExportType.LONG -> it.registerMutableOfLong()
+                InstrumentExportType.DOUBLE -> it.registerMutableOfDouble()
             }
         }
         source.sendSuccess({ TranslationKeys.Commands.metricsCreateSuccess(instrument) }, false)

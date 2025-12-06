@@ -19,18 +19,37 @@ object CommandExceptions {
     val METRIC_NAME_BAD_START = SimpleCommandExceptionType(TranslationKeys.Errors.metricNameBadStart())
     val METRIC_NAME_BAD_END = SimpleCommandExceptionType(TranslationKeys.Errors.metricNameBadEnd())
     val METRIC_NAME_DOUBLE_DELIMITER = SimpleCommandExceptionType(TranslationKeys.Errors.metricNameDoubleDelimiter())
+    val ENUM_VALUE_NOT_FOUND = Dynamic2CommandExceptionType { a, b ->
+        TranslationKeys.Errors.enumValueNotFound(a as String, b as String)
+    }
 
     fun metricNameEmpty(reader: ImmutableStringReader? = null): CommandSyntaxException =
         METRIC_NAME_EMPTY.createWithNullableContext(reader)
-    fun metricNameInvalidChar(char: Char, index: Int, reader: ImmutableStringReader?=null): CommandSyntaxException =
+
+    fun metricNameInvalidChar(char: Char, index: Int, reader: ImmutableStringReader? = null): CommandSyntaxException =
         METRIC_NAME_INVALID_CHAR.createWithNullableContext(reader, char.toString(), index)
+
     fun metricNameBadStart(reader: ImmutableStringReader? = null): CommandSyntaxException =
         METRIC_NAME_BAD_START.createWithNullableContext(reader)
+
     fun metricNameBadEnd(reader: ImmutableStringReader? = null): CommandSyntaxException =
         METRIC_NAME_BAD_END.createWithNullableContext(reader)
+
     fun metricNameDoubleDelimiter(reader: ImmutableStringReader? = null): CommandSyntaxException =
         METRIC_NAME_DOUBLE_DELIMITER.createWithNullableContext(reader)
 
+    fun enumValueNotFound(
+        name: String,
+        enumName: String,
+        reader: ImmutableStringReader? = null,
+    ): CommandSyntaxException =
+        ENUM_VALUE_NOT_FOUND.createWithNullableContext(reader, name, enumName)
+
+    inline fun <reified E : Enum<*>> enumValueNotFound(
+        name: String,
+        readable: ImmutableStringReader? = null,
+    ): CommandSyntaxException =
+        enumValueNotFound(name, E::class.java.simpleName, readable)
 }
 
 fun SimpleCommandExceptionType.createWithNullableContext(reader: ImmutableStringReader?): CommandSyntaxException {

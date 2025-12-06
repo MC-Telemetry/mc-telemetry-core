@@ -35,7 +35,6 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
 import kotlin.collections.forEach
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
@@ -295,7 +294,6 @@ abstract class ObservationSourceContainerBlockEntity(
                     ?: throw NullPointerException("Instrument manager not available for server: $server")
             }
 
-        @OptIn(ExperimentalContracts::class)
         private inline fun <T> loadAndApplyToStateTags(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,

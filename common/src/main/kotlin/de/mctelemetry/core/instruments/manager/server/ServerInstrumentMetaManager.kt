@@ -5,6 +5,7 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
 import de.mctelemetry.core.instruments.manager.GameInstrumentManager
+import de.mctelemetry.core.utils.left
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import dev.architectury.event.events.common.LifecycleEvent
@@ -153,5 +154,10 @@ object ServerInstrumentMetaManager {
         }!!
         newValue.left().getOrNull()?.run(callback)
         return closer ?: AutoCloseable {}
+    }
+
+    internal fun current(): ServerWorldInstrumentManager {
+        val values = serverMetricsManagers.values.toList()
+        return values.single().left
     }
 }
