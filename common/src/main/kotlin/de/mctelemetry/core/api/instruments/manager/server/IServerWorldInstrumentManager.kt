@@ -3,13 +3,13 @@
 package de.mctelemetry.core.api.instruments.manager.server
 
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
-import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
+import de.mctelemetry.core.api.instruments.IWorldInstrumentRegistration
 import de.mctelemetry.core.api.instruments.builder.IWorldGaugeInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.IWorldInstrumentManager
 import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
@@ -18,14 +18,21 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-interface IServerWorldInstrumentManager : IMutableInstrumentManager {
+interface IServerWorldInstrumentManager : IMutableInstrumentManager, IWorldInstrumentManager {
 
     val gameInstruments: IGameInstrumentManager
 
     override fun gaugeInstrument(name: String): IWorldGaugeInstrumentBuilder<*>
 
+
+    override fun findLocal(pattern: Regex?): Sequence<IWorldInstrumentRegistration>
+
+    override fun findLocal(name: String): IWorldInstrumentRegistration? {
+        return findLocal(Regex("^"+Regex.escape(name)+"$")).firstOrNull()
+    }
+
     override fun findLocalMutable(name: String): IWorldMutableInstrumentRegistration<*>? {
-        return super.findLocalMutable(name) as IWorldMutableInstrumentRegistration<*>?
+        return super.findLocalMutable(name) as? IWorldMutableInstrumentRegistration<*>
     }
 
     override fun findLocalMutable(pattern: Regex?): Sequence<IWorldMutableInstrumentRegistration<*>> {
@@ -53,10 +60,6 @@ interface IServerWorldInstrumentManager : IMutableInstrumentManager {
             }
         })
     }
-
-    interface IWorldMutableInstrumentRegistration<out R : IWorldMutableInstrumentRegistration<R>> :
-            IInstrumentRegistration.Mutable<R>,
-            IWorldInstrumentDefinition
 
     object Events {
 
