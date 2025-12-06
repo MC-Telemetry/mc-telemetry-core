@@ -32,10 +32,14 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
     }
 
     override fun observe(value: Double, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>) {
-        val attributeValues = attributes.attributeKeys.map {
+        val attributeValues = attributes.attributeKeys.mapNotNull {
             MappedAttributeKeyValue(
                 it,
-                attributes[it] ?: throw NoSuchElementException("Could not find $it in $attributes")
+                try {
+                    attributes[it] ?: return@mapNotNull null
+                } catch (_: NoSuchElementException) {
+                    return@mapNotNull null
+                }
             )
         }
         val point = RecordedObservationPoint(MappedAttributeKeyMap(attributeValues), value)
@@ -43,10 +47,14 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
     }
 
     override fun observe(value: Long, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>) {
-        val attributeValues = attributes.attributeKeys.map {
+        val attributeValues = attributes.attributeKeys.mapNotNull {
             MappedAttributeKeyValue(
                 it,
-                attributes[it] ?: throw NoSuchElementException("Could not find $it in $attributes")
+                try {
+                    attributes[it] ?: return@mapNotNull null
+                } catch (_: NoSuchElementException) {
+                    return@mapNotNull null
+                }
             )
         }
         val point = RecordedObservationPoint(MappedAttributeKeyMap(attributeValues), value)
@@ -59,10 +67,14 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
         attributes: IMappedAttributeValueLookup,
         source: IObservationSource<*, *>,
     ) {
-        val attributeValues = attributes.attributeKeys.map {
+        val attributeValues = attributes.attributeKeys.mapNotNull {
             MappedAttributeKeyValue(
                 it,
-                attributes[it] ?: throw NoSuchElementException("Could not find $it in $attributes")
+                try {
+                    attributes[it] ?: return@mapNotNull null
+                } catch (_: NoSuchElementException) {
+                    return@mapNotNull null
+                }
             )
         }
         val point = RecordedObservationPoint(
