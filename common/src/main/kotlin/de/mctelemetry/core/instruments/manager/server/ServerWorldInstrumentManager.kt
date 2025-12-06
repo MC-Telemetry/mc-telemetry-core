@@ -7,9 +7,11 @@ import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
+import de.mctelemetry.core.api.instruments.IWorldInstrumentRegistration
 import de.mctelemetry.core.api.instruments.builder.IWorldGaugeInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.IWorldMutableInstrumentRegistration
 import de.mctelemetry.core.instruments.manager.GameInstrumentManager
 import de.mctelemetry.core.instruments.manager.InstrumentManagerBase
 import de.mctelemetry.core.instruments.manager.InstrumentManagerBaseRegistrationUnion
@@ -52,6 +54,15 @@ internal class ServerWorldInstrumentManager private constructor(
     )
 
     private val server: WeakReference<MinecraftServer> = WeakReference(server)
+
+
+    override fun findLocal(name: String): IWorldInstrumentRegistration? {
+        return super<Child>.findLocal(name) as IWorldInstrumentRegistration?
+    }
+
+    override fun findLocal(pattern: Regex?): Sequence<IWorldInstrumentRegistration> {
+        return super<Child>.findLocal(pattern).map { it as IWorldInstrumentRegistration }
+    }
 
     companion object {
 
@@ -120,7 +131,8 @@ internal class ServerWorldInstrumentManager private constructor(
         callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>,
     ): ImmutableGaugeInstrumentRegistration {
         if (builder.persistent) throw IllegalArgumentException("Cannot create persistent immutable instrument registrations")
-        return super.createImmutableDoubleRegistration(builder, callback)
+        assertAllowsRegistration()
+        return WorldImmutableGaugeInstrumentRegistration(builder, supportsFloating = true, callback)
     }
 
     override fun createImmutableLongRegistration(
@@ -128,7 +140,8 @@ internal class ServerWorldInstrumentManager private constructor(
         callback: IInstrumentRegistration.Callback<ILongInstrumentRegistration>,
     ): ImmutableGaugeInstrumentRegistration {
         if (builder.persistent) throw IllegalArgumentException("Cannot create persistent immutable instrument registrations")
-        return super.createImmutableLongRegistration(builder, callback)
+        assertAllowsRegistration()
+        return WorldImmutableGaugeInstrumentRegistration(builder, supportsFloating = false, callback)
     }
 
     override fun createMutableDoubleRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableGaugeInstrumentRegistration {
@@ -139,6 +152,25 @@ internal class ServerWorldInstrumentManager private constructor(
     override fun createMutableLongRegistration(builder: WorldGaugeInstrumentBuilder): WorldMutableGaugeInstrumentRegistration {
         assertAllowsRegistration()
         return WorldMutableGaugeInstrumentRegistration(builder, supportsFloating = false)
+    }
+
+    internal class WorldImmutableGaugeInstrumentRegistration: ImmutableGaugeInstrumentRegistration, IWorldInstrumentRegistration {
+        constructor(
+            name: String,
+            description: String,
+            unit: String,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+            supportsFloating: Boolean,
+            callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
+        ) : super(name, description, unit, attributes, supportsFloating, callback)
+
+        constructor(
+            builder: GaugeInstrumentBuilder<*>,
+            supportsFloating: Boolean,
+            callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
+        ) : super(builder, supportsFloating, callback)
+
+        override val persistent: Boolean = false
     }
 
     internal class WorldGaugeInstrumentBuilder(
@@ -155,7 +187,7 @@ internal class ServerWorldInstrumentManager private constructor(
 
     internal class WorldMutableGaugeInstrumentRegistration :
             MutableGaugeInstrumentRegistration<WorldMutableGaugeInstrumentRegistration>,
-            IServerWorldInstrumentManager.IWorldMutableInstrumentRegistration<WorldMutableGaugeInstrumentRegistration> {
+            IWorldMutableInstrumentRegistration<WorldMutableGaugeInstrumentRegistration> {
 
         override val persistent: Boolean
 
@@ -212,7 +244,7 @@ internal class ServerWorldInstrumentManager private constructor(
                 registration: InstrumentManagerBaseRegistrationUnion,
             ): CompoundTag? {
                 val value = registration.value
-                if (value !is IServerWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) return null
+                if (value !is IWorldMutableInstrumentRegistration<*>) return null
                 if (!value.persistent) return null
                 return CompoundTag().apply {
                     putString("name", name)

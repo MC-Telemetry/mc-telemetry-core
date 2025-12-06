@@ -18,13 +18,17 @@ object TranslationKeys {
         const val ERRORS_METRIC_NAME_BAD_START = "errors.${OTelCoreMod.MOD_ID}.metric.name.bad_start"
         const val ERRORS_METRIC_NAME_BAD_END = "errors.${OTelCoreMod.MOD_ID}.metric.name.bad_end"
         const val ERRORS_METRIC_NAME_DOUBLE_DELIMITER = "errors.${OTelCoreMod.MOD_ID}.metric.name.double_delimiter"
-        const val ERRORS_METRIC_RESPONSE_TYPE_UNEXPECTED = "errors.${OTelCoreMod.MOD_ID}.metric.response_type.unexpected"
-        const val ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING = "errors.${OTelCoreMod.MOD_ID}.world.instrument_manager.missing"
+        const val ERRORS_METRIC_RESPONSE_TYPE_UNEXPECTED =
+            "errors.${OTelCoreMod.MOD_ID}.metric.response_type.unexpected"
+        const val ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING =
+            "errors.${OTelCoreMod.MOD_ID}.world.instrument_manager.missing"
         const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE = "errors.${OTelCoreMod.MOD_ID}.attributes.type.incompatible"
         const val ERRORS_ATTRIBUTES_MAPPING_MISSING = "errors.${OTelCoreMod.MOD_ID}.attributes.mapping.missing"
         const val ERRORS_OBSERVATIONS_UNINITIALIZED = "errors.${OTelCoreMod.MOD_ID}.observations.uninitialized"
         const val ERRORS_OBSERVATIONS_NOT_CONFIGURED = "errors.${OTelCoreMod.MOD_ID}.observations.not_configured"
-        const val ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND = "errors.${OTelCoreMod.MOD_ID}.observations.configuration.instrument.not_found"
+        const val ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND =
+            "errors.${OTelCoreMod.MOD_ID}.observations.configuration.instrument.not_found"
+        const val ERRORS_ENUM_VALUE_NOT_FOUND = "errors.${OTelCoreMod.MOD_ID}.enum.value.not_found"
 
         fun metricsAccessorMissing(): MutableComponent =
             Component.translatableWithFallback(
@@ -122,16 +126,26 @@ object TranslationKeys {
                 ERRORS_OBSERVATIONS_UNINITIALIZED,
                 "Observations not initialized",
             )
+
         fun observationsNotConfigured(): MutableComponent =
             Component.translatableWithFallback(
                 ERRORS_OBSERVATIONS_NOT_CONFIGURED,
                 "Observations not configured",
             )
+
         fun observationsConfigurationInstrumentNotFound(name: String): MutableComponent =
             Component.translatableWithFallback(
                 ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND,
                 $$"Instrument not found: '%1$s'",
                 name
+            )
+
+        fun enumValueNotFound(name: String, enumName: String): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_ENUM_VALUE_NOT_FOUND,
+                $$"Enum value not found: '%1$s' of '%2$s'",
+                name,
+                enumName,
             )
     }
 
@@ -220,16 +234,19 @@ object TranslationKeys {
     }
 
     object ObservationSources {
-        const val OBSERVATIONSOURCES_REDSTONE_SCRAPER_POWER = "${OTelCoreMod.MOD_ID}.observation_sources.${OTelCoreMod.MOD_ID}.redstone_scraper.power"
-        const val OBSERVATIONSOURCES_REDSTONE_SCRAPER_DIRECT_POWER = "${OTelCoreMod.MOD_ID}.observation_sources.${OTelCoreMod.MOD_ID}.redstone_scraper.power.direct"
-        const val OBSERVATIONSOURCES_REDSTONE_SCRAPER_COMPARATOR = "${OTelCoreMod.MOD_ID}.observation_sources.${OTelCoreMod.MOD_ID}.redstone_scraper.power.comparator"
 
-        operator fun get(source: IObservationSource<*,*>): MutableComponent = this[source.id]
-        operator fun get(sourceKey: ResourceKey<IObservationSource<*,*>>): MutableComponent = this[sourceKey.location()]
+        const val OBSERVATIONSOURCES_REDSTONE_SCRAPER_POWER =
+            "${OTelCoreMod.MOD_ID}.observation_sources.${OTelCoreMod.MOD_ID}.redstone_scraper.power"
+        const val OBSERVATIONSOURCES_REDSTONE_SCRAPER_DIRECT_POWER =
+            "${OTelCoreMod.MOD_ID}.observation_sources.${OTelCoreMod.MOD_ID}.redstone_scraper.power.direct"
+        const val OBSERVATIONSOURCES_REDSTONE_SCRAPER_COMPARATOR =
+            "${OTelCoreMod.MOD_ID}.observation_sources.${OTelCoreMod.MOD_ID}.redstone_scraper.power.comparator"
+
+        operator fun get(source: IObservationSource<*, *>): MutableComponent = this[source.id]
+        operator fun get(sourceKey: ResourceKey<IObservationSource<*, *>>): MutableComponent =
+            this[sourceKey.location()]
 
         operator fun get(sourceID: ResourceLocation): MutableComponent =
             Component.translatable("${OTelCoreMod.MOD_ID}.observation_sources.${sourceID.namespace.lowercase()}.${sourceID.path.lowercase()}")
-
-
     }
 }
