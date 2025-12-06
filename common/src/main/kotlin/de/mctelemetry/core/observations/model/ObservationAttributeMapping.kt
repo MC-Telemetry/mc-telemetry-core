@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalContracts::class)
-
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.TranslationKeys
@@ -23,7 +21,6 @@ import net.minecraft.network.codec.StreamCodec
 import org.intellij.lang.annotations.MagicConstant
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.iterator
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 

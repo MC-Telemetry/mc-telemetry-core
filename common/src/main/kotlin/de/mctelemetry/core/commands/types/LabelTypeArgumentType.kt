@@ -25,8 +25,8 @@ class LabelTypeArgumentType(
         )
 
         private val examples = listOf(
-            "mcotelcore:string",
-            "mcotelcore:double",
+            "string",
+            "minecraft:global_position",
         )
 
         override fun getValue(

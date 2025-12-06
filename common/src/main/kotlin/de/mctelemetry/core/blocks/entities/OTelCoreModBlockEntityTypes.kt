@@ -15,10 +15,14 @@ object OTelCoreModBlockEntityTypes {
             : DeferredRegister<BlockEntityType<*>> =
         DeferredRegister.create<BlockEntityType<*>>(OTelCoreMod.MOD_ID, Registries.BLOCK_ENTITY_TYPE)
 
+
     val SCRAPER_BLOCK_ENTITY: RegistrySupplier<BlockEntityType<ScraperBlockEntity>> = registerBlockEntity("redstone_scraper_block") {
         BlockEntityType.Builder
             .of(::ScraperBlockEntity, OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get())
-            .build(null)
+            .build(
+                @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS") // null is actually acceptable here
+                null
+            )
     }
 
     fun init() {

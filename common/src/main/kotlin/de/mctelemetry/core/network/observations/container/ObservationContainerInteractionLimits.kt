@@ -7,7 +7,6 @@ import net.minecraft.resources.ResourceKey
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 import org.apache.logging.log4j.LogManager
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.math.abs
 
@@ -18,7 +17,6 @@ object ObservationContainerInteractionLimits {
 
     const val RANGE: Double = 40.0
 
-    @OptIn(ExperimentalContracts::class)
     fun checkIsInteractable(
         level: Level?,
         pos: BlockPos,

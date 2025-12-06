@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalContracts::class)
-
 package de.mctelemetry.core.gametest.utils
 
 import com.mojang.brigadier.context.ContextChain
@@ -14,7 +12,6 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.phys.Vec2
 import net.minecraft.world.phys.Vec3
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.jvm.optionals.getOrElse
