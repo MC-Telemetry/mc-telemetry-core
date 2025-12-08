@@ -7,6 +7,7 @@ import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.canConvertTo
 import de.mctelemetry.core.api.attributes.convertFrom
+import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
@@ -152,6 +153,32 @@ class ObservationAttributeMapping(
                 })
             }
         }
+    }
+
+    fun plus(instrumentAttribute: MappedAttributeKeyInfo<*, *>, sourceAttribute: MappedAttributeKeyInfo<*, *>) =
+        this + (instrumentAttribute to sourceAttribute)
+
+    operator fun plus(entry: Pair<MappedAttributeKeyInfo<*, *>, MappedAttributeKeyInfo<*, *>>): ObservationAttributeMapping =
+        ObservationAttributeMapping(mapping + entry)
+
+    operator fun minus(instrumentAttribute: MappedAttributeKeyInfo<*, *>): ObservationAttributeMapping {
+        val other = mapping - instrumentAttribute
+        return if (other.size == mapping.size)
+            this
+        else
+            ObservationAttributeMapping(other)
+    }
+
+    fun filterForInstrument(instrumentAttributes: Collection<MappedAttributeKeyInfo<*, *>>): ObservationAttributeMapping {
+        val unneededKeys = mapping.keys - instrumentAttributes.toSet()
+        return if (unneededKeys.isEmpty())
+            this
+        else
+            ObservationAttributeMapping(mapping - unneededKeys)
+    }
+
+    fun filterForInstrument(definition: IInstrumentDefinition): ObservationAttributeMapping {
+        return filterForInstrument(definition.attributes.values)
     }
 
     companion object {
