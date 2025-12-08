@@ -18,7 +18,7 @@ import kotlin.collections.plus
 class AttributeMappingComponent(
     val sourceAttributes: IMappedAttributeKeySet,
     instrumentAttributesObservable: ObservableValue<Map<String, MappedAttributeKeyInfo<*, *>>?>,
-    mappingProperty: ObservableProperty<ObservationAttributeMapping>
+    mappingProperty: ObservableProperty<ObservationAttributeMapping>,
 ) : FlowLayout(Sizing.content(), Sizing.content(), Algorithm.VERTICAL) {
 
     val instrumentAttributes by instrumentAttributesObservable
@@ -72,15 +72,12 @@ class AttributeMappingComponent(
                 SelectBoxComponent(
                     nameComponent,
                     options,
-                    options.firstOrNull { it.value == selected } ?: options.first()) { old, new ->
+                    options.firstOrNull { it.value == selected } ?: options.first()
+                ) { old, new ->
                     if (new.value != null) {
-                        mapping = ObservationAttributeMapping(
-                            mapping.mapping + (instrumentationSourceAttribute to new.value)
-                        )
+                        mapping += instrumentationSourceAttribute to new.value
                     } else if (old.value != null) {
-                        mapping = ObservationAttributeMapping(
-                            mapping.mapping - instrumentationSourceAttribute
-                        )
+                        mapping -= instrumentationSourceAttribute
                     }
                     println(new)
                 }
@@ -94,5 +91,4 @@ class AttributeMappingComponent(
             child(row)
         }
     }
-
 }

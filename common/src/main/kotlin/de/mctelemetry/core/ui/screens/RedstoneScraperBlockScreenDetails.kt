@@ -43,7 +43,7 @@ class RedstoneScraperBlockScreenDetails(
     val sourceState: ObservationSourceState,
     instrumentName: String,
     mapping: ObservationAttributeMapping = sourceState.configuration?.mapping ?: ObservationAttributeMapping.empty(),
-    val sourceAttributes: IMappedAttributeKeySet = sourceState.source.attributes
+    val sourceAttributes: IMappedAttributeKeySet = sourceState.source.attributes,
 ) : BaseUIModelScreen<FlowLayout>(
     FlowLayout::class.java, DataSource.asset(
         ResourceLocation.fromNamespaceAndPath(
@@ -111,9 +111,16 @@ class RedstoneScraperBlockScreenDetails(
     }
 
     fun makeConfiguration(): ObservationSourceConfiguration {
-        return ObservationSourceConfiguration(
-            instrument = instrument ?: IInstrumentDefinition.Record(instrumentName),
-            mapping = mapping,
+        val instrument = instrument
+        return if (instrument == null)
+            ObservationSourceConfiguration(
+                instrument = IInstrumentDefinition.Record(instrumentName),
+                mapping = mapping,
+            )
+        else
+            ObservationSourceConfiguration(
+            instrument = instrument,
+            mapping = mapping.filterForInstrument(instrument),
         )
     }
 
