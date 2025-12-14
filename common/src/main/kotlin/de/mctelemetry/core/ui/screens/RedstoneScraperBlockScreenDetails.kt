@@ -83,7 +83,8 @@ class RedstoneScraperBlockScreenDetails(
     companion object {
 
         private fun findMatchingMetric(name: String): IClientInstrumentManager.IClientInstrumentDefinition? {
-            return IClientWorldInstrumentManager.clientWorldInstrumentManager!!.findGlobal(name)
+            return IClientWorldInstrumentManager.clientWorldInstrumentManager!!.findLocal(name)
+                ?.takeIf { it.persistent }
         }
 
         private fun findMatchingMetrics(name: String): List<IClientInstrumentManager.IClientInstrumentDefinition> {
@@ -96,10 +97,12 @@ class RedstoneScraperBlockScreenDetails(
             } else {
                 Regex.escape(name).toRegex(RegexOption.IGNORE_CASE)
             }
-            return IClientWorldInstrumentManager.clientWorldInstrumentManager!!.findGlobal(
+            return IClientWorldInstrumentManager.clientWorldInstrumentManager!!.findLocal(
                 searchRegex
             ).mapNotNull {
                 (searchRegex.find(it.name) ?: return@mapNotNull null) to it
+            }.filter {
+                it.second.persistent
             }.sortedWith(
                 compareBy<Pair<MatchResult, IMetricDefinition>> { (match, _) ->
                     match.range.first
@@ -119,9 +122,9 @@ class RedstoneScraperBlockScreenDetails(
             )
         else
             ObservationSourceConfiguration(
-            instrument = instrument,
-            mapping = mapping.filterForInstrument(instrument),
-        )
+                instrument = instrument,
+                mapping = mapping.filterForInstrument(instrument),
+            )
     }
 
     private fun sendToServer(allowDelete: Boolean = true) {
