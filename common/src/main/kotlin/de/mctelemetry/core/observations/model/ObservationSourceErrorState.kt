@@ -257,7 +257,7 @@ sealed class ObservationSourceErrorState(val type: Type) {
         val Uninitialized = Errors(listOf(uninitializedError))
 
         fun fromTag(tag: CompoundTag?): ObservationSourceErrorState {
-            if (tag == null) return NotConfigured
+            if (tag == null || tag.isEmpty) return NotConfigured
             val isOk = tag.getBoolean("ok")
             val errorsTag = tag.get("errors")
             val errors = if (errorsTag is ListTag) {
