@@ -305,8 +305,11 @@ open class ObservationSourceState(
         }
     }
 
-    fun subscribeToDirty(block: (ObservationSourceState) -> Unit) {
+    fun subscribeToDirty(block: (ObservationSourceState) -> Unit): AutoCloseable {
         onDirtyListeners.add(block)
+        return AutoCloseable {
+            unsubscribeFromDirty(block)
+        }
     }
 
     fun unsubscribeFromDirty(block: (ObservationSourceState) -> Unit) {
@@ -391,7 +394,9 @@ open class ObservationSourceState(
     }
 
     protected open fun saveErrorState(tag: CompoundTag) {
-        errorState.saveToTag(tag)
+        val errorStateTag = CompoundTag().also(errorState::saveToTag)
+        if (!errorStateTag.isEmpty)
+            tag.put("errorState", errorStateTag)
     }
 
     interface InstrumentSubRegistrationFactory {

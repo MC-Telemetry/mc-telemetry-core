@@ -12,7 +12,9 @@ import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.observations.model.ObservationSourceState
+import de.mctelemetry.core.utils.globalPosOrThrow
 import de.mctelemetry.core.utils.runWithExceptionCleanup
+import de.mctelemetry.core.utils.toShortString
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.core.HolderLookup
@@ -113,7 +115,7 @@ abstract class ObservationSourceContainerBlockEntity(
         return updateTag
     }
 
-    override fun getUpdatePacket(): Packet<ClientGamePacketListener?>? {
+    override fun getUpdatePacket(): Packet<ClientGamePacketListener> {
         return ClientboundBlockEntityDataPacket.create(this)
     }
 

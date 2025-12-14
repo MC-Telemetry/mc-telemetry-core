@@ -8,10 +8,12 @@ import de.mctelemetry.core.network.observations.container.observationrequest.Obs
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponent
+import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
 import de.mctelemetry.core.utils.childByIdOrThrow
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
 import de.mctelemetry.core.utils.coroutineDispatcher
 import de.mctelemetry.core.utils.globalPosOrThrow
+import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import de.mctelemetry.core.utils.toShortString
 import io.wispforest.owo.ui.base.BaseUIModelScreen
@@ -59,6 +61,8 @@ class RedstoneScraperBlockScreen(
     private val observationValuePreviews: MutableMap<IObservationSource<*, *>, ObservationValuePreviewDataComponent> =
         mutableMapOf()
 
+    private val closable = mutableListOf<AutoCloseable>()
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun currentValue(): ObservationSourceObservationMap? {
         val deferred = observationFlowRef.get() ?: return null
@@ -88,6 +92,7 @@ class RedstoneScraperBlockScreen(
                     continue
                 }
             }
+
             preview.value = observations
         }
     }
@@ -119,7 +124,19 @@ class RedstoneScraperBlockScreen(
     }
 
     override fun close() {
-        scope.cancel()
+        try {
+            scope.cancel()
+        } finally {
+            var exceptionAccumulator: Exception? = null
+            while (closable.isNotEmpty()) {
+                try {
+                    closable.removeFirst().close()
+                } catch(ex: Exception) {
+                    exceptionAccumulator += ex
+                }
+            }
+            if(exceptionAccumulator != null) throw exceptionAccumulator
+        }
         OTelCoreMod.logger.trace("Cancelled coroutine scope for {}", this)
     }
 
@@ -144,6 +161,13 @@ class RedstoneScraperBlockScreen(
                 TranslationKeys.ObservationSources[source]
             )
             list.child(template)
+
+            closable.add(
+                ObservationValueStateDataComponent(
+                    template.childByIdOrThrow<LabelComponent>("observation-source-state"),
+                    state
+                )
+            )
 
             observationValuePreviews[source] = ObservationValuePreviewDataComponent(
                 template.childByIdOrThrow<LabelComponent>("observation-source-value")

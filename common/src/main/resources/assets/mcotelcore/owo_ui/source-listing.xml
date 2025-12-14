@@ -61,8 +61,14 @@
                 <children>
                     <label id="observation-source-name">
                         <sizing>
-                            <horizontal method="fill">68</horizontal>
+                            <horizontal method="fill">58</horizontal>
                         </sizing>
+                    </label>
+                    <label id="observation-source-state">
+                        <sizing>
+                            <horizontal method="fill">10</horizontal>
+                        </sizing>
+                        <horizontal-text-alignment>center</horizontal-text-alignment>
                     </label>
                     <label id="observation-source-value">
                         <sizing>
