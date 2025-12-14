@@ -1,5 +1,8 @@
+import net.fabricmc.loom.configuration.ide.RunConfigSettings
 import java.nio.file.Paths
 import java.util.Properties
+import kotlin.io.path.absolutePathString
+import kotlin.io.path.div
 
 plugins {
     id("com.gradleup.shadow")
@@ -21,7 +24,26 @@ loom {
         this.accessTransformer(project.layout.projectDirectory.file("src/main/resources/META-INF/accesstransformer.cfg"))
     }
     runs {
-        named("server") {
+        val gameTestModClassesEnvValue = run {
+
+            val commonBuildClasses = project(":common").layout.buildDirectory.dir("classes").get().asFile.toPath()
+            val neoforgeBuildClasses = project.layout.buildDirectory.dir("classes").get().asFile.toPath()
+            listOf(
+                project.layout.buildDirectory.dir("resources").get().asFile.toPath() / "gametest",
+                neoforgeBuildClasses / "java" / "main",
+                neoforgeBuildClasses / "kotlin" / "main",
+                neoforgeBuildClasses / "java" / "gametest",
+                neoforgeBuildClasses / "kotlin" / "gametest",
+//                commonBuildClasses / "java" / "main",
+//                commonBuildClasses / "kotlin" / "main",
+                commonBuildClasses / "java" / "gametest",
+                commonBuildClasses / "kotlin" / "gametest",
+                project.layout.projectDirectory.dir("out").asFile.toPath() / "production" / "classes",
+            ).joinToString(separator = ";") {
+                "gametest%%${it.absolutePathString()}"
+            }
+        }
+        named("server", Action<RunConfigSettings> {
             vmArg(
                 "-javaagent:${
                     rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar")
@@ -33,8 +55,8 @@ loom {
                 rootProject.layout.projectDirectory.file("dev.otel.properties")
             )
             runDir = "serverRun"
-        }
-        named("client") {
+        })
+        named("client", Action<RunConfigSettings> {
             vmArg(
                 "-javaagent:${
                     rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar")
@@ -45,8 +67,8 @@ loom {
                 "OTEL_JAVAAGENT_CONFIGURATION_FILE",
                 rootProject.layout.projectDirectory.file("dev.otel.properties")
             )
-        }
-        create("clientWithDocker") {
+        })
+        create("clientWithDocker", Action<RunConfigSettings> {
             client()
             inherit(this@runs["client"])
             configName = "Minecraft Client + Docker"
@@ -54,10 +76,27 @@ loom {
                 "OTEL_JAVAAGENT_CONFIGURATION_FILE",
                 rootProject.layout.projectDirectory.file("docker.otel.properties")
             )
-        }
-        create("gameTestServer") {
+        })
+        create("clientGameTest", Action<RunConfigSettings> {
+            client()
+            inherit(this@runs["client"])
+            configName = "Minecraft Client + GameTest"
+            source("gametest")
+            environmentVariable("MOD_CLASSES", gameTestModClassesEnvValue)
+        })
+        create("clientGameTestWithDocker", Action<RunConfigSettings> {
+            client()
+            inherit(this@runs["clientWithDocker"])
+            configName = "Minecraft Client + GameTest + Docker"
+            source("gametest")
+            environmentVariable("MOD_CLASSES", gameTestModClassesEnvValue)
+        })
+        create("gameTestServer", Action<RunConfigSettings> {
             server()
             runDir = "gameTestRun"
+
+            source("gametest")
+            environmentVariable("MOD_CLASSES", gameTestModClassesEnvValue)
 
             vmArg(
                 "-javaagent:${
@@ -74,11 +113,36 @@ loom {
             property("neoforge.enabledGameTestNamespaces", MOD_ID)
             property("neoforge.enableGameTest", "true")
             property("neoforge.gameTestServer", "true")
-        }
+        })
     }
 }
 
 tasks["check"].dependsOn("runGameTestServer")
+
+sourceSets {
+    val main by getting
+    val commonGameTest = project(":common").sourceSets["gametest"]
+
+    val gametest by creating {
+        compileClasspath += commonGameTest.output + commonGameTest.compileClasspath + main.output + main.compileClasspath
+        val pathSep = File.separator
+        val blacklistedSepName = "${pathSep}neoforge${pathSep}build${pathSep}resources${pathSep}main"
+        runtimeClasspath += commonGameTest.output + /*commonGameTest.runtimeClasspath +*/ (main.output + main.runtimeClasspath).filter {
+            !(it.path.endsWith("\\neoforge\\build\\resources\\main") || it.path.endsWith(blacklistedSepName))
+        }
+        /*for ((k, v) in mapOf(
+            "commonOutput" to commonGameTest.output,
+            "commonClasspath" to commonGameTest.runtimeClasspath,
+            "mainOutput" to main.output,
+            "mainClasspath" to main.runtimeClasspath,
+            "total" to runtimeClasspath,
+        )) {
+            println(v.files.joinToString(prefix = "$k\n  - ", separator = "\n  - ") {
+                it.path
+            })
+        }*/
+    }
+}
 
 val common: Configuration by configurations.creating {
     this.isCanBeResolved = true
@@ -250,5 +314,24 @@ tasks.register("configureGameTestServer") {
             properties.store(it, null)
         }
     }
+    tasks["runGameTestServer"].dependsOn(this)
+}
+
+tasks.processResources {
+    val commonProcessResources = project(":common").tasks.processResources.get()
+    dependsOn(commonProcessResources)
+    inputs.dir(commonProcessResources.destinationDir)
+    from(commonProcessResources.destinationDir)
+}
+
+tasks.named<ProcessResources>("processGametestResources") {
+    val resourcesTask = tasks.processResources.get()
+    val commonGameTestResourcesTask = project(":common").tasks.getByName<ProcessResources>("processGametestResources")
+    dependsOn(resourcesTask, commonGameTestResourcesTask)
+    inputs.dir(commonGameTestResourcesTask.destinationDir)
+    from(commonGameTestResourcesTask.destinationDir)
+    inputs.dir(resourcesTask.destinationDir)
+    from(resourcesTask.destinationDir)
+
     tasks["runGameTestServer"].dependsOn(this)
 }

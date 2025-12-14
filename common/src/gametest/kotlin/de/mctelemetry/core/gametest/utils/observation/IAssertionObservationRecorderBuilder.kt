@@ -10,7 +10,7 @@ interface IAssertionObservationRecorderBuilder {
     var allowAdditional: Boolean // default false
 
 
-    @Contract("_,_,_,_,_ -> this", mutates = "this")
+    @Contract("_,_,_,_,_ -> this")
     fun assertRecordsPreferred(
         attributes: Attributes,
         longValue: Long,
@@ -21,7 +21,7 @@ interface IAssertionObservationRecorderBuilder {
 
     interface ForDouble: IAssertionObservationRecorderBuilder {
 
-        @Contract("_,_,_,_,_ -> this", mutates = "this")
+        @Contract("_,_,_,_,_ -> this")
         fun assertRecordsDouble(
             attributes: Attributes,
             doubleValue: Double,
@@ -33,7 +33,7 @@ interface IAssertionObservationRecorderBuilder {
 
     interface ForLong : IAssertionObservationRecorderBuilder {
 
-        @Contract("_,_,_,_,_ -> this", mutates = "this")
+        @Contract("_,_,_,_,_ -> this")
         fun assertRecordsLong(
             attributes: Attributes,
             longValue: Long,

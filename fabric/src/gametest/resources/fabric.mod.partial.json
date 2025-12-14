@@ -1,0 +1,9 @@
+{
+  "entrypoints": {
+    "fabric-gametest": [
+      {
+        "value": "de.mctelemetry.core.gametest.CommonGameTestFactory"
+      }
+    ]
+  }
+}

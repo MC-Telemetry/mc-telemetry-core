@@ -524,7 +524,7 @@ internal fun <T : Any> GameTestHelper.withConfiguredStartupSequence(
                 if (errorStateValue != ObservationSourceErrorState.Type.Ok) {
                     val problems = entity.observationStatesIfInitialized.orEmpty()
                         .mapValues { (_, value) ->
-                            value.errorState.withoutWarning(ObservationSourceErrorState.notConfiguredWarning)
+                            value.errorState.withoutWarning(ObservationSourceErrorState.NotConfigured.warnings.single())
                         }
                         .filterValues { it != ObservationSourceErrorState.Ok }
                     if (problems.isEmpty()) {

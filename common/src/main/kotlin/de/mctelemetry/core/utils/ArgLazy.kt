@@ -5,7 +5,7 @@ import java.util.Collections
 import java.util.WeakHashMap
 import kotlin.reflect.KProperty
 
-internal class ArgLazy<T, R : Any>(val block: (T) -> R) {
+class ArgLazy<T, R : Any>(val block: (T) -> R) {
 
     private val map: MutableMap<T, WeakReference<R>> = Collections.synchronizedMap(WeakHashMap())
     operator fun getValue(thisRef: T, property: KProperty<*>): R {

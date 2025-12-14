@@ -21,11 +21,6 @@
         "adapter": "kotlin",
         "value": "de.mctelemetry.core.fabric.OTelCoreModFabric"
       }
-    ],
-    "fabric-gametest": [
-      {
-        "value": "de.mctelemetry.core.gametest.CommonGameTestFactory"
-      }
     ]
   },
   "mixins": [
