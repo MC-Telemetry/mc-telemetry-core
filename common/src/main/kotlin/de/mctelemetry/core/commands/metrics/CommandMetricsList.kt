@@ -7,8 +7,8 @@ import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
+import de.mctelemetry.core.api.instruments.manager.server.IWorldMutableInstrumentRegistration
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.invoke
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -81,7 +81,7 @@ class CommandMetricsList internal constructor(
                         }
                     }
             }
-            if (definition is IServerWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) {
+            if (definition is IWorldMutableInstrumentRegistration<*>) {
                 if (definition.persistent) {
                     append("P") {
                         style {
@@ -159,7 +159,7 @@ class CommandMetricsList internal constructor(
         return sendList(
             context,
             instrumentManager.findLocal().filterNot {
-                (it is IServerWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
+                (it is IWorldMutableInstrumentRegistration<*>) && it.persistent
             },
             "world"
         )
@@ -173,7 +173,7 @@ class CommandMetricsList internal constructor(
         return sendList(
             context,
             instrumentManager.findLocal().filter {
-                (it is IServerWorldInstrumentManager.IWorldMutableInstrumentRegistration<*>) && it.persistent
+                (it is IWorldMutableInstrumentRegistration<*>) && it.persistent
             },
             "custom"
         )

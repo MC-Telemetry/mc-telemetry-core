@@ -19,13 +19,22 @@ architectury {
 
 kotlin {
     jvmToolchain(21)
+    compilerOptions {
+        optIn.add("kotlin.contracts.ExperimentalContracts")
+    }
 }
 
 subprojects {
     apply(plugin = "dev.architectury.loom")
+    apply(plugin = "kotlin")
 
     val loom = project.extensions.getByName<LoomGradleExtensionAPI>("loom")
 
+    kotlin {
+        compilerOptions {
+            optIn.add("kotlin.contracts.ExperimentalContracts")
+        }
+    }
 
     dependencies {
         "minecraft"("com.mojang:minecraft:${project.property("minecraft_version")}")
@@ -89,7 +98,7 @@ val downloadOTelAgentTask = tasks.register<Download>("downloadOTelAgent") {
 tasks.register<Verify>("verifyOTelAgent") {
     dependsOn(downloadOTelAgentTask)
     src(rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar"))
-    val (algorithm, checksum) = (rootProject.property("otel_javaagent_checksum") as String).split(':',limit=2)
+    val (algorithm, checksum) = (rootProject.property("otel_javaagent_checksum") as String).split(':', limit = 2)
     algorithm(algorithm)
     checksum(checksum)
 }

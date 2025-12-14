@@ -9,6 +9,7 @@ import de.mctelemetry.core.api.instruments.builder.IRemoteWorldInstrumentDefinit
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
 import de.mctelemetry.core.network.instrumentsync.A2AInstrumentAddedPayload
 import de.mctelemetry.core.network.instrumentsync.A2AInstrumentRemovedPayload
@@ -32,7 +33,7 @@ import kotlin.concurrent.withLock
 @Environment(EnvType.CLIENT)
 class ClientWorldInstrumentManager(
     reservedNames: Set<String> = setOf(),
-    instruments: Collection<IClientWorldInstrumentManager.IClientWorldInstrumentDefinition> = emptyList(),
+    instruments: Collection<IClientWorldInstrumentDefinition> = emptyList(),
     localCallbacks: Collection<IInstrumentAvailabilityCallback<IInstrumentDefinition>> = emptyList(),
     globalCallbacks: Collection<IInstrumentAvailabilityCallback<IInstrumentDefinition>> = emptyList(),
 ) : IClientWorldInstrumentManager {
@@ -50,7 +51,7 @@ class ClientWorldInstrumentManager(
     override val reservedNames: Set<String>
         get() = dataLock.readLock().withLock { _reservedNames.toSet() }
 
-    private val instruments: MutableMap<String, IClientWorldInstrumentManager.IClientWorldInstrumentDefinition> =
+    private val instruments: MutableMap<String, IClientWorldInstrumentDefinition> =
         instruments.associateByTo(mutableMapOf()) {
             it.name.lowercase()
         }
@@ -129,11 +130,11 @@ class ClientWorldInstrumentManager(
         return findLocal(pattern)
     }
 
-    override fun findLocal(name: String): IClientWorldInstrumentManager.IClientWorldInstrumentDefinition? {
+    override fun findLocal(name: String): IClientWorldInstrumentDefinition? {
         return dataLock.readLock().withLock { instruments[name.lowercase()] }
     }
 
-    override fun findLocal(pattern: Regex?): Sequence<IClientWorldInstrumentManager.IClientWorldInstrumentDefinition> {
+    override fun findLocal(pattern: Regex?): Sequence<IClientWorldInstrumentDefinition> {
         if (pattern == null) return dataLock.readLock().withLock {
             instruments.values.toList()
         }.asSequence()
@@ -226,8 +227,8 @@ class ClientWorldInstrumentManager(
     }
 
     fun addReceivedInstrument(instrument: IWorldInstrumentDefinition) {
-        val clientInstrument: IClientWorldInstrumentManager.IClientWorldInstrumentDefinition =
-            instrument as? IClientWorldInstrumentManager.IClientWorldInstrumentDefinition
+        val clientInstrument: IClientWorldInstrumentDefinition =
+            instrument as? IClientWorldInstrumentDefinition
                 ?: IWorldInstrumentDefinition.Record(instrument)
         var exceptionAccumulator: Exception? = forEachCollectExceptions(globalCallbacks) {
             it.instrumentAdded(this, clientInstrument, IInstrumentAvailabilityCallback.Phase.PRE)
@@ -251,7 +252,7 @@ class ClientWorldInstrumentManager(
 
     fun removeReceivedInstrument(instrument: IWorldInstrumentDefinition) {
         var exceptionAccumulator: Exception? = null
-        var oldValue: IClientWorldInstrumentManager.IClientWorldInstrumentDefinition? = null
+        var oldValue: IClientWorldInstrumentDefinition? = null
         dataLock.writeLock().withLock {
             instruments.compute(instrument.name.lowercase()) { _, old ->
                 if (old == null) {

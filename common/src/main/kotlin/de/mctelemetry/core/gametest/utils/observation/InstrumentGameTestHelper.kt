@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalContracts::class)
-
 package de.mctelemetry.core.gametest.utils.observation
 
 import com.mojang.datafixers.util.Either
@@ -42,7 +40,6 @@ import net.minecraft.gametest.framework.GameTestSequence
 import net.minecraft.world.level.block.entity.BlockEntity
 import kotlin.collections.get
 import kotlin.collections.iterator
-import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.streams.asSequence

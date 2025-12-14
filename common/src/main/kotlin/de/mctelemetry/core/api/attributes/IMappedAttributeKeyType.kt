@@ -58,7 +58,7 @@ fun <T : Any, R : Any> IMappedAttributeKeyType<T, *>.convertTo(supertype: IMappe
 
 
 fun <T : Any, R : Any> MappedAttributeKeyValue<T, *>.convertTo(supertype: IMappedAttributeKeyType<R, *>): R? {
-    @Suppress("UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST") // relevant part of cast (T) is still retained, only wildcard is cascaded
     return (info.type as IMappedAttributeKeyType<T, *>).convertTo(supertype, value)
 }
 

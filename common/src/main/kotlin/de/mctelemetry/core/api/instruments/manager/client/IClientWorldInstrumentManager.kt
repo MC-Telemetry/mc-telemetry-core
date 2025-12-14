@@ -1,7 +1,7 @@
 package de.mctelemetry.core.api.instruments.manager.client
 
-import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.builder.IRemoteWorldInstrumentDefinitionBuilder
+import de.mctelemetry.core.api.instruments.manager.IWorldInstrumentManager
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import dev.architectury.event.Event
 import dev.architectury.event.EventFactory
@@ -9,7 +9,7 @@ import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 
 @Environment(EnvType.CLIENT)
-interface IClientWorldInstrumentManager : IClientInstrumentManager {
+interface IClientWorldInstrumentManager : IClientInstrumentManager, IWorldInstrumentManager {
 
     fun gaugeInstrument(name: String): IRemoteWorldInstrumentDefinitionBuilder<*>
 
@@ -31,10 +31,6 @@ interface IClientWorldInstrumentManager : IClientInstrumentManager {
     }
 
     override fun findLocal(pattern: Regex?): Sequence<IClientWorldInstrumentDefinition>
-
-    interface IClientWorldInstrumentDefinition :
-            IClientInstrumentManager.IClientInstrumentDefinition,
-            IWorldInstrumentDefinition
 
 
     object Events {
