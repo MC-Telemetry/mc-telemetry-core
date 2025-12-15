@@ -94,8 +94,8 @@ object TranslationKeys {
             Component.translatableWithFallback(
                 ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE,
                 $$"Incompatible attribute types: Cannot assign from %1$s to %2$s",
-                sourceType.id.toString(),
-                targetType.id.toString(),
+                sourceType.id.location().toString(),
+                targetType.id.location().toString(),
             )
 
         fun attributeTypesIncompatible(
@@ -105,8 +105,8 @@ object TranslationKeys {
             Component.translatableWithFallback(
                 ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE,
                 $$"Incompatible attribute types: Cannot assign from %1$s ('%3$s') to %2$s ('%4$s')",
-                source.type.id.toString(),
-                target.type.id.toString(),
+                source.type.id.location().toString(),
+                target.type.id.location().toString(),
                 source.baseKey.key,
                 target.baseKey.key,
             )
@@ -118,7 +118,7 @@ object TranslationKeys {
                 ERRORS_ATTRIBUTES_MAPPING_MISSING,
                 $$"Missing attributes mapping: Cannot find source attribute for '%1$s' (%2$s)",
                 target.baseKey.key,
-                target.type.id.toString(),
+                target.type.id.location().toString(),
             )
 
         fun observationsUninitialized(): MutableComponent =

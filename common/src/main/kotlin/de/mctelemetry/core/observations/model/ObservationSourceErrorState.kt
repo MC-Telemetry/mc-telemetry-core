@@ -261,11 +261,11 @@ sealed class ObservationSourceErrorState(val type: Type) {
             val isOk = tag.getBoolean("ok")
             val errorsTag = tag.get("errors")
             val errors = if (errorsTag is ListTag) {
-                errorsTag.map { ComponentSerialization.CODEC.parse(NbtOps.INSTANCE, tag).orThrow }
+                errorsTag.map { ComponentSerialization.CODEC.parse(NbtOps.INSTANCE, it).orThrow }
             } else emptyList()
             val warningsTag = tag.get("warnings")
             val warnings = if (warningsTag is ListTag) {
-                warningsTag.map { ComponentSerialization.CODEC.parse(NbtOps.INSTANCE, tag).orThrow }
+                warningsTag.map { ComponentSerialization.CODEC.parse(NbtOps.INSTANCE, it).orThrow }
             } else emptyList()
             return when {
                 errors.isNotEmpty() -> Errors(errors, warnings)
