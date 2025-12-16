@@ -160,7 +160,7 @@ object RedstoneScraperBlockTest {
         fun validation() { // shared validation logic between "wait until this is true" and "assert this remains true"
             helper.assertBlockEntityDataC<ObservationSourceContainerBlockEntity>(
                 BasePos,
-                { "Expected to be in a warning state" }) {
+                { "Expected to be in NotConfigured state" }) {
                 val states = helper.assertNotNullC(it.observationStatesIfInitialized, "observationStates")
                 helper.assertFalseC(states.isEmpty(), "Expected observationStates to not be empty")
                 states.forEach { (source, state) ->
@@ -171,7 +171,7 @@ object RedstoneScraperBlockTest {
                     )
                     helper.assertNullC(state.configuration, "configuration of $source")
                 }
-                ObservationSourceErrorState.Type.Warnings == it.blockState.getValue(ObservationSourceContainerBlock.ERROR)
+                ObservationSourceErrorState.Type.NotConfigured == it.blockState.getValue(ObservationSourceContainerBlock.ERROR)
             }
         }
         helper.startSequence()
