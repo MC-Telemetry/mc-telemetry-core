@@ -1,52 +1,50 @@
 package de.mctelemetry.core
 
 import com.mojang.serialization.Lifecycle
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
-import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.blocks.OTelCoreModBlocks
-import de.mctelemetry.core.commands.scrape.CommandScrape
-import de.mctelemetry.core.items.OTelCoreModItems
-import de.mctelemetry.core.commands.metrics.CommandMetrics
-import de.mctelemetry.core.instruments.builtin.BuiltinInstruments
-import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
 import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
-import de.mctelemetry.core.network.instrumentsync.A2AInstrumentAddedPayload
-import de.mctelemetry.core.network.instrumentsync.A2AInstrumentRemovedPayload
-import de.mctelemetry.core.network.instrumentsync.C2SAllInstrumentRequestPayload
-import de.mctelemetry.core.network.instrumentsync.S2CAllInstrumentsPayload
-import de.mctelemetry.core.network.instrumentsync.S2CReservedNameAddedPayload
-import de.mctelemetry.core.network.instrumentsync.S2CReservedNameRemovedPayload
-import de.mctelemetry.core.network.instrumentsync.SyncSubscriptions
+import de.mctelemetry.core.commands.metrics.CommandMetrics
+import de.mctelemetry.core.commands.scrape.CommandScrape
+import de.mctelemetry.core.instruments.builtin.BuiltinInstruments
+import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
+import de.mctelemetry.core.items.OTelCoreModItems
+import de.mctelemetry.core.network.instrumentsync.*
 import de.mctelemetry.core.network.observations.container.observationrequest.C2SObservationsRequestPayload
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerServer
 import de.mctelemetry.core.network.observations.container.observationrequest.S2CObservationsPayload
 import de.mctelemetry.core.network.observations.container.settings.C2SObservationSourceSettingsUpdatePayload
 import de.mctelemetry.core.observations.ObservationSources
 import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
+import de.mctelemetry.core.ui.screens.InstrumentManagerScreen
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
+import dev.architectury.event.events.client.ClientTickEvent
 import dev.architectury.event.events.common.CommandRegistrationEvent
 import dev.architectury.platform.Platform
 import dev.architectury.registry.CreativeTabRegistry
+import dev.architectury.registry.client.keymappings.KeyMappingRegistry
 import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
 import dev.architectury.utils.Env
-import io.github.pixix4.kobserve.property.constObservable
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.metrics.Meter
+import net.minecraft.client.KeyMapping
 import net.minecraft.core.RegistrationInfo
 import net.minecraft.core.WritableRegistry
-import java.util.function.Supplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
 import net.minecraft.world.item.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import java.util.Optional
+import org.lwjgl.glfw.GLFW
+import java.util.*
+import java.util.function.Supplier
 
 object OTelCoreMod {
 
@@ -62,21 +60,17 @@ object OTelCoreMod {
     val OTEL_TAB: RegistrySupplier<CreativeModeTab>
 
     init {
-        val con = constObservable(15)
-
         OTEL_TAB = TABS.register(
             "mcotelcore_tab",
             {
                 CreativeTabRegistry.create(
-                    Component.translatable("category.mcotelcore_tab"),
-                    Supplier { ItemStack(OTelCoreModItems.REDSTONE_SCRAPER_BLOCK) }
-                )
+                    Component.translatable("category.mcotelcore_tab")
+                ) { ItemStack(OTelCoreModItems.REDSTONE_SCRAPER_BLOCK) }
             }
         )
     }
 
     fun registerCallbacks() {
-
         ServerInstrumentMetaManager.register()
         BuiltinInstruments.register()
         CommandRegistrationEvent.EVENT.register { evt, ctx, _ ->
@@ -97,6 +91,10 @@ object OTelCoreMod {
         C2SObservationsRequestPayload.register()
         C2SObservationSourceSettingsUpdatePayload.register()
         SyncSubscriptions.register()
+
+        if (Platform.getEnvironment() == Env.CLIENT) {
+            KeyBindingManager.register()
+        }
     }
 
     fun registerContent() {
