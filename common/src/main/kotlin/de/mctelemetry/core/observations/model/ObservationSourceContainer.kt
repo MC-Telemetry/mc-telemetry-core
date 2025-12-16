@@ -7,7 +7,8 @@ import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
-import de.mctelemetry.core.utils.plus
+import de.mctelemetry.core.utils.closeAllRethrow
+import de.mctelemetry.core.utils.closeConsumeAllRethrow
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.gametest.framework.GameTestAssertException
 import net.minecraft.gametest.framework.GameTestTimeoutException
@@ -34,14 +35,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
     )
 
     override fun close() {
-        observationStates.values.fold<ObservationSourceState, Exception?>(null) { acc, state ->
-            try {
-                state.close()
-                acc
-            } catch (ex: Exception) {
-                acc + ex
-            }
-        }?.let { throw it }
+        observationStates.values.closeAllRethrow()
     }
 
     protected open fun setup() {
@@ -66,16 +60,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
             }
             cleanupList.clear()
         } catch (ex: Exception) {
-            var exAcc: Exception = ex
-            while (cleanupList.isNotEmpty()) {
-                val cleanup = cleanupList.remove()
-                try {
-                    cleanup.close()
-                } catch (e: Exception) {
-                    exAcc += e
-                }
-            }
-            throw ex
+            cleanupList.closeConsumeAllRethrow(ex)
         }
     }
 

@@ -1,6 +1,6 @@
 package de.mctelemetry.core.gametest.utils
 
-import de.mctelemetry.core.utils.plus
+import de.mctelemetry.core.utils.consumeAllRethrow
 import net.minecraft.gametest.framework.GameTestHelper
 import net.minecraft.gametest.framework.GameTestInfo
 import net.minecraft.gametest.framework.GameTestListener
@@ -61,25 +61,8 @@ interface IGameTestHelperFinalizer : MutableCollection<IGameTestHelperFinalizer.
 
         constructor() : this(ConcurrentLinkedQueue())
 
-        companion object {
-
-            private inline fun <T> consumeQueue(queue: ConcurrentLinkedQueue<T>, block: (T) -> Unit) {
-                var completionInvocationException: Exception? = null
-                do {
-                    val element = queue.poll()
-                    if (element == null) break
-                    try {
-                        block(element)
-                    } catch (ex: Exception) {
-                        completionInvocationException += ex
-                    }
-                } while (true)
-                if (completionInvocationException != null) throw completionInvocationException
-            }
-        }
-
         private fun callOnComplete(result: Throwable?) {
-            consumeQueue(callbacks) { it.onComplete(result) }
+            callbacks.consumeAllRethrow { it.onComplete(result) }
         }
 
         override fun testStructureLoaded(gameTestInfo: GameTestInfo) {}

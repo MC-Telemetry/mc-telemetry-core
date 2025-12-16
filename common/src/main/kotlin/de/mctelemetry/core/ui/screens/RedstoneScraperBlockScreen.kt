@@ -11,9 +11,9 @@ import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponen
 import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
 import de.mctelemetry.core.utils.childByIdOrThrow
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
+import de.mctelemetry.core.utils.closeConsumeAllRethrow
 import de.mctelemetry.core.utils.coroutineDispatcher
 import de.mctelemetry.core.utils.globalPosOrThrow
-import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import de.mctelemetry.core.utils.toShortString
 import io.wispforest.owo.ui.base.BaseUIModelScreen
@@ -127,15 +127,7 @@ class RedstoneScraperBlockScreen(
         try {
             scope.cancel()
         } finally {
-            var exceptionAccumulator: Exception? = null
-            while (closable.isNotEmpty()) {
-                try {
-                    closable.removeFirst().close()
-                } catch(ex: Exception) {
-                    exceptionAccumulator += ex
-                }
-            }
-            if(exceptionAccumulator != null) throw exceptionAccumulator
+            closable.closeConsumeAllRethrow()
         }
         OTelCoreMod.logger.trace("Cancelled coroutine scope for {}", this)
     }

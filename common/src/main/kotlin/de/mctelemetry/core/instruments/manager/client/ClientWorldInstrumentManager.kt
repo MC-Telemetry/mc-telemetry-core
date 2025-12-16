@@ -15,7 +15,8 @@ import de.mctelemetry.core.network.instrumentsync.A2AInstrumentAddedPayload
 import de.mctelemetry.core.network.instrumentsync.A2AInstrumentRemovedPayload
 import de.mctelemetry.core.network.instrumentsync.C2SAllInstrumentRequestPayload
 import de.mctelemetry.core.network.instrumentsync.S2CAllInstrumentsPayload
-import de.mctelemetry.core.utils.plus
+import de.mctelemetry.core.utils.forEachCollect
+import de.mctelemetry.core.utils.forEachRethrow
 import dev.architectury.networking.NetworkManager
 import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.Job
@@ -80,31 +81,14 @@ class ClientWorldInstrumentManager(
         return AutoCloseable { localCallbacks.remove(callback) }
     }
 
-    private inline fun <T> forEachCollectExceptions(
-        callbacks: Collection<T>,
-        block: (T) -> Unit,
-    ): Exception? {
-        return callbacks.fold(null as Exception?) { acc, it ->
-            try {
-                block(it)
-                acc
-            } catch (ex: Exception) {
-                acc + ex
-            }
-        }
-    }
-
     override fun instrumentAdded(
         manager: IInstrumentManager,
         instrument: IMetricDefinition,
         phase: IInstrumentAvailabilityCallback.Phase,
     ) {
         if (instrument !is IInstrumentDefinition) return
-        val exception = forEachCollectExceptions(globalCallbacks) {
+        globalCallbacks.forEachRethrow {
             it.instrumentAdded(manager, instrument, phase)
-        }
-        if (exception != null) {
-            throw exception
         }
     }
 
@@ -114,11 +98,8 @@ class ClientWorldInstrumentManager(
         phase: IInstrumentAvailabilityCallback.Phase,
     ) {
         if (instrument !is IInstrumentDefinition) return
-        val exception = forEachCollectExceptions(globalCallbacks) {
+        globalCallbacks.forEachRethrow {
             it.instrumentRemoved(manager, instrument, phase)
-        }
-        if (exception != null) {
-            throw exception
         }
     }
 
@@ -145,7 +126,7 @@ class ClientWorldInstrumentManager(
 
     fun populate(allInstruments: S2CAllInstrumentsPayload): Boolean {
         val data = allInstruments.instruments.associateBy { it.name.lowercase() }
-        var exceptionAccumulator: Exception? = null
+        var exceptionAccumulator: Exception?
         dataLock.writeLock().withLock {
             _reservedNames.clear()
             _reservedNames.addAll(allInstruments.reservedNames.map { it.lowercase() })
@@ -164,20 +145,11 @@ class ClientWorldInstrumentManager(
                 }
             val pendingRemovals: Collection<IWorldInstrumentDefinition> = (instruments - matchingInstrumentNames).values
             val pendingAdditions: Collection<IWorldInstrumentDefinition> = (data - matchingInstrumentNames).values
-            for (removal in pendingRemovals) {
-                try {
-                    removeReceivedInstrument(removal)
-                } catch (ex: Exception) {
-                    exceptionAccumulator += ex
-                }
-            }
-            for (addition in pendingAdditions) {
-                try {
-                    addReceivedInstrument(addition)
-                } catch (ex: Exception) {
-                    exceptionAccumulator += ex
-                }
-            }
+            exceptionAccumulator = pendingRemovals.forEachCollect(block = ::removeReceivedInstrument)
+            exceptionAccumulator = pendingAdditions.forEachCollect(
+                exceptionSeed = exceptionAccumulator,
+                block = ::addReceivedInstrument,
+            )
         }
         populationJob.get().complete()
         return populatedInitial.compareAndSet(false, true).also {
@@ -230,19 +202,19 @@ class ClientWorldInstrumentManager(
         val clientInstrument: IClientWorldInstrumentDefinition =
             instrument as? IClientWorldInstrumentDefinition
                 ?: IWorldInstrumentDefinition.Record(instrument)
-        var exceptionAccumulator: Exception? = forEachCollectExceptions(globalCallbacks) {
+        var exceptionAccumulator: Exception? = globalCallbacks.forEachCollect {
             it.instrumentAdded(this, clientInstrument, IInstrumentAvailabilityCallback.Phase.PRE)
         }
-        exceptionAccumulator += forEachCollectExceptions(localCallbacks) {
+        exceptionAccumulator = localCallbacks.forEachCollect(exceptionAccumulator) {
             it.instrumentAdded(this, clientInstrument, IInstrumentAvailabilityCallback.Phase.PRE)
         }
         dataLock.writeLock().withLock {
             instruments.put(instrument.name.lowercase(), clientInstrument)
         }
-        exceptionAccumulator += forEachCollectExceptions(localCallbacks) {
+        exceptionAccumulator = localCallbacks.forEachCollect(exceptionAccumulator) {
             it.instrumentAdded(this, clientInstrument, IInstrumentAvailabilityCallback.Phase.POST)
         }
-        exceptionAccumulator += forEachCollectExceptions(globalCallbacks) {
+        exceptionAccumulator = globalCallbacks.forEachCollect(exceptionAccumulator) {
             it.instrumentAdded(this, clientInstrument, IInstrumentAvailabilityCallback.Phase.POST)
         }
         if (exceptionAccumulator != null) {
@@ -267,10 +239,10 @@ class ClientWorldInstrumentManager(
                         subLogger.trace("Removing mismatched instrument {}, locally stored {}", instrument, old)
                     }
                     oldValue = old
-                    exceptionAccumulator += forEachCollectExceptions(globalCallbacks) {
+                    exceptionAccumulator = globalCallbacks.forEachCollect(exceptionAccumulator) {
                         it.instrumentRemoved(this, old, IInstrumentAvailabilityCallback.Phase.PRE)
                     }
-                    exceptionAccumulator += forEachCollectExceptions(localCallbacks) {
+                    exceptionAccumulator = localCallbacks.forEachCollect(exceptionAccumulator) {
                         it.instrumentRemoved(this, old, IInstrumentAvailabilityCallback.Phase.PRE)
                     }
                 }
@@ -278,10 +250,10 @@ class ClientWorldInstrumentManager(
             }
         }
         if (oldValue != null) {
-            exceptionAccumulator += forEachCollectExceptions(localCallbacks) {
+            exceptionAccumulator = localCallbacks.forEachCollect(exceptionAccumulator) {
                 it.instrumentRemoved(this, oldValue, IInstrumentAvailabilityCallback.Phase.POST)
             }
-            exceptionAccumulator += forEachCollectExceptions(globalCallbacks) {
+            exceptionAccumulator = globalCallbacks.forEachCollect(exceptionAccumulator) {
                 it.instrumentRemoved(this, oldValue, IInstrumentAvailabilityCallback.Phase.POST)
             }
         }
