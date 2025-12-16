@@ -63,7 +63,7 @@
                             </flow-layout>
 
                             <sizing>
-                                <vertical method="fill">40</vertical>
+                                <vertical method="fill">52</vertical>
                                 <horizontal method="fill">60</horizontal>
                             </sizing>
 
