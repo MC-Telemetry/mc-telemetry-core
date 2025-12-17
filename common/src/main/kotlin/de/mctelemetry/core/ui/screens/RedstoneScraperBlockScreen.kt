@@ -24,7 +24,6 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
@@ -62,14 +61,6 @@ class RedstoneScraperBlockScreen(
         mutableMapOf()
 
     private val closable = mutableListOf<AutoCloseable>()
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun currentValue(): ObservationSourceObservationMap? {
-        val deferred = observationFlowRef.get() ?: return null
-        if (!deferred.isCompleted) return null
-        deferred.getCompletionExceptionOrNull()?.let { throw it }
-        return deferred.getCompleted().value
-    }
 
     override fun isPauseScreen(): Boolean {
         return false
@@ -120,6 +111,7 @@ class RedstoneScraperBlockScreen(
     }
 
     override fun added() {
+        @Suppress("DeferredResultUnused")
         configureFlow()
     }
 
@@ -133,6 +125,7 @@ class RedstoneScraperBlockScreen(
     }
 
     override fun onClose() {
+        @Suppress("ConvertTryFinallyToUseCall")
         try {
             super.onClose()
         } finally {

@@ -59,6 +59,7 @@ class InstrumentManagerScreen(private val instrumentManager: IClientWorldInstrum
     }
 
     override fun onClose() {
+        @Suppress("ConvertTryFinallyToUseCall")
         try {
             super.onClose()
         } finally {
@@ -73,13 +74,12 @@ class InstrumentManagerScreen(private val instrumentManager: IClientWorldInstrum
     override fun build(rootComponent: FlowLayout) {
         instrumentList = rootComponent.childByIdOrThrow("list")
         updateInstrumentList()
-
     }
 
     private fun updateInstrumentList() {
         instrumentList.clearChildren()
 
-        val instruments = instrumentManager.findLocal().filter { it.persistent }.sortedBy { it.name };
+        val instruments = instrumentManager.findLocal().filter { it.persistent }.sortedBy { it.name }
         for (instrument in instruments) {
             val template = model.expandTemplate(
                 FlowLayout::class.java,
