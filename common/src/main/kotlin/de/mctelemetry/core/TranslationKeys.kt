@@ -249,4 +249,10 @@ object TranslationKeys {
         operator fun get(sourceID: ResourceLocation): MutableComponent =
             Component.translatable("${OTelCoreMod.MOD_ID}.observation_sources.${sourceID.namespace.lowercase()}.${sourceID.path.lowercase()}")
     }
+
+    object KeyMappings {
+
+        const val CATEGORY = "key.${OTelCoreMod.MOD_ID}.category"
+        const val OPEN_INSTRUMENT_MANAGER = "key.${OTelCoreMod.MOD_ID}.open_instrument_manager"
+    }
 }

@@ -5,5 +5,7 @@
   "category.mcotelcore_tab": "MC Telemetry",
   "mcotelcore.observation_sources.mcotelcore.redstone_scraper.power": "Redstone Power",
   "mcotelcore.observation_sources.mcotelcore.redstone_scraper.direct_power": "Redstone Direct Power",
-  "mcotelcore.observation_sources.mcotelcore.redstone_scraper.comparator": "Redstone Comparator"
+  "mcotelcore.observation_sources.mcotelcore.redstone_scraper.comparator": "Redstone Comparator",
+  "key.mcotelcore.category": "MC Telemetry",
+  "key.mcotelcore.open_instrument_manager": "Instrument Manager"
 }

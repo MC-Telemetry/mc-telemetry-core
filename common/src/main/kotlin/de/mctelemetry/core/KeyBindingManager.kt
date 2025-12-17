@@ -11,7 +11,7 @@ import org.lwjgl.glfw.GLFW
 @Environment(EnvType.CLIENT)
 object KeyBindingManager {
     private val INSTRUMENT_MANAGER_MAPPING =
-        KeyMapping("key.owo-ui-academy.begin", GLFW.GLFW_KEY_O, "key.categories.misc")
+        KeyMapping(TranslationKeys.KeyMappings.OPEN_INSTRUMENT_MANAGER, GLFW.GLFW_KEY_O, TranslationKeys.KeyMappings.CATEGORY)
 
     fun register() {
         KeyMappingRegistry.register(INSTRUMENT_MANAGER_MAPPING)
