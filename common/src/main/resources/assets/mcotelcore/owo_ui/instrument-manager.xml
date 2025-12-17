@@ -5,23 +5,14 @@
             <children>
                 <flow-layout direction="vertical">
                     <children>
-                        <flow-layout direction="horizontal">
-                            <children>
-                                <label>
-                                    <text translate="true">container.mcotelcore.instrument_manager</text>
-                                    <color>black</color>
-                                    <margins>
-                                        <top>6</top>
-                                        <bottom>6</bottom>
-                                    </margins>
-                                </label>
-                            </children>
+                        <label>
+                            <text translate="true">container.mcotelcore.instrument_manager</text>
+                            <color>black</color>
                             <margins>
-                                <bottom>5</bottom>
+                                <top>6</top>
+                                <bottom>11</bottom>
                             </margins>
-                            <vertical-alignment>center</vertical-alignment>
-                        </flow-layout>
-
+                        </label>
 
                         <button id="instrument-create">
                             <text>Create</text>

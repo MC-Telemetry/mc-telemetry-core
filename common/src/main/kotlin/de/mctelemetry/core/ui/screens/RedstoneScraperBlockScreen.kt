@@ -4,6 +4,7 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
@@ -134,6 +135,12 @@ class RedstoneScraperBlockScreen(
     }
 
     override fun build(rootComponent: FlowLayout) {
+        val instrumentManagerButton: ButtonComponent = rootComponent.childWidgetByIdOrThrow("instrument-manager")
+        instrumentManagerButton.onPress {
+            val instrumentManager = ClientInstrumentMetaManager.activeWorldManager ?: return@onPress
+            Minecraft.getInstance().setScreen(InstrumentManagerScreen(instrumentManager))
+        }
+
         val list: FlowLayout = rootComponent.childByIdOrThrow("list")
 
         for ((source, state) in observationSourceContainer.observationStates) {

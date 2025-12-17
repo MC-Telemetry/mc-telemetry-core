@@ -15,6 +15,7 @@ import io.wispforest.owo.ui.component.LabelComponent
 import io.wispforest.owo.ui.container.FlowLayout
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
+import net.minecraft.client.Minecraft
 import net.minecraft.resources.ResourceLocation
 
 @Environment(EnvType.CLIENT)
@@ -72,6 +73,11 @@ class InstrumentManagerScreen(private val instrumentManager: IClientWorldInstrum
     }
 
     override fun build(rootComponent: FlowLayout) {
+        val createButton: ButtonComponent = rootComponent.childWidgetByIdOrThrow("instrument-create")
+        createButton.onPress {
+            Minecraft.getInstance().setScreen(InstrumentManagerScreenCreate(this, instrumentManager))
+        }
+
         instrumentList = rootComponent.childByIdOrThrow("list")
         updateInstrumentList()
     }

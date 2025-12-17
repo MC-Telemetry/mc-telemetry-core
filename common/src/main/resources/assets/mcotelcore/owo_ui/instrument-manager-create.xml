@@ -1,0 +1,87 @@
+<owo-ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/wisp-forest/owo-lib/1.20/owo-ui.xsd">
+    <components>
+        <flow-layout direction="vertical">
+            <children>
+                <flow-layout direction="vertical">
+                    <children>
+                        <flow-layout direction="horizontal">
+                            <children>
+                                <button id="back">
+                                    <text>Back</text>
+                                    <sizing>
+                                        <horizontal method="fill">20</horizontal>
+                                    </sizing>
+                                </button>
+
+                                <stack-layout>
+                                    <children>
+                                        <label id="instrument-name">
+                                            <margins>
+                                                <all>5</all>
+                                            </margins>
+                                        </label>
+                                    </children>
+                                    <surface>
+                                        <panel-inset/>
+                                    </surface>
+                                    <margins>
+                                        <left>5</left>
+                                    </margins>
+                                    <sizing>
+                                        <horizontal method="fill">80</horizontal>
+                                    </sizing>
+                                </stack-layout>
+                            </children>
+                            <vertical-alignment>center</vertical-alignment>
+                            <sizing>
+                                <horizontal method="fill">60</horizontal>
+                            </sizing>
+                            <margins>
+                                <bottom>5</bottom>
+                            </margins>
+                        </flow-layout>
+
+                        <scroll direction="vertical">
+                            <flow-layout direction="vertical" id="list">
+                                <children>
+                                </children>
+
+                                <padding>
+                                    <all>5</all>
+                                </padding>
+                            </flow-layout>
+
+                            <sizing>
+                                <vertical method="fill">52</vertical>
+                                <horizontal method="fill">60</horizontal>
+                            </sizing>
+
+                            <surface>
+                                <panel-inset/>
+                            </surface>
+                        </scroll>
+                    </children>
+
+                    <horizontal-alignment>center</horizontal-alignment>
+                    <vertical-alignment>center</vertical-alignment>
+
+                    <padding>
+                        <all>10</all>
+                    </padding>
+
+                    <surface>
+                        <panel dark="false"/>
+                    </surface>
+                </flow-layout>
+            </children>
+
+            <horizontal-alignment>center</horizontal-alignment>
+            <vertical-alignment>center</vertical-alignment>
+
+            <surface>
+                <vanilla-translucent/>
+            </surface>
+        </flow-layout>
+    </components>
+</owo-ui>

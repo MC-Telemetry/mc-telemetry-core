@@ -9,9 +9,19 @@
                             <text translate="true">container.mcotelcore.redstone_scraper_block</text>
                             <color>black</color>
                             <margins>
-                                <bottom>5</bottom>
+                                <top>6</top>
+                                <bottom>11</bottom>
                             </margins>
                         </label>
+
+                        <button id="instrument-manager">
+                            <text>Manager</text>
+                            <sizing>
+                                <horizontal method="fill">17</horizontal>
+                            </sizing>
+                            <positioning type="relative">100,0</positioning>
+                        </button>
+
 
                         <scroll direction="vertical">
                             <flow-layout direction="vertical" id="list">
@@ -24,7 +34,7 @@
                             </flow-layout>
 
                             <sizing>
-                                <vertical method="fill">70</vertical>
+                                <vertical method="fill">64</vertical>
                                 <horizontal method="fill">60</horizontal>
                             </sizing>
 
@@ -34,7 +44,7 @@
                         </scroll>
                     </children>
 
-                    <horizontal-alignment>center</horizontal-alignment>
+                    <horizontal-alignment>left</horizontal-alignment>
                     <vertical-alignment>center</vertical-alignment>
 
                     <padding>
