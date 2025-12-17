@@ -26,15 +26,15 @@ class ObservationValueStateDataComponent(
         val (textComponent, tooltipComponent) = if (errorState is ObservationSourceErrorState.Configured) {
             val textComponent = when (errorState) {
                 ObservationSourceErrorState.Configured.Ok -> {
-                    IComponentDSLBuilder.buildComponent("Ok") {}
+                    IComponentDSLBuilder.buildComponent("Ok")
                 }
 
                 is ObservationSourceErrorState.Configured.Warnings -> {
-                    IComponentDSLBuilder.buildComponent("Warn") {}
+                    IComponentDSLBuilder.buildComponent("Warn")
                 }
 
                 is ObservationSourceErrorState.Configured.Errors -> {
-                    IComponentDSLBuilder.buildComponent("Err") {}
+                    IComponentDSLBuilder.buildComponent("Err")
                 }
             }
 
@@ -45,7 +45,7 @@ class ObservationValueStateDataComponent(
                             numbering("Error", "Errors", errorState.errors.size),
                             numbering("Warning", "Warnings", errorState.warnings.size)
                         )
-                    ) {}) +
+                    )) +
                         (errorState.errors + errorState.warnings).map {
                             IComponentDSLBuilder.buildComponent {
                                 +"• "
@@ -61,7 +61,7 @@ class ObservationValueStateDataComponent(
                 tooltipComponent,
             )
         } else {
-            TextTooltipPair(IComponentDSLBuilder.buildComponent("-") {})
+            TextTooltipPair(IComponentDSLBuilder.buildComponent("-"))
         }
 
 

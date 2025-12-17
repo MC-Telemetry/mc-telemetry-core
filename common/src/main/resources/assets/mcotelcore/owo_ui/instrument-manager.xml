@@ -5,13 +5,31 @@
             <children>
                 <flow-layout direction="vertical">
                     <children>
-                        <label>
-                            <text translate="true">container.mcotelcore.redstone_scraper_block</text>
-                            <color>black</color>
+                        <flow-layout direction="horizontal">
+                            <children>
+                                <label>
+                                    <text translate="true">container.mcotelcore.instrument_manager</text>
+                                    <color>black</color>
+                                    <margins>
+                                        <top>6</top>
+                                        <bottom>6</bottom>
+                                    </margins>
+                                </label>
+                            </children>
                             <margins>
                                 <bottom>5</bottom>
                             </margins>
-                        </label>
+                            <vertical-alignment>center</vertical-alignment>
+                        </flow-layout>
+
+
+                        <button id="instrument-create">
+                            <text>Create</text>
+                            <sizing>
+                                <horizontal method="fill">15</horizontal>
+                            </sizing>
+                            <positioning type="relative">100,0</positioning>
+                        </button>
 
                         <scroll direction="vertical">
                             <flow-layout direction="vertical" id="list">
@@ -34,7 +52,7 @@
                         </scroll>
                     </children>
 
-                    <horizontal-alignment>center</horizontal-alignment>
+                    <horizontal-alignment>left</horizontal-alignment>
                     <vertical-alignment>center</vertical-alignment>
 
                     <padding>
@@ -55,4 +73,28 @@
             </surface>
         </flow-layout>
     </components>
+    <templates>
+        <template name="list-row">
+            <flow-layout direction="horizontal">
+                <children>
+                    <label id="instrument-name">
+                        <sizing>
+                            <horizontal method="fill">78</horizontal>
+                        </sizing>
+                    </label>
+                    <button id="instrument-delete">
+                        <text>Delete</text>
+                        <sizing>
+                            <horizontal method="fill">20</horizontal>
+                        </sizing>
+                    </button>
+                </children>
+                <vertical-alignment>center</vertical-alignment>
+                <margins>
+                    <vertical>2</vertical>
+                    <horizontal>2</horizontal>
+                </margins>
+            </flow-layout>
+        </template>
+    </templates>
 </owo-ui>

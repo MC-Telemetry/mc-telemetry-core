@@ -68,12 +68,12 @@ class ObservationValuePreviewDataComponent(
                     isObfuscated = true
                 }
             },
-            IComponentDSLBuilder.buildComponent("Pending observation-data") {}//TODO: use translatable component
+            IComponentDSLBuilder.buildComponent("Pending observation-data") //TODO: use translatable component
         )
 
         private val noValueComponentPair = TextTooltipPair(
-            IComponentDSLBuilder.buildComponent("∅") {},
-            IComponentDSLBuilder.buildComponent("No observations") {}//TODO: use translatable component
+            IComponentDSLBuilder.buildComponent("∅"),
+            IComponentDSLBuilder.buildComponent("No observations") //TODO: use translatable component
         )
 
         private fun attributeMapListing(

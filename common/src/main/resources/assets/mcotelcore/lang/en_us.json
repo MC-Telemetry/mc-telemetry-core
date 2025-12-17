@@ -2,6 +2,7 @@
   "item.mcotelcore.redstone_scraper_block": "Redstone Scraper",
   "block.mcotelcore.redstone_scraper_block": "Redstone Scraper",
   "container.mcotelcore.redstone_scraper_block": "Redstone Scraper",
+  "container.mcotelcore.instrument_manager": "Instrument Manager",
   "category.mcotelcore_tab": "MC Telemetry",
   "mcotelcore.observation_sources.mcotelcore.redstone_scraper.power": "Redstone Power",
   "mcotelcore.observation_sources.mcotelcore.redstone_scraper.direct_power": "Redstone Direct Power",

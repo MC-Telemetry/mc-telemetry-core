@@ -1,5 +1,6 @@
 package de.mctelemetry.core
 
+import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.ui.screens.InstrumentManagerScreen
 import dev.architectury.event.events.client.ClientTickEvent
 import dev.architectury.registry.client.keymappings.KeyMappingRegistry
@@ -17,7 +18,8 @@ object KeyBindingManager {
         KeyMappingRegistry.register(INSTRUMENT_MANAGER_MAPPING)
         ClientTickEvent.CLIENT_POST.register {
             while (INSTRUMENT_MANAGER_MAPPING.consumeClick()) {
-                it.setScreen(InstrumentManagerScreen())
+                val instrumentManager = ClientInstrumentMetaManager.activeWorldManager ?: continue
+                it.setScreen(InstrumentManagerScreen(instrumentManager))
             }
         }
     }
