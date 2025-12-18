@@ -27,7 +27,7 @@ object RedstoneScraperComparatorObservationSource : IObservationSource.SingleAtt
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.comparator")
     )
 
-    override val contextType: Class<BlockEntity> = BlockEntity::class.java
+    override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
 
     private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
 

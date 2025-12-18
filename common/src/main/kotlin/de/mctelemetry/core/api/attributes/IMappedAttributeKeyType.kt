@@ -1,7 +1,10 @@
 package de.mctelemetry.core.api.attributes
 
 import de.mctelemetry.core.api.OTelCoreModAPI
+import net.minecraft.core.HolderLookup
+import net.minecraft.core.RegistryAccess
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.StreamCodec
@@ -25,6 +28,9 @@ interface IMappedAttributeKeyType<T : Any, B : Any> {
     fun canConvertDirectlyTo(supertype: IMappedAttributeKeyType<*, *>): Boolean = false
     fun <R : Any> convertDirectlyFrom(subtype: IMappedAttributeKeyType<R, *>, value: R): T? = null
     fun <R : Any> convertDirectlyTo(supertype: IMappedAttributeKeyType<R, *>, value: T): R? = null
+
+    fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): T
+    fun toNbt(value: T): Tag
 
     companion object {
 

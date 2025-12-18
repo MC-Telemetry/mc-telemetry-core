@@ -22,7 +22,7 @@ object RedstoneScraperDirectPowerObservationSource : IObservationSource.MultiAtt
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.direct_power")
     )
 
-    override val contextType: Class<BlockEntity> = BlockEntity::class.java
+    override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
 
     private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
     private val DIR_KEY = BuiltinAttributeKeyTypes.DirectionType("dir")

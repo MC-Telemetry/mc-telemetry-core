@@ -4,6 +4,7 @@ import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.observations.model.AttributeDataSource
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.resources.ResourceKey
@@ -23,6 +24,10 @@ object TranslationKeys {
         const val ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING =
             "errors.${OTelCoreMod.MOD_ID}.world.instrument_manager.missing"
         const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE = "errors.${OTelCoreMod.MOD_ID}.attributes.type.incompatible"
+        const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED =
+            "errors.${OTelCoreMod.MOD_ID}.attributes.type.incompatible.target_detailed"
+        const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED =
+            "errors.${OTelCoreMod.MOD_ID}.attributes.type.incompatible.detailed"
         const val ERRORS_ATTRIBUTES_MAPPING_MISSING = "errors.${OTelCoreMod.MOD_ID}.attributes.mapping.missing"
         const val ERRORS_OBSERVATIONS_UNINITIALIZED = "errors.${OTelCoreMod.MOD_ID}.observations.uninitialized"
         const val ERRORS_OBSERVATIONS_NOT_CONFIGURED = "errors.${OTelCoreMod.MOD_ID}.observations.not_configured"
@@ -99,17 +104,37 @@ object TranslationKeys {
             )
 
         fun attributeTypesIncompatible(
-            source: MappedAttributeKeyInfo<*, *>,
+            source: AttributeDataSource.ConstantAttributeData<*>,
             target: MappedAttributeKeyInfo<*, *>,
         ): MutableComponent =
             Component.translatableWithFallback(
-                ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE,
+                ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED,
+                $$"Incompatible attribute types: Cannot assign from %1$s to %2$s ('%3$s')",
+                source.type.id.location().toString(),
+                target.type.id.location().toString(),
+                target.baseKey.key,
+            )
+
+        fun attributeTypesIncompatible(
+            source: AttributeDataSource.ObservationSourceAttributeReference<*>,
+            target: MappedAttributeKeyInfo<*, *>,
+        ): MutableComponent =
+            Component.translatableWithFallback(
+                ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED,
                 $$"Incompatible attribute types: Cannot assign from %1$s ('%3$s') to %2$s ('%4$s')",
                 source.type.id.location().toString(),
                 target.type.id.location().toString(),
-                source.baseKey.key,
+                source.info.baseKey.key,
                 target.baseKey.key,
             )
+
+        fun attributeTypesIncompatible(
+            source: AttributeDataSource<*>,
+            target: MappedAttributeKeyInfo<*, *>,
+        ): MutableComponent = when (source) {
+            is AttributeDataSource.ConstantAttributeData<*> -> attributeTypesIncompatible(source, target)
+            is AttributeDataSource.ObservationSourceAttributeReference<*> -> attributeTypesIncompatible(source, target)
+        }
 
         fun attributeMappingMissing(
             target: MappedAttributeKeyInfo<*, *>,

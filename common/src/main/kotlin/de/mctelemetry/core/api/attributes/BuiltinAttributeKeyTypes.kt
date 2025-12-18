@@ -5,8 +5,15 @@ import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
+import net.minecraft.core.HolderLookup
+import net.minecraft.core.RegistryAccess
 import net.minecraft.core.UUIDUtil
 import net.minecraft.core.registries.Registries
+import net.minecraft.nbt.ByteTag
+import net.minecraft.nbt.CompoundTag
+import net.minecraft.nbt.IntArrayTag
+import net.minecraft.nbt.StringTag
+import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.StreamCodec
@@ -64,6 +71,15 @@ object BuiltinAttributeKeyTypes {
                 else -> null
             }
         }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): BlockPos {
+            val data = (tag as IntArrayTag).asIntArray
+            return BlockPos(data[0], data[1], data[2])
+        }
+
+        override fun toNbt(value: BlockPos): IntArrayTag {
+            return IntArrayTag(intArrayOf(value.x, value.y, value.z))
+        }
     }
 
     object GlobalPosType : IMappedAttributeKeyType<GlobalPos, List<String>> {
@@ -106,6 +122,24 @@ object BuiltinAttributeKeyTypes {
                 else -> null
             }
         }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): GlobalPos {
+            tag as CompoundTag
+            val dimension = tag.getString("dimension")
+            val posArray = tag.getIntArray("position")
+            return GlobalPos(
+                ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimension)),
+                BlockPos(posArray[0], posArray[1], posArray[2])
+            )
+        }
+
+        override fun toNbt(value: GlobalPos): Tag {
+            return CompoundTag().apply {
+                putString("dimension", value.dimension.location().toString())
+                val pos = value.pos
+                putIntArray("position", intArrayOf(pos.x, pos.y, pos.z))
+            }
+        }
     }
 
     object DirectionType : IMappedAttributeKeyType<Direction, String> {
@@ -122,6 +156,14 @@ object BuiltinAttributeKeyTypes {
         override fun format(value: Direction): String {
             return value.toString()
         }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Direction {
+            return Direction.from3DDataValue((tag as ByteTag).asByte.toInt())
+        }
+
+        override fun toNbt(value: Direction): Tag {
+            return ByteTag.valueOf(value.get3DDataValue().toByte())
+        }
     }
 
     object ItemType : IMappedAttributeKeyType<Item, String> {
@@ -132,12 +174,32 @@ object BuiltinAttributeKeyTypes {
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
-        override val valueStreamCodec: StreamCodec<RegistryFriendlyByteBuf, Item> = ByteBufCodecs.registry(Registries.ITEM)
+        override val valueStreamCodec: StreamCodec<RegistryFriendlyByteBuf, Item> =
+            ByteBufCodecs.registry(Registries.ITEM)
         override val valueType: Class<Item> = Item::class.java
 
         override fun format(value: Item): String {
             val key = value.`arch$holder`().unwrapKey().orElseThrow()
             return key.location().toString()
+        }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Item {
+            val resourceLocation = (tag as StringTag).asString
+
+            return lookupProvider.lookupOrThrow(Registries.ITEM).getOrThrow(
+                ResourceKey.create(Registries.ITEM, ResourceLocation.parse(resourceLocation))
+            ).value()
+        }
+
+        override fun toNbt(value: Item): Tag {
+            return StringTag.valueOf(
+                value
+                    .`arch$holder`()
+                    .unwrapKey()
+                    .orElseThrow()
+                    .location()
+                    .toString()
+            )
         }
     }
 
@@ -155,6 +217,25 @@ object BuiltinAttributeKeyTypes {
 
         override fun format(value: UUID): String {
             return value.toString()
+        }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): UUID {
+            val data = (tag as IntArrayTag).asIntArray
+            return UUID(
+                (data[0].toLong() shl 32) or (data[1].toLong()),
+                (data[2].toLong() shl 32) or (data[3].toLong()),
+            )
+        }
+
+        override fun toNbt(value: UUID): Tag {
+            return IntArrayTag(
+                intArrayOf(
+                    (value.mostSignificantBits shr 32).toInt(),
+                    value.mostSignificantBits.toInt(),
+                    (value.leastSignificantBits shr 32).toInt(),
+                    value.leastSignificantBits.toInt(),
+                )
+            )
         }
     }
 }

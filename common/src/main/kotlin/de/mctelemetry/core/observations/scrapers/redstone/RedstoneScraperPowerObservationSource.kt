@@ -24,7 +24,7 @@ object RedstoneScraperPowerObservationSource : IObservationSource.MultiAttribute
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.power")
     )
 
-    override val contextType: Class<BlockEntity> = BlockEntity::class.java
+    override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
 
     private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
     private val DIR_KEY = BuiltinAttributeKeyTypes.DirectionType("dir")

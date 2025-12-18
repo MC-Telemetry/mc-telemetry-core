@@ -1,6 +1,6 @@
 package de.mctelemetry.core.api.observations
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.ObservationContext
 import io.opentelemetry.api.common.Attributes
 
 sealed interface IObservationRecorder {
@@ -9,15 +9,17 @@ sealed interface IObservationRecorder {
 
         val supportsFloating: Boolean
 
-        fun observe(value: Long, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>)
-        fun observe(value: Double, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>)
+        context(observationContext: ObservationContext<*>)
+        fun observe(value: Long, source: IObservationSource<*, *>)
+        context(observationContext: ObservationContext<*>)
+        fun observe(value: Double, source: IObservationSource<*, *>)
+        context(observationContext: ObservationContext<*>)
         fun observePreferred(
             double: Double,
             long: Long,
-            attributes: IMappedAttributeValueLookup,
             source: IObservationSource<*, *>,
-        ) = if (supportsFloating) observe(double, attributes, source)
-        else observe(long, attributes, source)
+        ) = if (supportsFloating) observe(double, source)
+        else observe(long, source)
 
         fun onNewSource(source: IObservationSource<*, *>) {}
     }

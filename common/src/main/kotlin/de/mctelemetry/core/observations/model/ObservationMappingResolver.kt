@@ -1,6 +1,6 @@
 package de.mctelemetry.core.observations.model
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.ObservationContext
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 
@@ -11,20 +11,22 @@ class ObservationMappingResolver(
 
     override val supportsFloating: Boolean = resolvedRecorder.supportsFloating
 
-    override fun observe(value: Double, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>) {
-        resolvedRecorder.observe(value, mapping.resolveAttributes(attributes), source)
+    context(observationContext: ObservationContext<*>)
+    override fun observe(value: Double, source: IObservationSource<*, *>) {
+        resolvedRecorder.observe(value, mapping.resolveAttributes(), source)
     }
 
-    override fun observe(value: Long, attributes: IMappedAttributeValueLookup, source: IObservationSource<*, *>) {
-        resolvedRecorder.observe(value, mapping.resolveAttributes(attributes), source)
+    context(observationContext: ObservationContext<*>)
+    override fun observe(value: Long, source: IObservationSource<*, *>) {
+        resolvedRecorder.observe(value, mapping.resolveAttributes(), source)
     }
 
+    context(observationContext: ObservationContext<*>)
     override fun observePreferred(
         double: Double,
         long: Long,
-        attributes: IMappedAttributeValueLookup,
         source: IObservationSource<*, *>,
     ) {
-        resolvedRecorder.observePreferred(double, long, mapping.resolveAttributes(attributes), source)
+        resolvedRecorder.observePreferred(double, long, mapping.resolveAttributes(), source)
     }
 }

@@ -9,6 +9,17 @@ import it.unimi.dsi.fastutil.booleans.BooleanList
 import it.unimi.dsi.fastutil.booleans.BooleanLists
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList
 import it.unimi.dsi.fastutil.longs.LongArrayList
+import net.minecraft.core.HolderLookup
+import net.minecraft.core.RegistryAccess
+import net.minecraft.nbt.ByteArrayTag
+import net.minecraft.nbt.ByteTag
+import net.minecraft.nbt.DoubleTag
+import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.LongArrayTag
+import net.minecraft.nbt.LongTag
+import net.minecraft.nbt.NumericTag
+import net.minecraft.nbt.StringTag
+import net.minecraft.nbt.Tag
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
@@ -123,8 +134,16 @@ object NativeAttributeKeyTypes {
 
         override fun format(value: String): String = value
 
-        fun MappedAttributeKeyValue<*,*>.convertValueToString(): String {
+        fun MappedAttributeKeyValue<*, *>.convertValueToString(): String {
             return convertTo(StringType)!!
+        }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): String {
+            return (tag as StringTag).asString
+        }
+
+        override fun toNbt(value: String): StringTag {
+            return StringTag.valueOf(value)
         }
     }
 
@@ -140,6 +159,14 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<Boolean> = Boolean::class.java
 
         override fun format(value: Boolean): Boolean = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Boolean {
+            return (tag as NumericTag).asByte > 0
+        }
+
+        override fun toNbt(value: Boolean): NumericTag {
+            return ByteTag.valueOf(value)
+        }
     }
 
     object LongType : IMappedAttributeKeyType<Long, Long> {
@@ -154,6 +181,14 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<Long> = Long::class.java
 
         override fun format(value: Long): Long = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Long {
+            return (tag as NumericTag).asLong
+        }
+
+        override fun toNbt(value: Long): LongTag {
+            return LongTag.valueOf(value)
+        }
     }
 
     object DoubleType : IMappedAttributeKeyType<Double, Double> {
@@ -168,6 +203,14 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<Double> = Double::class.java
 
         override fun format(value: Double): Double = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Double {
+            return (tag as NumericTag).asDouble
+        }
+
+        override fun toNbt(value: Double): DoubleTag {
+            return DoubleTag.valueOf(value)
+        }
     }
 
     object StringArrayType : IMappedAttributeKeyType<List<String>, List<String>> {
@@ -185,6 +228,18 @@ object NativeAttributeKeyTypes {
             ByteBufCodecs.collection({ if (it == 0) emptyList() else ArrayList(it) }, ByteBufCodecs.STRING_UTF8)
 
         override fun format(value: List<String>): List<String> = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): List<String> {
+            return (tag as ListTag).map { (it as StringTag).asString }
+        }
+
+        override fun toNbt(value: List<String>): ListTag {
+            return ListTag().apply {
+                value.forEach {
+                    add(StringTag.valueOf(it))
+                }
+            }
+        }
     }
 
     object BooleanArrayType : IMappedAttributeKeyType<List<Boolean>, List<Boolean>>,
@@ -244,6 +299,14 @@ object NativeAttributeKeyTypes {
                 `object`.writeByte(currentByte)
             }
         }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): List<Boolean> {
+            return (tag as ByteArrayTag).map { it.asByte > 0 }
+        }
+
+        override fun toNbt(value: List<Boolean>): Tag {
+            return ByteArrayTag(value.map { if (it) 1 else 0 })
+        }
     }
 
     object LongArrayType : IMappedAttributeKeyType<List<Long>, List<Long>> {
@@ -261,6 +324,14 @@ object NativeAttributeKeyTypes {
             ByteBufCodecs.collection({ if (it == 0) emptyList() else LongArrayList(it) }, ByteBufCodecs.VAR_LONG)
 
         override fun format(value: List<Long>): List<Long> = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): List<Long> {
+            return (tag as LongArrayTag).asLongArray.toList()
+        }
+
+        override fun toNbt(value: List<Long>): LongArrayTag {
+            return LongArrayTag(value)
+        }
     }
 
     object DoubleArrayType : IMappedAttributeKeyType<List<Double>, List<Double>> {
@@ -278,5 +349,13 @@ object NativeAttributeKeyTypes {
             ByteBufCodecs.collection({ if (it == 0) emptyList() else DoubleArrayList(it) }, ByteBufCodecs.DOUBLE)
 
         override fun format(value: List<Double>): List<Double> = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): List<Double> {
+            return (tag as LongArrayTag).asLongArray.map { Double.fromBits(it) }
+        }
+
+        override fun toNbt(value: List<Double>): Tag {
+            return LongArrayTag(value.map { it.toRawBits() })
+        }
     }
 }
