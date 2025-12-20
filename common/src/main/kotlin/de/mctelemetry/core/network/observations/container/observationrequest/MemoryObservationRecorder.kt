@@ -33,9 +33,9 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
 
     context(observationContext: ObservationContext<*>)
     override fun observe(value: Double, source: IObservationSource<*, *>) {
-        val attributeValues = observationContext.attributeValueLookup.attributeKeys.mapNotNull {
+        val attributeValues = observationContext.attributeValueLookup.references.mapNotNull {
             MappedAttributeKeyValue(
-                it,
+                it.info,
                 try {
                     observationContext.attributeValueLookup[it] ?: return@mapNotNull null
                 } catch (_: NoSuchElementException) {
@@ -49,9 +49,9 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
 
     context(observationContext: ObservationContext<*>)
     override fun observe(value: Long, source: IObservationSource<*, *>) {
-        val attributeValues = observationContext.attributeValueLookup.attributeKeys.mapNotNull {
+        val attributeValues = observationContext.attributeValueLookup.references.mapNotNull {
             MappedAttributeKeyValue(
-                it,
+                it.info,
                 try {
                     observationContext.attributeValueLookup[it] ?: return@mapNotNull null
                 } catch (_: NoSuchElementException) {
@@ -69,9 +69,9 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
         long: Long,
         source: IObservationSource<*, *>,
     ) {
-        val attributeValues = observationContext.attributeValueLookup.attributeKeys.mapNotNull {
+        val attributeValues = observationContext.attributeValueLookup.references.mapNotNull {
             MappedAttributeKeyValue(
-                it,
+                it.info,
                 try {
                     observationContext.attributeValueLookup[it] ?: return@mapNotNull null
                 } catch (_: NoSuchElementException) {

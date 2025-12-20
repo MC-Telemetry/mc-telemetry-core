@@ -1,6 +1,7 @@
 package de.mctelemetry.core.ui.components
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
+import de.mctelemetry.core.api.attributes.AttributeDataSource
+import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -16,7 +17,7 @@ import io.wispforest.owo.ui.core.VerticalAlignment
 import kotlin.collections.plus
 
 class AttributeMappingComponent(
-    val sourceAttributes: IMappedAttributeKeySet,
+    val sourceAttributes: IAttributeDateSourceReferenceSet,
     instrumentAttributesObservable: ObservableValue<Map<String, MappedAttributeKeyInfo<*, *>>?>,
     mappingProperty: ObservableProperty<ObservationAttributeMapping>,
 ) : FlowLayout(Sizing.content(), Sizing.content(), Algorithm.VERTICAL) {
@@ -37,20 +38,20 @@ class AttributeMappingComponent(
     }
 
     private fun rebuild() {
-        val observationSourceAttributes = sourceAttributes.attributeKeys
+        val observationSourceAttributes = sourceAttributes.references
         val instrumentAttributes = instrumentAttributes?.values?.toList() ?: emptyList()
 
         val options = listOf(
-            SelectBoxComponentEntry<MappedAttributeKeyInfo<*, *>>(
+            SelectBoxComponentEntry<AttributeDataSource<*>>(
                 null,
                 "None"
             )
         ) + observationSourceAttributes.map { attribute ->
-            SelectBoxComponentEntry(
+            SelectBoxComponentEntry<AttributeDataSource<*>>(
                 attribute,
-                attribute.baseKey.key
+                attribute.info.baseKey.key
             )
-        } + SelectBoxComponentEntry<MappedAttributeKeyInfo<*, *>>(null, "Custom")
+        } + SelectBoxComponentEntry<AttributeDataSource<*>>(null, "Custom")
 
         clearChildren()
 

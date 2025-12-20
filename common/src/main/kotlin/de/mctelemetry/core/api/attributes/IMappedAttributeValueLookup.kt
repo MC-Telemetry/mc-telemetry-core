@@ -1,17 +1,19 @@
 package de.mctelemetry.core.api.attributes
 
-interface IMappedAttributeValueLookup : IMappedAttributeKeySet {
+import kotlin.collections.mutableMapOf
 
-    operator fun <T : Any> get(info: MappedAttributeKeyInfo<T, *>): T?
+interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
 
-    fun <T : Any> prepareLookup(info: MappedAttributeKeyInfo<T, *>): ((MappedAttributeKeyInfo<T, *>) -> T)?
+    operator fun <T : Any> get(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): T?
+
+    fun <T : Any> prepareLookup(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): ((AttributeDataSource.ObservationSourceAttributeReference<T>) -> T)?
 
     companion object {
 
         private val Empty = object : IMappedAttributeValueLookup {
-            override fun <T : Any> get(info: MappedAttributeKeyInfo<T, *>): T? = null
-            override val attributeKeys: Set<MappedAttributeKeyInfo<*, *>> = emptySet()
-            override fun <T : Any> prepareLookup(info: MappedAttributeKeyInfo<T, *>): ((MappedAttributeKeyInfo<T, *>) -> T)? =
+            override fun <T : Any> get(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): T? = null
+            override val references: Set<AttributeDataSource.ObservationSourceAttributeReference<*>> = emptySet()
+            override fun <T : Any> prepareLookup(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): ((AttributeDataSource.ObservationSourceAttributeReference<T>) -> T)? =
                 null
         }
 
@@ -19,43 +21,47 @@ interface IMappedAttributeValueLookup : IMappedAttributeKeySet {
     }
 
     class PairLookup<T : Any>(
-        val key: MappedAttributeKeyInfo<T, *>, var value: T?,
+        val key: AttributeDataSource.ObservationSourceAttributeReference<T>,
+        var value: T?,
         val parent: IMappedAttributeValueLookup = empty(),
     ) : IMappedAttributeValueLookup {
 
-        constructor(pair: Pair<MappedAttributeKeyInfo<T, *>, T?>, parent: IMappedAttributeValueLookup = empty()) :
+        constructor(
+            pair: Pair<AttributeDataSource.ObservationSourceAttributeReference<T>, T?>,
+            parent: IMappedAttributeValueLookup = empty(),
+        ) :
                 this(pair.first, pair.second, parent)
 
-        override val attributeKeys: Set<MappedAttributeKeyInfo<*, *>> by lazy {
+        override val references: Set<AttributeDataSource.ObservationSourceAttributeReference<*>> by lazy {
             if (parent === Empty) setOf(key)
-            else parent.attributeKeys + key
+            else parent.references + key
         }
 
-        override fun <T : Any> get(info: MappedAttributeKeyInfo<T, *>): T? {
-            return if (info == key) {
+        override fun <T : Any> get(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): T? {
+            return if (reference == key) {
                 @Suppress("UNCHECKED_CAST")
                 value as T?
-                    ?: throw NoSuchElementException("Key $info is stored locally but has not been initialized")
-            } else parent[info]
+                    ?: throw NoSuchElementException("Key $reference is stored locally but has not been initialized")
+            } else parent[reference]
         }
 
-        private fun <T : Any> getValue(info: MappedAttributeKeyInfo<T, *>): T {
-            if (key !== info) throw IllegalArgumentException("Invoked getValue with foreign keyInfo: $info")
+        private fun <T : Any> getValue(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): T {
+            if (key.info !== reference.info) throw IllegalArgumentException("Invoked getValue with foreign reference: $reference")
             @Suppress("UNCHECKED_CAST")
             return value as T?
-                ?: throw NoSuchElementException("Key $info is stored locally but has not been initialized")
+                ?: throw NoSuchElementException("Key $reference is stored locally but has not been initialized")
         }
 
-        override fun <T : Any> prepareLookup(info: MappedAttributeKeyInfo<T, *>): ((MappedAttributeKeyInfo<T, *>) -> T)? {
-            if (info == key) {
+        override fun <T : Any> prepareLookup(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): ((AttributeDataSource.ObservationSourceAttributeReference<T>) -> T)? {
+            if (reference == key) {
                 return ::getValue
             }
-            return parent.prepareLookup(info)
+            return parent.prepareLookup(reference)
         }
     }
 
     class MapLookup private constructor(
-        private val data: MutableMap<MappedAttributeKeyInfo<*, *>, Any?>,
+        private val data: MutableMap<AttributeDataSource.ObservationSourceAttributeReference<*>, Any?>,
         private val parent: IMappedAttributeValueLookup,
     ) : IMappedAttributeValueLookup {
 
@@ -66,8 +72,9 @@ interface IMappedAttributeValueLookup : IMappedAttributeKeySet {
 
         companion object {
 
+            @JvmName("newFromReferences")
             operator fun invoke(
-                data: Map<MappedAttributeKeyInfo<*, *>, Any?>,
+                data: Map<AttributeDataSource.ObservationSourceAttributeReference<*>, Any?>,
                 parent: IMappedAttributeValueLookup = empty(),
             ) = MapLookup(data.also {
                 data.forEach { (key, value) ->
@@ -77,35 +84,48 @@ interface IMappedAttributeValueLookup : IMappedAttributeKeySet {
                     }
                 }
             }.toMutableMap(), parent)
+
+            @JvmName("newFromAttributeKeyInfos")
+            operator fun invoke(
+                data: Map<MappedAttributeKeyInfo<*,*>, Any?>,
+                parent: IMappedAttributeValueLookup = empty(),
+            ) = MapLookup(data.mapKeysTo(mutableMapOf()) { (key, value) ->
+                if (value != null){
+                    require(key.type.valueType.isInstance(value)) {
+                        "Incompatible key and value: $key to $value"
+                    }
+                }
+                AttributeDataSource.ObservationSourceAttributeReference(key)
+            }, parent)
         }
 
-        override val attributeKeys: Set<MappedAttributeKeyInfo<*, *>> by lazy {
+        override val references: Set<AttributeDataSource.ObservationSourceAttributeReference<*>> by lazy {
             if (parent === Empty) data.keys
-            else data.keys.union(parent.attributeKeys)
+            else data.keys.union(parent.references)
         }
 
-        override fun <T : Any> get(info: MappedAttributeKeyInfo<T, *>): T? {
-            return if (info in data) {
+        override fun <T : Any> get(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): T? {
+            return if (reference in data) {
                 @Suppress("UNCHECKED_CAST")
-                data.getValue(info) as T?
-                    ?: throw java.util.NoSuchElementException("Key $info is stored locally but has no value")
+                data.getValue(reference) as T?
+                    ?: throw java.util.NoSuchElementException("Key $reference is stored locally but has no value")
             } else {
-                parent[info]
+                parent[reference]
             }
         }
 
-        private fun <T : Any> getValue(info: MappedAttributeKeyInfo<T, *>): T {
+        private fun <T : Any> getValue(info: AttributeDataSource.ObservationSourceAttributeReference<T>): T {
             @Suppress("UNCHECKED_CAST")
             return data.getValue(info) as T?
                 ?: throw NoSuchElementException("Key $info is stored locally but has no value")
         }
 
-        override fun <T : Any> prepareLookup(info: MappedAttributeKeyInfo<T, *>): ((MappedAttributeKeyInfo<T, *>) -> T)? {
-            return if (info in data) ::getValue
-            else parent.prepareLookup(info)
+        override fun <T : Any> prepareLookup(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): ((AttributeDataSource.ObservationSourceAttributeReference<T>) -> T)? {
+            return if (reference in data) ::getValue
+            else parent.prepareLookup(reference)
         }
 
-        fun <T : Any> update(key: MappedAttributeKeyInfo<T, *>, value: T?) {
+        fun <T : Any> update(key: AttributeDataSource.ObservationSourceAttributeReference<T>, value: T?) {
             require(key in data) {
                 "Cannot add additional values after construction (tried to add $key=$value)"
             }
@@ -113,7 +133,7 @@ interface IMappedAttributeValueLookup : IMappedAttributeKeySet {
         }
 
 
-        operator fun <T : Any> set(key: MappedAttributeKeyInfo<T, *>, value: T?) {
+        operator fun <T : Any> set(key: AttributeDataSource.ObservationSourceAttributeReference<T>, value: T?) {
             update(key, value)
         }
     }

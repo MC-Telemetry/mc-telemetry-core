@@ -1,10 +1,6 @@
-package de.mctelemetry.core.observations.model
+package de.mctelemetry.core.api.attributes
 
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.ObservationContext
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.Tag
@@ -38,7 +34,7 @@ sealed interface AttributeDataSource<T : Any> {
 
         context(observationContext: ObservationContext<*>)
         override val value: T?
-            get() = observationContext.attributeValueLookup[info]
+            get() = observationContext.attributeValueLookup[this]
     }
 
     class ConstantAttributeData<T : Any>(
@@ -96,10 +92,17 @@ sealed interface AttributeDataSource<T : Any> {
     companion object {
 
         fun fromNbt(tag: CompoundTag, lookupProvider: HolderLookup.Provider): AttributeDataSource<*> {
-            return when (val typeString = tag.getString("type").lowercase()) {
+            var typeString = tag.getString("type").lowercase()
+            if(typeString.isEmpty()) {
+                if(!tag.getCompound("reference").isEmpty)
+                    typeString = "reference"
+                else if (tag.get("value") != null)
+                    typeString = "constant"
+            }
+            return when (typeString) {
                 "reference" -> ObservationSourceAttributeReference(
                     MappedAttributeKeyInfo.load(
-                        tag.getCompound("data"),
+                        tag.getCompound("reference"),
                         lookupProvider.lookupOrThrow(
                             OTelCoreModAPI.AttributeTypeMappings
                         )
@@ -121,15 +124,15 @@ sealed interface AttributeDataSource<T : Any> {
             }
         }
 
-        fun toNbt(data: AttributeDataSource<*>): CompoundTag {
+        fun toNbt(data: AttributeDataSource<*>, explicitType: Boolean = false): CompoundTag {
             return CompoundTag().also { tag ->
                 when (data) {
                     is ObservationSourceAttributeReference<*> -> {
-                        tag.putString("type", "reference")
+                        if(explicitType) tag.putString("type", "reference")
                         tag.put("reference", data.info.save())
                     }
                     is ConstantAttributeData<*> -> {
-                        tag.putString("type", "constant")
+                        if(explicitType) tag.putString("type", "constant")
                         tag.putString("value_type", data.type.id.location().toString())
                         tag.put("value", data.valueTag)
                         if (data.additionalTypeData != null) {

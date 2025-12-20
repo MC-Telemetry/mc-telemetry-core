@@ -1,11 +1,11 @@
 package de.mctelemetry.core.observations.model
 
+import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.ObservationContext
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.utils.closeAllRethrow
@@ -145,7 +145,7 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable, ObservationSource
         val attributeLookup = createAttributeLookup()
         val context = context
         var mappingResolver: ObservationMappingResolver? = null
-        val unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>> = mutableSetOf()
+        val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
         for ((source, state) in observationStates) {
             if (filter != null && source !in filter) continue
             try {
@@ -198,7 +198,7 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable, ObservationSource
     ) {
         val attributeLookup = createAttributeLookup()
         val context = context
-        val unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>> = mutableSetOf()
+        val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
         for ((source, state) in observationStates) {
             if (filter != null && source !in filter) continue
             withValidMapping(state, forceObservation = forceObservation) { mapping ->
@@ -245,16 +245,18 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable, ObservationSource
         source: IObservationSource<in SC, OC>,
         sourceContext: SC,
         parentLookup: IMappedAttributeValueLookup,
-        unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>>,
+        unusedAttributesSet: MutableSet<AttributeDataSource<*>>,
         mapping: ObservationAttributeMapping,
         recorder: IObservationRecorder.Unresolved,
     ) {
         context(sourceContext) {
             val observationContext = source.createObservationContext(parentLookup)
             unusedAttributesSet.clear()
-            mapping.findUnusedAttributeDataSources(observationContext.attributeValueLookup.attributeKeys, unusedAttributesSet)
+            mapping.findUnusedAttributeDataSources(observationContext.attributeValueLookup.references, unusedAttributesSet)
             recorder.onNewSource(source)
-            source.observe(sourceContext, recorder, lookup, unusedAttributesSet)
+            context(observationContext) {
+                source.observe(recorder, unusedAttributesSet)
+            }
 
         }
     }

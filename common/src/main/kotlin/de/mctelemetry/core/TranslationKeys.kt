@@ -4,7 +4,7 @@ import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.observations.model.AttributeDataSource
+import de.mctelemetry.core.api.attributes.AttributeDataSource
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.resources.ResourceKey

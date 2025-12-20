@@ -1,16 +1,16 @@
 package de.mctelemetry.core.api.observations
 
+import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.ObservationContext
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
+import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import net.minecraft.resources.ResourceKey
 
 interface IObservationSource<SC, OC : ObservationContext<*>> {
 
     val id: ResourceKey<IObservationSource<*, *>>
 
-    val attributes: IMappedAttributeKeySet
+    val attributes: IAttributeDateSourceReferenceSet
 
     val sourceContextType: Class<SC>
 
@@ -20,7 +20,7 @@ interface IObservationSource<SC, OC : ObservationContext<*>> {
     context(sourceContext: SC, observationContext: OC)
     fun observe(
         recorder: IObservationRecorder.Unresolved,
-        unusedAttributes: Set<MappedAttributeKeyInfo<*, *>>,
+        unusedAttributes: Set<AttributeDataSource<*>>,
     )
 
     interface Simple<SC> : IObservationSource<SC, ObservationContext<*>> {
@@ -31,11 +31,11 @@ interface IObservationSource<SC, OC : ObservationContext<*>> {
         ): ObservationContext<*> {
             val ownAttributes = this.attributes
             return ObservationContext(
-                if (ownAttributes.attributeKeys.isEmpty())
+                if (ownAttributes.references.isEmpty())
                     lookup
                 else
                     IMappedAttributeValueLookup.MapLookup(
-                        data = ownAttributes.attributeKeys.associateWith { null },
+                        data = ownAttributes.references.associateWith { null },
                         parent = lookup
                     )
             )
@@ -50,7 +50,7 @@ interface IObservationSource<SC, OC : ObservationContext<*>> {
         ): ObservationContext<IMappedAttributeValueLookup.MapLookup> {
             return ObservationContext(
                 IMappedAttributeValueLookup.MapLookup(
-                    data = this.attributes.attributeKeys.associateWith { null },
+                    data = this.attributes.references.associateWith { null },
                     parent = lookup
                 )
             )
@@ -59,10 +59,10 @@ interface IObservationSource<SC, OC : ObservationContext<*>> {
 
     interface SingleAttribute<SC, T : Any> : IObservationSource<SC, ObservationContext<IMappedAttributeValueLookup.PairLookup<T>>> {
 
-        val attributeKey: MappedAttributeKeyInfo<T, *>
+        val reference: AttributeDataSource.ObservationSourceAttributeReference<T>
 
-        override val attributes: IMappedAttributeKeySet
-            get() = IMappedAttributeKeySet(attributeKey)
+        override val attributes: IAttributeDateSourceReferenceSet
+            get() = IAttributeDateSourceReferenceSet(listOf(reference))
 
         context(sourceContext: SC)
         override fun createObservationContext(
@@ -70,7 +70,7 @@ interface IObservationSource<SC, OC : ObservationContext<*>> {
         ): ObservationContext<IMappedAttributeValueLookup.PairLookup<T>> {
             return ObservationContext(
                 IMappedAttributeValueLookup.PairLookup(
-                    attributeKey,
+                    reference,
                     null,
                     parent = lookup
                 )

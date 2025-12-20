@@ -36,6 +36,7 @@ class ObservationValuePreviewDataComponent(
             val (_, observationMap) = value
             val cardinalities =
                 CommandScrapeCardinality.analyzeCardinality(observationMap.values.map { it.attributes.map })
+                    ?.mapKeys { it.key.info }
             if (cardinalities == null) {
                 noValueComponentPair
             } else {
@@ -201,7 +202,7 @@ class ObservationValuePreviewDataComponent(
                     val commonAttributeValues: MappedAttributeKeyMap<*> = MappedAttributeKeyMap(
                         values.first().attributes.filter { it.info !in cardinalitiesWithoutCommon }
                     )
-                    commonAttributeKeys = commonAttributeValues.attributeKeys
+                    commonAttributeKeys = commonAttributeValues.references.mapTo(mutableSetOf()) {it.info}
                     append(
                         attributeMapListing(
                             commonAttributeValues,
