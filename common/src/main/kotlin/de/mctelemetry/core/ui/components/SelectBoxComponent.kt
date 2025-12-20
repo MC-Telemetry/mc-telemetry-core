@@ -101,4 +101,4 @@ class SelectBoxComponent<T>(
     }
 }
 
-data class SelectBoxComponentEntry<T>(val value: T?, val name: String)
+data class SelectBoxComponentEntry<T>(val value: T, val name: String)

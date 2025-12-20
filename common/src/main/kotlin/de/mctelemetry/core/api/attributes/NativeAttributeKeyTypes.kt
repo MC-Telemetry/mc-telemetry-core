@@ -137,6 +137,10 @@ object NativeAttributeKeyTypes {
             return convertTo(StringType)!!
         }
 
+        fun AttributeDataSource.ConstantAttributeData<*>.convertValueToString(): String {
+            return convertValueTo(StringType)!!
+        }
+
         override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): String {
             return (tag as StringTag).asString
         }

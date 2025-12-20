@@ -157,6 +157,9 @@ class ObservationAttributeMapping(
         }
     }
 
+    operator fun get(instrumentAttribute: MappedAttributeKeyInfo<*, *>): AttributeDataSource<*>? =
+        mapping[instrumentAttribute]
+
     fun plus(instrumentAttribute: MappedAttributeKeyInfo<*, *>, attributeDataSource: AttributeDataSource<*>) =
         this + (instrumentAttribute to attributeDataSource)
 

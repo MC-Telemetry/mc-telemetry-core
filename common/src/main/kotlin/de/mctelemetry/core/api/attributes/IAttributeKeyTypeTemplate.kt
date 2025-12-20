@@ -21,7 +21,7 @@ interface IAttributeKeyTypeTemplate<T : Any, B : Any> {
     }
 
     fun create(savedData: CompoundTag?): IAttributeKeyTypeInstance<T, B> {
-        return object : IAttributeKeyTypeInstance<T,B> {
+        return object : IAttributeKeyTypeInstance<T, B> {
             override val templateType: IAttributeKeyTypeTemplate<T, B>
                 get() = this@IAttributeKeyTypeTemplate
         }
@@ -75,6 +75,14 @@ fun <T : Any, R : Any> MappedAttributeKeyValue<T, *>.convertTo(supertype: IAttri
     return (info.templateType as IAttributeKeyTypeTemplate<T, *>).convertTo(supertype, value)
 }
 
+fun <T : Any, R : Any> AttributeDataSource.ConstantAttributeData<T>.convertValueTo(supertype: IAttributeKeyTypeTemplate<R, *>): R? {
+    return type.convertTo(supertype, value)
+}
+
+fun <T : Any, R : Any> AttributeDataSource.ConstantAttributeData<T>.convertTo(supertype: IAttributeKeyTypeTemplate<R, *>): AttributeDataSource.ConstantAttributeData<R>? {
+    return AttributeDataSource.ConstantAttributeData(supertype,type.convertTo(supertype, value) ?: return null)
+}
+
 fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(
     subtype: IAttributeKeyTypeTemplate<T, *>,
     value: T,
@@ -83,6 +91,14 @@ fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(
 }
 
 fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(subtypeValue: MappedAttributeKeyValue<T, *>): R? {
+    return subtypeValue.convertTo(this)
+}
+
+fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertValueFrom(subtypeValue: AttributeDataSource.ConstantAttributeData<T>): R? {
+    return subtypeValue.convertValueTo(this)
+}
+
+fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(subtypeValue: AttributeDataSource.ConstantAttributeData<T>): AttributeDataSource.ConstantAttributeData<R>? {
     return subtypeValue.convertTo(this)
 }
 

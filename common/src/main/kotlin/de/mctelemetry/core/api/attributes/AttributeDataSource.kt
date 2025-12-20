@@ -54,7 +54,11 @@ sealed interface AttributeDataSource<T : Any> {
         override val additionalTypeData: CompoundTag? = null,
     ) : AttributeDataSource<T> {
 
-        constructor(info: MappedAttributeKeyInfo<T, *>, value: T) : this(info.templateType, value, info.saveTemplateData())
+        constructor(info: MappedAttributeKeyInfo<T, *>, value: T) : this(
+            info.templateType,
+            value,
+            info.saveTemplateData()
+        )
 
         @Suppress("UNCHECKED_CAST")
         constructor(value: MappedAttributeKeyValue<T, *>) : this(
@@ -71,8 +75,11 @@ sealed interface AttributeDataSource<T : Any> {
             type.valueStreamCodec.encode(bb, _value)
         }
 
-        context(attributeStore: IMappedAttributeValueLookup)
+        context(_: IMappedAttributeValueLookup)
         override val value: T
+            get() = _value
+
+        val value: T
             get() = _value
 
         companion object {
@@ -131,9 +138,10 @@ sealed interface AttributeDataSource<T : Any> {
                 )
                 "constant" -> {
                     val valueTypeResourceLocation = ResourceLocation.parse(tag.getString("value_type"))
-                    val valueType = lookupProvider.lookupOrThrow(OTelCoreModAPI.AttributeTypeMappings).getOrThrow(
-                        ResourceKey.create(OTelCoreModAPI.AttributeTypeMappings, valueTypeResourceLocation)
-                    )
+                    val valueType: IAttributeKeyTypeTemplate<*, *> =
+                        lookupProvider.lookupOrThrow(OTelCoreModAPI.AttributeTypeMappings).getOrThrow(
+                            ResourceKey.create(OTelCoreModAPI.AttributeTypeMappings, valueTypeResourceLocation)
+                        ).value()
                     ConstantAttributeData(
                         @Suppress("UNCHECKED_CAST")
                         (valueType as IAttributeKeyTypeTemplate<Any, *>),
