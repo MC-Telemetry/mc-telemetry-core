@@ -6,7 +6,7 @@ import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.utils.Validators
@@ -22,7 +22,7 @@ import java.lang.AssertionError
 import java.util.concurrent.CompletableFuture
 
 class LabelDefinitionArgumentType(
-    private val labelTypeLookup: HolderLookup.RegistryLookup<IMappedAttributeKeyType<*, *>>,
+    private val labelTypeLookup: HolderLookup.RegistryLookup<IAttributeKeyTypeTemplate<*, *>>,
 ) : ArgumentType<MappedAttributeKeyInfo<*, *>> {
 
     constructor(context: CommandBuildContext) : this(context.lookupOrThrow(OTelCoreModAPI.AttributeTypeMappings))

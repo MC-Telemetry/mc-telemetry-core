@@ -4,7 +4,7 @@ import io.opentelemetry.api.common.AttributeType
 
 sealed class GenericAttributeType<T : Any>(
     internal val otelType: AttributeType,
-    internal val mappedType: IMappedAttributeKeyType<T, T>,
+    internal val mappedType: IAttributeKeyTypeTemplate<T, T>,
 ) {
 
     object STRING : GenericAttributeType<String>(

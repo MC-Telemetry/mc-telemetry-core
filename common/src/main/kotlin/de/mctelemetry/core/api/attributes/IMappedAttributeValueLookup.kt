@@ -101,7 +101,7 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
                 parent: IMappedAttributeValueLookup = empty(),
             ) = MapLookup(data.mapKeysTo(mutableMapOf()) { (key, value) ->
                 if (value != null) {
-                    require(key.type.valueType.isInstance(value)) {
+                    require(key.templateType.valueType.isInstance(value)) {
                         "Incompatible key and value: $key to $value"
                     }
                 }

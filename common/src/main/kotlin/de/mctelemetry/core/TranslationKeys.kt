@@ -1,7 +1,7 @@
 package de.mctelemetry.core
 
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.attributes.AttributeDataSource
@@ -93,8 +93,8 @@ object TranslationKeys {
             )
 
         fun attributeTypesIncompatible(
-            sourceType: IMappedAttributeKeyType<*, *>,
-            targetType: IMappedAttributeKeyType<*, *>,
+            sourceType: IAttributeKeyTypeTemplate<*, *>,
+            targetType: IAttributeKeyTypeTemplate<*, *>,
         ): MutableComponent =
             Component.translatableWithFallback(
                 ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE,
@@ -111,7 +111,7 @@ object TranslationKeys {
                 ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED,
                 $$"Incompatible attribute types: Cannot assign from %1$s to %2$s ('%3$s')",
                 source.type.id.location().toString(),
-                target.type.id.location().toString(),
+                target.templateType.id.location().toString(),
                 target.baseKey.key,
             )
 
@@ -123,7 +123,7 @@ object TranslationKeys {
                 ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED,
                 $$"Incompatible attribute types: Cannot assign from %1$s ('%3$s') to %2$s ('%4$s')",
                 source.type.id.location().toString(),
-                target.type.id.location().toString(),
+                target.templateType.id.location().toString(),
                 source.info.baseKey.key,
                 target.baseKey.key,
             )
@@ -143,7 +143,7 @@ object TranslationKeys {
                 ERRORS_ATTRIBUTES_MAPPING_MISSING,
                 $$"Missing attributes mapping: Cannot find source attribute for '%1$s' (%2$s)",
                 target.baseKey.key,
-                target.type.id.location().toString(),
+                target.templateType.id.location().toString(),
             )
 
         fun observationsUninitialized(): MutableComponent =

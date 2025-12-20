@@ -1,7 +1,7 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
@@ -90,7 +90,7 @@ class ObservationAttributeMapping(
 
     fun validateTypes(force: Boolean = false): MutableComponent? = cacheableValidation(VALIDATION_FLAG_TYPES, force) {
         for ((target, source) in mapping) {
-            if (!(source.type canConvertTo target.type))
+            if (!(source.type canConvertTo target.templateType))
                 return TranslationKeys.Errors.attributeTypesIncompatible(source, target)
         }
         return null
@@ -207,7 +207,7 @@ class ObservationAttributeMapping(
             attributeDataSource: AttributeDataSource<*>,
             builder: AttributesBuilder,
         ): AttributesBuilder {
-            val metricAttributeType: IMappedAttributeKeyType<T, B> = metricAttribute.type
+            val metricAttributeType: IAttributeKeyTypeTemplate<T, B> = metricAttribute.templateType
             val metricAttributeKey: AttributeKey<B> = metricAttribute.baseKey
             val value: T = lookupConverted(metricAttributeType, attributeDataSource)
             return builder.put(metricAttributeKey, metricAttributeType.format(value))
@@ -215,7 +215,7 @@ class ObservationAttributeMapping(
 
         context(attributeStore: IMappedAttributeValueLookup)
         private fun <T : Any, R : Any, B : Any> lookupConverted(
-            metricAttributeType: IMappedAttributeKeyType<T, B>,
+            metricAttributeType: IAttributeKeyTypeTemplate<T, B>,
             attributeDataSource: AttributeDataSource<R>,
         ): T {
             val value = attributeDataSource.value

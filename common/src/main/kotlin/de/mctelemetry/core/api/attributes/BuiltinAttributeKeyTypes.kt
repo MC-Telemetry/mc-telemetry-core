@@ -6,7 +6,6 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
 import net.minecraft.core.HolderLookup
-import net.minecraft.core.RegistryAccess
 import net.minecraft.core.UUIDUtil
 import net.minecraft.core.registries.Registries
 import net.minecraft.nbt.ByteTag
@@ -25,7 +24,7 @@ import java.util.UUID
 
 object BuiltinAttributeKeyTypes {
 
-    val ALL: List<IMappedAttributeKeyType<*, *>> = listOf(
+    val ALL: List<IAttributeKeyTypeInstance.InstanceType<*, *>> = listOf(
         BlockPosType,
         GlobalPosType,
         ItemType,
@@ -33,9 +32,9 @@ object BuiltinAttributeKeyTypes {
         UUIDType,
     )
 
-    object BlockPosType : IMappedAttributeKeyType<BlockPos, List<Long>> {
+    object BlockPosType : IAttributeKeyTypeInstance.InstanceType<BlockPos, List<Long>> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "block_position")
         )
@@ -52,14 +51,14 @@ object BuiltinAttributeKeyTypes {
             return listOf(x, y, z)
         }
 
-        override fun canConvertDirectlyTo(supertype: IMappedAttributeKeyType<*, *>): Boolean {
+        override fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *>): Boolean {
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> true
                 else -> false
             }
         }
 
-        override fun <R : Any> convertDirectlyTo(supertype: IMappedAttributeKeyType<R, *>, value: BlockPos): R? {
+        override fun <R : Any> convertDirectlyTo(supertype: IAttributeKeyTypeTemplate<R, *>, value: BlockPos): R? {
             @Suppress("UNCHECKED_CAST") // known values from when-matching
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> "${value.x},${value.y},${value.z}" as R
@@ -82,9 +81,9 @@ object BuiltinAttributeKeyTypes {
         }
     }
 
-    object GlobalPosType : IMappedAttributeKeyType<GlobalPos, List<String>> {
+    object GlobalPosType : IAttributeKeyTypeInstance.InstanceType<GlobalPos, List<String>> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "global_position")
         )
@@ -106,7 +105,7 @@ object BuiltinAttributeKeyTypes {
             return listOf(dimension.location().toString(), x.toString(), y.toString(), z.toString())
         }
 
-        override fun canConvertDirectlyTo(supertype: IMappedAttributeKeyType<*, *>): Boolean {
+        override fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *>): Boolean {
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> true
                 BlockPosType -> true
@@ -114,7 +113,7 @@ object BuiltinAttributeKeyTypes {
             }
         }
 
-        override fun <R : Any> convertDirectlyTo(supertype: IMappedAttributeKeyType<R, *>, value: GlobalPos): R? {
+        override fun <R : Any> convertDirectlyTo(supertype: IAttributeKeyTypeTemplate<R, *>, value: GlobalPos): R? {
             @Suppress("UNCHECKED_CAST") // known values from when-matching
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> "${value.dimension.location()}@${value.pos.x},${value.pos.y},${value.pos.z}" as R
@@ -142,9 +141,9 @@ object BuiltinAttributeKeyTypes {
         }
     }
 
-    object DirectionType : IMappedAttributeKeyType<Direction, String> {
+    object DirectionType : IAttributeKeyTypeInstance.InstanceType<Direction, String> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "direction")
         )
@@ -166,9 +165,9 @@ object BuiltinAttributeKeyTypes {
         }
     }
 
-    object ItemType : IMappedAttributeKeyType<Item, String> {
+    object ItemType : IAttributeKeyTypeInstance.InstanceType<Item, String> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "item")
         )
@@ -203,9 +202,9 @@ object BuiltinAttributeKeyTypes {
         }
     }
 
-    object UUIDType : IMappedAttributeKeyType<UUID, String> {
+    object UUIDType : IAttributeKeyTypeInstance.InstanceType<UUID, String> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "uuid")
         )

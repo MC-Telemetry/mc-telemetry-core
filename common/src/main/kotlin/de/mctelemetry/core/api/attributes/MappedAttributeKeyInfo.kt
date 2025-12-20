@@ -24,8 +24,8 @@ import kotlin.jvm.optionals.getOrNull
 
 open class MappedAttributeKeyInfo<T : Any, B : Any>(
     val baseKey: AttributeKey<B>,
-    val type: IMappedAttributeKeyType<T, B>,
-) {
+    override val templateType: IAttributeKeyTypeTemplate<T, B>,
+) : IAttributeKeyTypeInstance<T, B> {
 
     companion object {
 
@@ -33,10 +33,10 @@ open class MappedAttributeKeyInfo<T : Any, B : Any>(
         val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, MappedAttributeKeyInfo<*, *>> = StreamCodec.composite(
             ByteBufCodecs.stringUtf8(256),
             { it.baseKey.key },
-            IMappedAttributeKeyType.STREAM_CODEC,
-            MappedAttributeKeyInfo<*, *>::type,
+            IAttributeKeyTypeTemplate.STREAM_CODEC,
+            MappedAttributeKeyInfo<*, *>::templateType,
             ByteBufCodecs.OPTIONAL_COMPOUND_TAG,
-            { Optional.ofNullable(it.saveAdditional()) },
+            { Optional.ofNullable(it.saveTemplateData()) },
         ) { name, type, data ->
             type.create(name, data.getOrNull())
         }
@@ -117,14 +117,14 @@ open class MappedAttributeKeyInfo<T : Any, B : Any>(
 
         fun load(
             tag: CompoundTag,
-            attributeKeyTypeHolderGetter: HolderGetter<IMappedAttributeKeyType<*, *>>,
+            attributeKeyTypeHolderGetter: HolderGetter<IAttributeKeyTypeTemplate<*, *>>,
         ): MappedAttributeKeyInfo<*, *> {
             val name = tag.getString("name")
             if (name.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'name'")
             val type = tag.getString("type")
             if (type.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'type'")
             val typeResourceLocation = ResourceLocation.parse(type)
-            val mappingType: IMappedAttributeKeyType<*, *> = try {
+            val mappingType: IAttributeKeyTypeTemplate<*, *> = try {
                 attributeKeyTypeHolderGetter.getOrThrow(
                     ResourceKey.create(
                         OTelCoreModAPI.AttributeTypeMappings,
@@ -158,16 +158,11 @@ open class MappedAttributeKeyInfo<T : Any, B : Any>(
         }
     }
 
-    @Suppress("SameReturnValue")
-    open fun saveAdditional(): CompoundTag? {
-        return null
-    }
-
     fun save(): CompoundTag {
         return CompoundTag().also { saveTag ->
             saveTag.putString("name", baseKey.key)
-            saveTag.putString("type", type.id.location().toString())
-            val data = saveAdditional()
+            saveTag.putString("type", templateType.id.location().toString())
+            val data = saveTemplateData()
             if (data != null) {
                 saveTag.put("data", data)
             }
@@ -175,8 +170,8 @@ open class MappedAttributeKeyInfo<T : Any, B : Any>(
     }
 
     override fun toString(): String {
-        val additional = saveAdditional()
-        val typeId: String = type.id.location().let {
+        val additional = saveTemplateData()
+        val typeId: String = templateType.id.location().let {
             if (it.namespace == ResourceLocation.DEFAULT_NAMESPACE) it.path else it.toString()
         }
         return if (additional != null) {
@@ -193,7 +188,7 @@ open class MappedAttributeKeyInfo<T : Any, B : Any>(
         other as MappedAttributeKeyInfo<*, *>
 
         if (baseKey != other.baseKey) return false
-        if (type != other.type) return false
+        if (templateType != other.templateType) return false
 
         return true
     }

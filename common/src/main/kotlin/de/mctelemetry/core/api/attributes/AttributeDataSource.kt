@@ -12,28 +12,25 @@ import net.minecraft.resources.ResourceLocation
 
 sealed interface AttributeDataSource<T : Any> {
 
-    val type: IMappedAttributeKeyType<T, *>
+    val type: IAttributeKeyTypeTemplate<T, *>
 
-    context(attributeStore: IMappedAttributeValueLookup)
+    val additionalTypeData: CompoundTag?
+        get() = null
+
+    context(_: IMappedAttributeValueLookup)
     val value: T?
 
     @JvmInline
     value class ObservationSourceAttributeReference<T : Any>(val info: MappedAttributeKeyInfo<T, *>) :
             AttributeDataSource<T> {
 
-        override val type: IMappedAttributeKeyType<T, *>
-            get() = info.type
+        override val type: IAttributeKeyTypeTemplate<T, *>
+            get() = info.templateType
 
         companion object {
 
-            val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationSourceAttributeReference<*>> =
-                MappedAttributeKeyInfo.STREAM_CODEC.map(
-                    { ObservationSourceAttributeReference(it) },
-                    ObservationSourceAttributeReference<*>::info
-                )
-
-            fun <T : Any> MappedAttributeKeyInfo<T, *>.asReference(): ObservationSourceAttributeReference<T> =
-                ObservationSourceAttributeReference(this)
+            val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationSourceAttributeReference<*>>
+                get() = REFERENCE_STREAM_CODEC
         }
 
         context(attributeStore: IMappedAttributeValueLookup)
@@ -52,12 +49,12 @@ sealed interface AttributeDataSource<T : Any> {
     }
 
     class ConstantAttributeData<T : Any>(
-        override val type: IMappedAttributeKeyType<T, *>,
+        override val type: IAttributeKeyTypeTemplate<T, *>,
         value: T,
-        val additionalTypeData: CompoundTag? = null,
+        override val additionalTypeData: CompoundTag? = null,
     ) : AttributeDataSource<T> {
 
-        constructor(info: MappedAttributeKeyInfo<T, *>, value: T) : this(info.type, value, info.saveAdditional())
+        constructor(info: MappedAttributeKeyInfo<T, *>, value: T) : this(info.templateType, value, info.saveTemplateData())
 
         @Suppress("UNCHECKED_CAST")
         constructor(value: MappedAttributeKeyValue<T, *>) : this(
@@ -95,7 +92,7 @@ sealed interface AttributeDataSource<T : Any> {
                         .getOrThrow(key)
                     val value = type.valueStreamCodec.decode(`object`)
                     @Suppress("UNCHECKED_CAST") // type information is retained in `type`
-                    return ConstantAttributeData(type as IMappedAttributeKeyType<Any, *>, value, additionalData)
+                    return ConstantAttributeData(type as IAttributeKeyTypeTemplate<Any, *>, value, additionalData)
                 }
             }
 
@@ -104,6 +101,16 @@ sealed interface AttributeDataSource<T : Any> {
     }
 
     companion object {
+
+
+        private val REFERENCE_STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationSourceAttributeReference<*>> =
+            MappedAttributeKeyInfo.STREAM_CODEC.map(
+                { ObservationSourceAttributeReference(it) },
+                ObservationSourceAttributeReference<*>::info
+            )
+
+        fun <T : Any> MappedAttributeKeyInfo<T, *>.asReference(): ObservationSourceAttributeReference<T> =
+            ObservationSourceAttributeReference(this)
 
         fun fromNbt(tag: CompoundTag, lookupProvider: HolderLookup.Provider): AttributeDataSource<*> {
             var typeString = tag.getString("type").lowercase()
@@ -129,7 +136,7 @@ sealed interface AttributeDataSource<T : Any> {
                     )
                     ConstantAttributeData(
                         @Suppress("UNCHECKED_CAST")
-                        (valueType as IMappedAttributeKeyType<Any, *>),
+                        (valueType as IAttributeKeyTypeTemplate<Any, *>),
                         valueType.fromNbt(tag.get("value")!!, lookupProvider),
                         tag.getCompound("type_data").takeUnless(CompoundTag::isEmpty)
                     )
@@ -162,7 +169,7 @@ sealed interface AttributeDataSource<T : Any> {
                 it::class.java
             }.add(
                 ObservationSourceAttributeReference::class.java,
-                ObservationSourceAttributeReference.STREAM_CODEC,
+                REFERENCE_STREAM_CODEC,
             ).add(
                 ConstantAttributeData::class.java,
                 ConstantAttributeData.STREAM_CODEC,

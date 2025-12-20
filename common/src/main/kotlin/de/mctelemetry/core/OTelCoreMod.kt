@@ -2,7 +2,7 @@ package de.mctelemetry.core
 
 import com.mojang.serialization.Lifecycle
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
@@ -116,8 +116,8 @@ object OTelCoreMod {
         registerContent()
     }
 
-    fun registerAttributeTypes(registry: WritableRegistry<IMappedAttributeKeyType<*, *>>?) {
-        val attributeTypes: List<IMappedAttributeKeyType<*, *>> =
+    fun registerAttributeTypes(registry: WritableRegistry<IAttributeKeyTypeTemplate<*, *>>?) {
+        val attributeTypes: List<IAttributeKeyTypeTemplate<*, *>> =
             NativeAttributeKeyTypes.ALL + BuiltinAttributeKeyTypes.ALL
         if (registry == null) {
             DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.AttributeTypeMappings).apply {

@@ -6,7 +6,7 @@ import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.AttributeDataSource.ObservationSourceAttributeReference.Companion.asReference
+import de.mctelemetry.core.api.attributes.AttributeDataSource.Companion.asReference
 import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.BlockPos
