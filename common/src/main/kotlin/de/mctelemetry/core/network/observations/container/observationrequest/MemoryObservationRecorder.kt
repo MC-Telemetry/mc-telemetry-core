@@ -1,6 +1,6 @@
 package de.mctelemetry.core.network.observations.container.observationrequest
 
-import de.mctelemetry.core.api.attributes.ObservationContext
+import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
@@ -31,13 +31,13 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
         backingMap.clear()
     }
 
-    context(observationContext: ObservationContext<*>)
+    context(attributeStore: IMappedAttributeValueLookup)
     override fun observe(value: Double, source: IObservationSource<*, *>) {
-        val attributeValues = observationContext.attributeValueLookup.references.mapNotNull {
+        val attributeValues = attributeStore.references.mapNotNull {
             MappedAttributeKeyValue(
                 it.info,
                 try {
-                    observationContext.attributeValueLookup[it] ?: return@mapNotNull null
+                    attributeStore[it] ?: return@mapNotNull null
                 } catch (_: NoSuchElementException) {
                     return@mapNotNull null
                 }
@@ -47,13 +47,13 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
         mapForSource(source)[attributeValues] = point
     }
 
-    context(observationContext: ObservationContext<*>)
+    context(attributeStore: IMappedAttributeValueLookup)
     override fun observe(value: Long, source: IObservationSource<*, *>) {
-        val attributeValues = observationContext.attributeValueLookup.references.mapNotNull {
+        val attributeValues = attributeStore.references.mapNotNull {
             MappedAttributeKeyValue(
                 it.info,
                 try {
-                    observationContext.attributeValueLookup[it] ?: return@mapNotNull null
+                    attributeStore[it] ?: return@mapNotNull null
                 } catch (_: NoSuchElementException) {
                     return@mapNotNull null
                 }
@@ -63,17 +63,17 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
         mapForSource(source)[attributeValues] = point
     }
 
-    context(observationContext: ObservationContext<*>)
+    context(attributeStore: IMappedAttributeValueLookup)
     override fun observePreferred(
         double: Double,
         long: Long,
         source: IObservationSource<*, *>,
     ) {
-        val attributeValues = observationContext.attributeValueLookup.references.mapNotNull {
+        val attributeValues = attributeStore.references.mapNotNull {
             MappedAttributeKeyValue(
                 it.info,
                 try {
-                    observationContext.attributeValueLookup[it] ?: return@mapNotNull null
+                    attributeStore[it] ?: return@mapNotNull null
                 } catch (_: NoSuchElementException) {
                     return@mapNotNull null
                 }

@@ -6,7 +6,7 @@ import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.ObservationContext
+import de.mctelemetry.core.api.attributes.AttributeDataSource.ObservationSourceAttributeReference.Companion.asReference
 import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.BlockPos
@@ -30,12 +30,11 @@ object RedstoneScraperComparatorObservationSource : IObservationSource.SingleAtt
 
     override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
 
-    private val POS_KEY =
-        AttributeDataSource.ObservationSourceAttributeReference(BuiltinAttributeKeyTypes.GlobalPosType("pos"))
+    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos").asReference()
 
     override val reference: AttributeDataSource.ObservationSourceAttributeReference<GlobalPos> = POS_KEY
 
-    context(sourceContext: BlockEntity, observationContext: ObservationContext<IMappedAttributeValueLookup.PairLookup<GlobalPos>>)
+    context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.PairLookup<GlobalPos>)
     override fun observe(
         recorder: IObservationRecorder.Unresolved,
         unusedAttributes: Set<AttributeDataSource<*>>,
@@ -46,10 +45,9 @@ object RedstoneScraperComparatorObservationSource : IObservationSource.SingleAtt
         if (!(level.isLoaded(scraperPos) && level.shouldTickBlocksAt(scraperPos))) return
         val facing = sourceContext.blockState.getValue(ObservationSourceContainerBlock.FACING)
         val observationPos = scraperPos.relative(facing)
-        observationContext.attributeValueLookup.value = GlobalPos(level.dimension(), observationPos)
+        POS_KEY.set(GlobalPos(level.dimension(), observationPos))
         val state = level.getBlockState(observationPos)
         if (state.hasAnalogOutputSignal()) {
-
             var analogValue = 0
             var advancedAnalogValue = 0.0
             val server = level.server

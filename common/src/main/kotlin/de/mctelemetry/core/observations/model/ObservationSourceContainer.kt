@@ -1,7 +1,6 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.ObservationContext
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.observations.IObservationRecorder
@@ -241,23 +240,22 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable, ObservationSource
         }
     }
 
-    protected open fun <OC : ObservationContext<*>> doObservation(
-        source: IObservationSource<in SC, OC>,
+    protected open fun <AS : IMappedAttributeValueLookup> doObservation(
+        source: IObservationSource<in SC, AS>,
         sourceContext: SC,
-        parentLookup: IMappedAttributeValueLookup,
+        parentStore: IMappedAttributeValueLookup,
         unusedAttributesSet: MutableSet<AttributeDataSource<*>>,
         mapping: ObservationAttributeMapping,
         recorder: IObservationRecorder.Unresolved,
     ) {
         context(sourceContext) {
-            val observationContext = source.createObservationContext(parentLookup)
+            val attributeStore = source.createAttributeStore(parentStore)
             unusedAttributesSet.clear()
-            mapping.findUnusedAttributeDataSources(observationContext.attributeValueLookup.references, unusedAttributesSet)
+            mapping.findUnusedAttributeDataSources(attributeStore.references, unusedAttributesSet)
             recorder.onNewSource(source)
-            context(observationContext) {
+            context(attributeStore) {
                 source.observe(recorder, unusedAttributesSet)
             }
-
         }
     }
 }

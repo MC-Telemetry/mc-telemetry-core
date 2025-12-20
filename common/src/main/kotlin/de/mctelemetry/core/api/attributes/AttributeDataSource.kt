@@ -13,7 +13,8 @@ import net.minecraft.resources.ResourceLocation
 sealed interface AttributeDataSource<T : Any> {
 
     val type: IMappedAttributeKeyType<T, *>
-    context(observationContext: ObservationContext<*>)
+
+    context(attributeStore: IMappedAttributeValueLookup)
     val value: T?
 
     @JvmInline
@@ -30,11 +31,24 @@ sealed interface AttributeDataSource<T : Any> {
                     { ObservationSourceAttributeReference(it) },
                     ObservationSourceAttributeReference<*>::info
                 )
+
+            fun <T : Any> MappedAttributeKeyInfo<T, *>.asReference(): ObservationSourceAttributeReference<T> =
+                ObservationSourceAttributeReference(this)
         }
 
-        context(observationContext: ObservationContext<*>)
+        context(attributeStore: IMappedAttributeValueLookup)
         override val value: T?
-            get() = observationContext.attributeValueLookup[this]
+            get() = attributeStore[this]
+
+        context(attributeStore: IMappedAttributeValueLookup.Mutable)
+        fun set(value: T) {
+            attributeStore[this] = value
+        }
+
+        context(attributeStore: IMappedAttributeValueLookup.Mutable)
+        fun unset() {
+            attributeStore[this] = null
+        }
     }
 
     class ConstantAttributeData<T : Any>(
@@ -60,7 +74,7 @@ sealed interface AttributeDataSource<T : Any> {
             type.valueStreamCodec.encode(bb, _value)
         }
 
-        context(observationContext: ObservationContext<*>)
+        context(attributeStore: IMappedAttributeValueLookup)
         override val value: T
             get() = _value
 
@@ -93,8 +107,8 @@ sealed interface AttributeDataSource<T : Any> {
 
         fun fromNbt(tag: CompoundTag, lookupProvider: HolderLookup.Provider): AttributeDataSource<*> {
             var typeString = tag.getString("type").lowercase()
-            if(typeString.isEmpty()) {
-                if(!tag.getCompound("reference").isEmpty)
+            if (typeString.isEmpty()) {
+                if (!tag.getCompound("reference").isEmpty)
                     typeString = "reference"
                 else if (tag.get("value") != null)
                     typeString = "constant"
@@ -128,11 +142,11 @@ sealed interface AttributeDataSource<T : Any> {
             return CompoundTag().also { tag ->
                 when (data) {
                     is ObservationSourceAttributeReference<*> -> {
-                        if(explicitType) tag.putString("type", "reference")
+                        if (explicitType) tag.putString("type", "reference")
                         tag.put("reference", data.info.save())
                     }
                     is ConstantAttributeData<*> -> {
-                        if(explicitType) tag.putString("type", "constant")
+                        if (explicitType) tag.putString("type", "constant")
                         tag.putString("value_type", data.type.id.location().toString())
                         tag.put("value", data.valueTag)
                         if (data.additionalTypeData != null) {

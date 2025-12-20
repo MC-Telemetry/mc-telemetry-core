@@ -5,7 +5,7 @@ import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.ObservationContext
+import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.attributes.canConvertTo
 import de.mctelemetry.core.api.attributes.convertFrom
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
@@ -136,7 +136,7 @@ class ObservationAttributeMapping(
         output.removeAll(this.attributeDataSources)
     }
 
-    context(observationContext: ObservationContext<*>)
+    context(attributeStore: IMappedAttributeValueLookup)
     fun resolveAttributes(): Attributes {
         if (mapping.isEmpty()) {
             return Attributes.empty()
@@ -201,7 +201,7 @@ class ObservationAttributeMapping(
 
         //private val comparator: Comparator<MappedAttributeKeyInfo<*, *>> = Comparator.comparing { it.baseKey.key }
 
-        context(observationContext: ObservationContext<*>)
+        context(attributeStore: IMappedAttributeValueLookup)
         private fun <T : Any, B : Any> addConverted(
             metricAttribute: MappedAttributeKeyInfo<T, B>,
             attributeDataSource: AttributeDataSource<*>,
@@ -213,7 +213,7 @@ class ObservationAttributeMapping(
             return builder.put(metricAttributeKey, metricAttributeType.format(value))
         }
 
-        context(observationContext: ObservationContext<*>)
+        context(attributeStore: IMappedAttributeValueLookup)
         private fun <T : Any, R : Any, B : Any> lookupConverted(
             metricAttributeType: IMappedAttributeKeyType<T, B>,
             attributeDataSource: AttributeDataSource<R>,

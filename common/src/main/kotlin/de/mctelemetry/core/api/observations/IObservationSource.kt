@@ -1,12 +1,11 @@
 package de.mctelemetry.core.api.observations
 
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.ObservationContext
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import net.minecraft.resources.ResourceKey
 
-interface IObservationSource<SC, OC : ObservationContext<*>> {
+interface IObservationSource<SC, AS : IMappedAttributeValueLookup> {
 
     val id: ResourceKey<IObservationSource<*, *>>
 
@@ -15,49 +14,45 @@ interface IObservationSource<SC, OC : ObservationContext<*>> {
     val sourceContextType: Class<SC>
 
     context(sourceContext: SC)
-    fun createObservationContext(lookup: IMappedAttributeValueLookup): OC
+    fun createAttributeStore(parent: IMappedAttributeValueLookup): AS
 
-    context(sourceContext: SC, observationContext: OC)
+    context(sourceContext: SC, attributeStore: AS)
     fun observe(
         recorder: IObservationRecorder.Unresolved,
         unusedAttributes: Set<AttributeDataSource<*>>,
     )
 
-    interface Simple<SC> : IObservationSource<SC, ObservationContext<*>> {
+    interface Simple<SC> : IObservationSource<SC, IMappedAttributeValueLookup> {
 
         context(sourceContext: SC)
-        override fun createObservationContext(
-            lookup: IMappedAttributeValueLookup,
-        ): ObservationContext<*> {
+        override fun createAttributeStore(
+            parent: IMappedAttributeValueLookup,
+        ): IMappedAttributeValueLookup {
             val ownAttributes = this.attributes
-            return ObservationContext(
-                if (ownAttributes.references.isEmpty())
-                    lookup
-                else
-                    IMappedAttributeValueLookup.MapLookup(
-                        data = ownAttributes.references.associateWith { null },
-                        parent = lookup
-                    )
-            )
+            return if (ownAttributes.references.isEmpty())
+                parent
+            else
+                IMappedAttributeValueLookup.MapLookup(
+                    data = ownAttributes.references.associateWith { null },
+                    parent = parent
+                )
         }
     }
 
-    interface MultiAttribute<SC> : IObservationSource<SC, ObservationContext<IMappedAttributeValueLookup.MapLookup>> {
+    interface MultiAttribute<SC> : IObservationSource<SC, IMappedAttributeValueLookup.MapLookup> {
 
         context(sourceContext: SC)
-        override fun createObservationContext(
-            lookup: IMappedAttributeValueLookup,
-        ): ObservationContext<IMappedAttributeValueLookup.MapLookup> {
-            return ObservationContext(
-                IMappedAttributeValueLookup.MapLookup(
-                    data = this.attributes.references.associateWith { null },
-                    parent = lookup
-                )
+        override fun createAttributeStore(
+            parent: IMappedAttributeValueLookup,
+        ): IMappedAttributeValueLookup.MapLookup {
+            return IMappedAttributeValueLookup.MapLookup(
+                data = this.attributes.references.associateWith { null },
+                parent = parent
             )
         }
     }
 
-    interface SingleAttribute<SC, T : Any> : IObservationSource<SC, ObservationContext<IMappedAttributeValueLookup.PairLookup<T>>> {
+    interface SingleAttribute<SC, T : Any> : IObservationSource<SC, IMappedAttributeValueLookup.PairLookup<T>> {
 
         val reference: AttributeDataSource.ObservationSourceAttributeReference<T>
 
@@ -65,15 +60,13 @@ interface IObservationSource<SC, OC : ObservationContext<*>> {
             get() = IAttributeDateSourceReferenceSet(listOf(reference))
 
         context(sourceContext: SC)
-        override fun createObservationContext(
-            lookup: IMappedAttributeValueLookup,
-        ): ObservationContext<IMappedAttributeValueLookup.PairLookup<T>> {
-            return ObservationContext(
-                IMappedAttributeValueLookup.PairLookup(
-                    reference,
-                    null,
-                    parent = lookup
-                )
+        override fun createAttributeStore(
+            parent: IMappedAttributeValueLookup,
+        ): IMappedAttributeValueLookup.PairLookup<T> {
+            return IMappedAttributeValueLookup.PairLookup(
+                reference,
+                null,
+                parent = parent
             )
         }
     }

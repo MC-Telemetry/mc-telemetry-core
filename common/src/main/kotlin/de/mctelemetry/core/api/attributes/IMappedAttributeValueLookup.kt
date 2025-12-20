@@ -8,6 +8,10 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
 
     fun <T : Any> prepareLookup(reference: AttributeDataSource.ObservationSourceAttributeReference<T>): ((AttributeDataSource.ObservationSourceAttributeReference<T>) -> T)?
 
+    interface Mutable : IMappedAttributeValueLookup {
+        operator fun <T : Any> set(reference: AttributeDataSource.ObservationSourceAttributeReference<T>, value: T?)
+    }
+
     companion object {
 
         private val Empty = object : IMappedAttributeValueLookup {
@@ -24,7 +28,7 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
         val key: AttributeDataSource.ObservationSourceAttributeReference<T>,
         var value: T?,
         val parent: IMappedAttributeValueLookup = empty(),
-    ) : IMappedAttributeValueLookup {
+    ) : Mutable {
 
         constructor(
             pair: Pair<AttributeDataSource.ObservationSourceAttributeReference<T>, T?>,
@@ -58,12 +62,18 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
             }
             return parent.prepareLookup(reference)
         }
+
+        override fun <T2 : Any> set(reference: AttributeDataSource.ObservationSourceAttributeReference<T2>, value: T2?) {
+            if(reference.info !== key.info) throw IllegalArgumentException("Tried to set value with foreign reference: $reference")
+            @Suppress("UNCHECKED_CAST")
+            this.value = value as T
+        }
     }
 
     class MapLookup private constructor(
         private val data: MutableMap<AttributeDataSource.ObservationSourceAttributeReference<*>, Any?>,
         private val parent: IMappedAttributeValueLookup,
-    ) : IMappedAttributeValueLookup {
+    ) : Mutable {
 
         constructor(
             data: MapLookup,
@@ -87,10 +97,10 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
 
             @JvmName("newFromAttributeKeyInfos")
             operator fun invoke(
-                data: Map<MappedAttributeKeyInfo<*,*>, Any?>,
+                data: Map<MappedAttributeKeyInfo<*, *>, Any?>,
                 parent: IMappedAttributeValueLookup = empty(),
             ) = MapLookup(data.mapKeysTo(mutableMapOf()) { (key, value) ->
-                if (value != null){
+                if (value != null) {
                     require(key.type.valueType.isInstance(value)) {
                         "Incompatible key and value: $key to $value"
                     }
@@ -132,9 +142,8 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
             data[key] = value
         }
 
-
-        operator fun <T : Any> set(key: AttributeDataSource.ObservationSourceAttributeReference<T>, value: T?) {
-            update(key, value)
+        override fun <T : Any> set(reference: AttributeDataSource.ObservationSourceAttributeReference<T>, value: T?) {
+            update(reference, value)
         }
     }
 }
