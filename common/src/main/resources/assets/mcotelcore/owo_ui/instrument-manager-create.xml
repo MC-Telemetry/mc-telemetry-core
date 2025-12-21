@@ -14,24 +14,19 @@
                                     </sizing>
                                 </button>
 
-                                <stack-layout>
-                                    <children>
-                                        <label id="instrument-name">
-                                            <margins>
-                                                <all>5</all>
-                                            </margins>
-                                        </label>
-                                    </children>
-                                    <surface>
-                                        <panel-inset/>
-                                    </surface>
+                                <text-box id="instrument-name">
+                                    <sizing>
+                                        <horizontal method="fill">72</horizontal>
+                                    </sizing>
                                     <margins>
                                         <left>5</left>
+                                        <right>5</right>
                                     </margins>
-                                    <sizing>
-                                        <horizontal method="fill">80</horizontal>
-                                    </sizing>
-                                </stack-layout>
+                                </text-box>
+
+                                <small-checkbox id="instrument-use-decimals">
+                                    <tooltip-text>Use decimals</tooltip-text>
+                                </small-checkbox>
                             </children>
                             <vertical-alignment>center</vertical-alignment>
                             <sizing>
@@ -43,7 +38,7 @@
                         </flow-layout>
 
                         <scroll direction="vertical">
-                            <flow-layout direction="vertical" id="list">
+                            <flow-layout direction="vertical" id="attribute-creator">
                                 <children>
                                 </children>
 
@@ -53,7 +48,7 @@
                             </flow-layout>
 
                             <sizing>
-                                <vertical method="fill">52</vertical>
+                                <vertical method="fill">70</vertical>
                                 <horizontal method="fill">60</horizontal>
                             </sizing>
 
