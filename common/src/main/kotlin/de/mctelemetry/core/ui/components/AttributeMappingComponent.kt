@@ -7,6 +7,7 @@ import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes.StringType.convertValueToString
+import de.mctelemetry.core.api.attributes.canConvertFrom
 import de.mctelemetry.core.api.attributes.convertFrom
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -42,11 +43,18 @@ class AttributeMappingComponent(
     }
 
     sealed class AttributeMappingSources {
-        object None : AttributeMappingSources()
+        abstract val type: IAttributeKeyTypeTemplate<*,*>?
+        object None : AttributeMappingSources() {
+            override val type: IAttributeKeyTypeTemplate<*,*>? = null
+        }
         class Reference(val reference: AttributeDataSource.ObservationSourceAttributeReference<*>) :
-                AttributeMappingSources()
+            AttributeMappingSources() {
+            override val type: IAttributeKeyTypeTemplate<*, *> = reference.type
+        }
 
-        object Custom : AttributeMappingSources()
+        object Custom : AttributeMappingSources() {
+            override val type: IAttributeKeyTypeTemplate<*, *> = NativeAttributeKeyTypes.StringType
+        }
     }
 
     private fun makeCustomConstantValue(
@@ -117,6 +125,7 @@ class AttributeMappingComponent(
                 is AttributeDataSource.ObservationSourceAttributeReference<*> -> options.firstOrNull {
                     (it.value as? AttributeMappingSources.Reference)?.reference == selected
                 } ?: noneOption
+
                 is AttributeDataSource.ConstantAttributeData<*> -> {
                     customInput.text(selected.convertValueToString())
                     customInput.setEditable(true)
@@ -127,7 +136,10 @@ class AttributeMappingComponent(
             val attributeMapping =
                 SelectBoxComponent(
                     nameComponent,
-                    options,
+                    options.filter {
+                        val optionType = it.value.type ?: return@filter true
+                        instrumentationSourceAttribute.templateType.canConvertFrom(optionType)
+                    },
                     selectedOption,
                 ) { old, new ->
                     println(new)
@@ -141,6 +153,7 @@ class AttributeMappingComponent(
                                 customInput,
                             )
                         }
+
                         is AttributeMappingSources.Reference -> new.value.reference
                         AttributeMappingSources.None -> {
                             if (old.value != AttributeMappingSources.None) {
