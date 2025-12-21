@@ -39,10 +39,6 @@ class AttributeMappingComponent(
         instrumentAttributesObservable.onChange {
             rebuild()
         }
-
-        mappingProperty.onChange {
-            rebuild()
-        }
     }
 
     sealed class AttributeMappingSources {
@@ -159,6 +155,13 @@ class AttributeMappingComponent(
             valueCol.child(attributeMapping)
 
             valueCol.child(customInput as Component)
+
+            // Initial coloring
+            makeCustomConstantValue(
+                customInput.value,
+                instrumentationSourceAttribute.templateType,
+                customInput,
+            )
 
             // order is relevant! Do not place above selectedOption construction (StackOverflow between onChanged and setText?)!
             customInput.onChanged().subscribe {
