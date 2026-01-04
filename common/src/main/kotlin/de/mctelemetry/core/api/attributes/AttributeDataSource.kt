@@ -1,6 +1,8 @@
 package de.mctelemetry.core.api.attributes
 
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.AttributeDataSource.Reference.ObservationSourceAttributeReference
+import de.mctelemetry.core.api.attributes.AttributeDataSource.Reference.ObservationSourceAttributeReference.Companion.find
 import de.mctelemetry.core.api.observations.IObservationSource
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
@@ -70,14 +72,8 @@ sealed interface AttributeDataSource<T : Any> {
                         ?: throw NoSuchElementException("Could not find ObservationSourceAttributeReference named $attributeName in $source")
                 }
 
-                val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationSourceAttributeReference<*>> =
-                    StreamCodec.composite(
-                        ByteBufCodecs.registry(OTelCoreModAPI.ObservationSources),
-                        ObservationSourceAttributeReference<*>::source,
-                        ByteBufCodecs.STRING_UTF8,
-                        ObservationSourceAttributeReference<*>::attributeName,
-                        ::find
-                    )
+                val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationSourceAttributeReference<*>>
+                    get() = OBSERVATION_ATTRIBUTE_REFERENCE_STREAM_CODEC
             }
         }
 
@@ -157,6 +153,16 @@ sealed interface AttributeDataSource<T : Any> {
                 Reference.TypedSlot<*>::info
             )
 
+        private val OBSERVATION_ATTRIBUTE_REFERENCE_STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, Reference.ObservationSourceAttributeReference<*>> =
+            StreamCodec.composite(
+                ByteBufCodecs.registry(OTelCoreModAPI.ObservationSources),
+                ObservationSourceAttributeReference<*>::source,
+                ByteBufCodecs.STRING_UTF8,
+                ObservationSourceAttributeReference<*>::attributeName,
+                ::find
+            )
+
+
         fun <T : Any> MappedAttributeKeyInfo<T, *>.asAttributeDataSlot(): Reference.TypedSlot<T> =
             Reference.TypedSlot(this)
 
@@ -187,6 +193,7 @@ sealed interface AttributeDataSource<T : Any> {
                         require(it.isNotEmpty()) { "Reference name must not be empty" }
                     }
                 )
+
                 "slot" -> Reference.TypedSlot(
                     MappedAttributeKeyInfo.load(
                         tag.getCompound("reference"),
@@ -195,6 +202,7 @@ sealed interface AttributeDataSource<T : Any> {
                         )
                     ),
                 )
+
                 "constant" -> {
                     val valueTypeResourceLocation = ResourceLocation.parse(tag.getString("value_type"))
                     val valueType: IAttributeKeyTypeTemplate<*, *> =
@@ -209,6 +217,7 @@ sealed interface AttributeDataSource<T : Any> {
                         valueType.fromNbt(tag.get("value")!!, lookupProvider),
                     )
                 }
+
                 "" -> throw IllegalArgumentException("No AttributeDataSource type found")
                 else -> throw IllegalArgumentException("Unknown AttributeDataSource type \"$typeString\"")
             }
@@ -221,10 +230,12 @@ sealed interface AttributeDataSource<T : Any> {
                         if (explicitType) tag.putString("type", "reference")
                         tag.putString("reference", data.attributeName)
                     }
+
                     is Reference.TypedSlot<*> -> {
                         if (explicitType) tag.putString("type", "slot")
                         tag.put("slot", data.info.save())
                     }
+
                     is ConstantAttributeData<*> -> {
                         if (explicitType) tag.putString("type", "constant")
                         tag.putString("value_type", data.type.templateType.id.location().toString())
@@ -245,8 +256,8 @@ sealed interface AttributeDataSource<T : Any> {
                 Reference.TypedSlot::class.java,
                 TYPED_SLOT_STREAM_CODEC,
             ).add(
-                Reference.ObservationSourceAttributeReference::class.java,
-                Reference.ObservationSourceAttributeReference.STREAM_CODEC,
+                ObservationSourceAttributeReference::class.java,
+                OBSERVATION_ATTRIBUTE_REFERENCE_STREAM_CODEC,
             ).add(
                 ConstantAttributeData::class.java,
                 ConstantAttributeData.STREAM_CODEC,
