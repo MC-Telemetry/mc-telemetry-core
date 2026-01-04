@@ -2,7 +2,7 @@ package de.mctelemetry.core.api.attributes
 
 interface IAttributeDateSourceReferenceSet {
 
-    val references: Set<AttributeDataSource.ObservationSourceAttributeReference<*>>
+    val references: Set<AttributeDataSource.Reference<*>>
 
     companion object {
 
@@ -10,11 +10,11 @@ interface IAttributeDateSourceReferenceSet {
 
         fun empty(): IAttributeDateSourceReferenceSet = empty
 
-        private class Default(override val references: Set<AttributeDataSource.ObservationSourceAttributeReference<*>>) :
+        private class Default(override val references: Set<AttributeDataSource.Reference<*>>) :
                 IAttributeDateSourceReferenceSet
 
         @JvmName("newFromReferenceCollection")
-        operator fun invoke(attributeKeys: Collection<AttributeDataSource.ObservationSourceAttributeReference<*>>): IAttributeDateSourceReferenceSet =
+        operator fun invoke(attributeKeys: Collection<AttributeDataSource.Reference<*>>): IAttributeDateSourceReferenceSet =
             if (attributeKeys.isEmpty()) empty
             else Default(attributeKeys.toSet())
 
@@ -22,14 +22,14 @@ interface IAttributeDateSourceReferenceSet {
         operator fun invoke(attributeKeys: Collection<MappedAttributeKeyInfo<*, *>>): IAttributeDateSourceReferenceSet =
             if (attributeKeys.isEmpty()) empty
             else Default(attributeKeys.mapTo(mutableSetOf()) {
-                AttributeDataSource.ObservationSourceAttributeReference(it)
+                AttributeDataSource.Reference.TypedSlot(it)
             })
 
         @JvmName("newFromVararg")
         operator fun invoke(vararg attributeKeys: MappedAttributeKeyInfo<*, *>): IAttributeDateSourceReferenceSet =
             if (attributeKeys.isEmpty()) empty
             else Default(attributeKeys.mapTo(mutableSetOf()) {
-                AttributeDataSource.ObservationSourceAttributeReference(it)
+                AttributeDataSource.Reference.TypedSlot(it)
             })
     }
 }

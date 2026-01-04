@@ -5,6 +5,7 @@ import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.commands.scrape.CommandScrape
 import de.mctelemetry.core.items.OTelCoreModItems
@@ -43,6 +44,7 @@ import net.minecraft.core.WritableRegistry
 import java.util.function.Supplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceKey
 import net.minecraft.world.item.*
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -136,19 +138,47 @@ object OTelCoreMod {
         }
     }
 
-    fun registerObservationSources(registry: WritableRegistry<IObservationSource<*, *>>?) {
+    fun registerObservationSources(
+        observationSourceRegistry: WritableRegistry<IObservationSource<*, *>>?,
+        observationAttributeRegistry: WritableRegistry<AttributeDataSource.Reference.ObservationSourceAttributeReference<*>>?,
+    ) {
         val observationSources: List<IObservationSource<*, *>> = ObservationSources.ALL
-        if (registry == null) {
-            DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.ObservationSources).apply {
-                for (observationSource in observationSources) {
-                    register(observationSource.id.location()) { observationSource }
-                }
-            }.register()
+        val sourceRegister: (IObservationSource<*, *>) -> Unit
+        val attributeRegister: (AttributeDataSource.Reference.ObservationSourceAttributeReference<*>) -> Unit
+        var deferredRegisters: MutableList<DeferredRegister<*>>? = null
+        if (observationAttributeRegistry == null) {
+            deferredRegisters = mutableListOf()
+            val deferredRegister =
+                DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.ObservationSourceAttributes)
+            deferredRegisters.add(deferredRegister)
+            attributeRegister = {
+
+                require('/' !in it.attributeName)
+                deferredRegister.register(it.id.location()) { it }
+            }
         } else {
-            for (observationSource in observationSources) {
-                registry.register(
-                    observationSource.id,
-                    observationSource,
+            attributeRegister = {
+                require('/' !in it.attributeName)
+                observationAttributeRegistry.register(
+                    ResourceKey.create(
+                        OTelCoreModAPI.ObservationSourceAttributes,
+                        it.source.id.location().withSuffix("/${it.attributeName}")
+                    ),
+                    it,
+                    RegistrationInfo(Optional.empty(), Lifecycle.stable())
+                )
+            }
+        }
+        if (observationSourceRegistry == null) {
+            deferredRegisters = deferredRegisters ?: mutableListOf()
+            val deferredRegister = DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.ObservationSources)
+            deferredRegisters.add(deferredRegister)
+            sourceRegister = { deferredRegister.register(it.id.location()) { it } }
+        } else {
+            sourceRegister = {
+                observationSourceRegistry.register(
+                    it.id,
+                    it,
                     RegistrationInfo(Optional.empty(), Lifecycle.stable())
                 )
             }

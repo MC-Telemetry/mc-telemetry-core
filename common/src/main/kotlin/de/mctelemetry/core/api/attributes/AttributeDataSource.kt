@@ -1,6 +1,8 @@
 package de.mctelemetry.core.api.attributes
 
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.observations.IObservationSource
+import net.minecraft.core.HolderGetter
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.Tag
@@ -12,7 +14,7 @@ import net.minecraft.resources.ResourceLocation
 
 sealed interface AttributeDataSource<T : Any> {
 
-    val type: IAttributeKeyTypeTemplate<T, *>
+    val type: IAttributeKeyTypeInstance<T, *>
 
     val additionalTypeData: CompoundTag?
         get() = null
@@ -20,18 +22,7 @@ sealed interface AttributeDataSource<T : Any> {
     context(_: IMappedAttributeValueLookup)
     val value: T?
 
-    @JvmInline
-    value class ObservationSourceAttributeReference<T : Any>(val info: MappedAttributeKeyInfo<T, *>) :
-            AttributeDataSource<T> {
-
-        override val type: IAttributeKeyTypeTemplate<T, *>
-            get() = info.templateType
-
-        companion object {
-
-            val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationSourceAttributeReference<*>>
-                get() = REFERENCE_STREAM_CODEC
-        }
+    sealed interface Reference<T : Any> : AttributeDataSource<T> {
 
         context(attributeStore: IMappedAttributeValueLookup)
         override val value: T?
@@ -46,19 +37,70 @@ sealed interface AttributeDataSource<T : Any> {
         fun unset() {
             attributeStore[this] = null
         }
+
+        class ObservationSourceAttributeReference<T : Any>(
+            val source: IObservationSource<*, *>,
+            val attributeName: String,
+            override val type: IAttributeKeyTypeInstance<T, *>,
+        ) : Reference<T> {
+
+            companion object {
+
+                fun find(
+                    source: ResourceLocation,
+                    attributeName: String,
+                    holderProvider: HolderGetter<IObservationSource<*, *>>,
+                ): ObservationSourceAttributeReference<*> {
+                    return find(
+                        ResourceKey.create(OTelCoreModAPI.ObservationSources, source),
+                        attributeName,
+                        holderProvider
+                    )
+                }
+
+                fun find(
+                    source: ResourceKey<IObservationSource<*, *>>,
+                    attributeName: String,
+                    holderProvider: HolderGetter<IObservationSource<*, *>>,
+                ): ObservationSourceAttributeReference<*> {
+                    val resolvedSource = holderProvider.getOrThrow(source).value()
+                    return find(resolvedSource, attributeName)
+                }
+
+                fun find(
+                    source: IObservationSource<*, *>,
+                    attributeName: String,
+                ): ObservationSourceAttributeReference<*> {
+                    for (ref in source.attributes.references) {
+                        if (ref !is ObservationSourceAttributeReference<*>) continue
+                        if (ref.attributeName != attributeName) continue
+                        return ref
+                    }
+                    throw NoSuchElementException("Could not find ObservationSourceAttributeReference named $attributeName in $source")
+                }
+            }
+        }
+
+        @JvmInline
+        value class TypedSlot<T : Any>(val info: MappedAttributeKeyInfo<T, *>) : Reference<T> {
+
+            override val type: IAttributeKeyTypeInstance<T, *>
+                get() = info
+
+            companion object {
+
+                val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, TypedSlot<*>>
+                    get() = REFERENCE_STREAM_CODEC
+            }
+        }
+
+
     }
 
     class ConstantAttributeData<T : Any>(
-        override val type: IAttributeKeyTypeTemplate<T, *>,
+        override val type: IAttributeKeyTypeInstance<T, *>,
         value: T,
-        override val additionalTypeData: CompoundTag? = null,
     ) : AttributeDataSource<T> {
-
-        constructor(info: MappedAttributeKeyInfo<T, *>, value: T) : this(
-            info.templateType,
-            value,
-            info.saveTemplateData()
-        )
 
         @Suppress("UNCHECKED_CAST")
         constructor(value: MappedAttributeKeyValue<T, *>) : this(
@@ -69,10 +111,10 @@ sealed interface AttributeDataSource<T : Any> {
         private val _value: T = value
 
         internal val valueTag: Tag
-            get() = type.toNbt(_value)
+            get() = type.templateType.toNbt(_value)
 
         private fun writeValue(bb: RegistryFriendlyByteBuf) {
-            type.valueStreamCodec.encode(bb, _value)
+            type.templateType.valueStreamCodec.encode(bb, _value)
         }
 
         context(_: IMappedAttributeValueLookup)
@@ -86,7 +128,7 @@ sealed interface AttributeDataSource<T : Any> {
             private object StreamCodecImpl : StreamCodec<RegistryFriendlyByteBuf, ConstantAttributeData<*>> {
 
                 override fun encode(`object`: RegistryFriendlyByteBuf, object2: ConstantAttributeData<*>) {
-                    `object`.writeResourceKey(object2.type.id)
+                    `object`.writeResourceKey(object2.type.templateType.id)
                     `object`.writeNbt(object2.additionalTypeData)
                     object2.writeValue(`object`)
                 }
@@ -94,12 +136,13 @@ sealed interface AttributeDataSource<T : Any> {
                 override fun decode(`object`: RegistryFriendlyByteBuf): ConstantAttributeData<*> {
                     val key = `object`.readResourceKey(OTelCoreModAPI.AttributeTypeMappings)
                     val additionalData = `object`.readNbt()
-                    val type = `object`.registryAccess()
+                    val type: IAttributeKeyTypeTemplate<*, *> = `object`.registryAccess()
                         .registryOrThrow(OTelCoreModAPI.AttributeTypeMappings)
                         .getOrThrow(key)
+                    val typeInstance: IAttributeKeyTypeInstance<*, *> = type.create(additionalData)
                     val value = type.valueStreamCodec.decode(`object`)
                     @Suppress("UNCHECKED_CAST") // type information is retained in `type`
-                    return ConstantAttributeData(type as IAttributeKeyTypeTemplate<Any, *>, value, additionalData)
+                    return ConstantAttributeData(typeInstance as IAttributeKeyTypeInstance<Any, *>, value)
                 }
             }
 

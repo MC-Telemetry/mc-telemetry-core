@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
@@ -46,6 +47,10 @@ object OTelCoreModNeoForge {
         OTelCoreMod.registerAttributeTypes(attributeKeyRegistry)
         event.register(attributeKeyRegistry)
 
+        val observationAttributeRegistry = RegistryBuilder(OTelCoreModAPI.ObservationSourceAttributes)
+            .sync(true)
+            .create() as WritableRegistry<AttributeDataSource.Reference.ObservationSourceAttributeReference<*>>
+        event.register(observationAttributeRegistry)
         val observationSourceRegistry =
             RegistryBuilder(OTelCoreModAPI.ObservationSources)
                 .sync(true)

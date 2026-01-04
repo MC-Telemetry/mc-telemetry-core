@@ -61,6 +61,10 @@ object OTelCoreModFabric : ModInitializer {
                 .attribute(RegistryAttribute.SYNCED)
                 .attribute(RegistryAttribute.MODDED)
                 .buildAndRegister()
+        FabricRegistryBuilder.createSimple(OTelCoreModAPI.ObservationSourceAttributes)
+            .attribute(RegistryAttribute.SYNCED)
+            .attribute(RegistryAttribute.MODDED)
+            .buildAndRegister()
         OTelCoreMod.registerAttributeTypes(attributeTypeRegistry)
         OTelCoreMod.registerObservationSources(observationSourceRegistry)
         ArgumentTypes.register {
