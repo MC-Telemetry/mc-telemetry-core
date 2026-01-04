@@ -278,6 +278,15 @@ object TranslationKeys {
             Component.translatable("${OTelCoreMod.MOD_ID}.observation_sources.${sourceID.namespace.lowercase()}.${sourceID.path.lowercase()}")
     }
 
+    object AttributeTypes {
+        operator fun get(source: IAttributeKeyTypeTemplate<*, *>): MutableComponent = this[source.id]
+        operator fun get(sourceKey: ResourceKey<IAttributeKeyTypeTemplate<*, *>>): MutableComponent =
+            this[sourceKey.location()]
+
+        operator fun get(sourceID: ResourceLocation): MutableComponent =
+            Component.translatable("${OTelCoreMod.MOD_ID}.attribute_types.${sourceID.namespace.lowercase()}.${sourceID.path.lowercase()}")
+    }
+
     object KeyMappings {
 
         const val CATEGORY = "key.${OTelCoreMod.MOD_ID}.category"

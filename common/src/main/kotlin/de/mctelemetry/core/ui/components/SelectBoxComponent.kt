@@ -32,9 +32,7 @@ class SelectBoxComponent<T>(
         clearChildren()
 
         child(
-            (Components.button(
-                buildComponent { +selected.name }
-            ) { openDropdown() } as Component).apply {
+            (Components.button(selected.name) { openDropdown() } as Component).apply {
                 horizontalSizing(Sizing.expand())
             }
         )
@@ -48,7 +46,14 @@ class SelectBoxComponent<T>(
         fun createEntry(list: FlowLayout, opt: SelectBoxComponentEntry<T>) {
             list.child(
                 (Components.button(buildComponent {
-                    +(if (opt == selected) "» ${opt.name} «" else opt.name)
+                    if (opt == selected) {
+                        append("» ")
+                    }
+                    append(opt.name)
+                    if (opt == selected) {
+                        append(" «")
+                    }
+
                     if (opt.value == null) {
                         color(CommonColors.LIGHTER_GRAY)
                         style {
@@ -67,9 +72,8 @@ class SelectBoxComponent<T>(
             )
         }
 
-        val list = Containers.verticalFlow(Sizing.fill(30), Sizing.content())
+        val list = Containers.verticalFlow(Sizing.fill(36), Sizing.content())
         list.gap(4)
-        list.padding(Insets.of(4))
         list.surface(Surface.BLANK)
         list.horizontalAlignment(HorizontalAlignment.CENTER)
 
@@ -77,9 +81,17 @@ class SelectBoxComponent<T>(
         titleLabel.margins(Insets.bottom(2))
         list.child(titleLabel)
 
+        val entryList = Containers.verticalFlow(Sizing.fill(100), Sizing.content())
+        entryList.gap(4)
+        entryList.padding(Insets.of(4))
+        entryList.surface(Surface.BLANK)
+        entryList.horizontalAlignment(HorizontalAlignment.CENTER)
         for (opt in options) {
-            createEntry(list, opt)
+            createEntry(entryList, opt)
         }
+
+        val scrollBox = Containers.verticalScroll(Sizing.fill(100), Sizing.fill(60), entryList)
+        list.child(scrollBox)
 
         val overlay = Containers.overlay(list).apply {
             zIndex(500)
@@ -101,4 +113,4 @@ class SelectBoxComponent<T>(
     }
 }
 
-data class SelectBoxComponentEntry<T>(val value: T, val name: String)
+data class SelectBoxComponentEntry<T>(val value: T, val name: net.minecraft.network.chat.Component)

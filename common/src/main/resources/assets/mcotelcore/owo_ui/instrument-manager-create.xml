@@ -7,8 +7,8 @@
                     <children>
                         <flow-layout direction="horizontal">
                             <children>
-                                <button id="back">
-                                    <text>Back</text>
+                                <button id="save">
+                                    <text>Save</text>
                                     <sizing>
                                         <horizontal method="fill">20</horizontal>
                                     </sizing>

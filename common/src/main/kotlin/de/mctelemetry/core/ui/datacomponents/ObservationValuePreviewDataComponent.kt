@@ -195,6 +195,10 @@ class ObservationValuePreviewDataComponent(
                     append(cardinality.toString())
                 }
                 append("]")
+
+                style {
+                    isItalic = true
+                }
             }
             val tooltipComponent = IComponentDSLBuilder.buildComponent {
                 val commonAttributeKeys: Set<MappedAttributeKeyInfo<*, *>>

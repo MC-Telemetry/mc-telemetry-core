@@ -82,15 +82,15 @@ class AttributeMappingComponent(
 
         val noneOption = SelectBoxComponentEntry<AttributeMappingSources>(
             AttributeMappingSources.None,
-            "None"
+            buildComponent("None")
         )
-        val customOption = SelectBoxComponentEntry<AttributeMappingSources>(AttributeMappingSources.Custom, "Custom")
+        val customOption = SelectBoxComponentEntry<AttributeMappingSources>(AttributeMappingSources.Custom, buildComponent("Custom"))
         val options = listOf(
             noneOption
         ) + observationSourceAttributes.map { reference ->
             SelectBoxComponentEntry<AttributeMappingSources>(
                 AttributeMappingSources.Reference(reference),
-                reference.info.baseKey.key
+                buildComponent(reference.info.baseKey.key)
             )
         } + customOption
 

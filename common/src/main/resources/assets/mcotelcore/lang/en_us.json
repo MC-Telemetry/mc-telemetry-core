@@ -8,5 +8,18 @@
   "mcotelcore.observation_sources.mcotelcore.redstone_scraper.direct_power": "Redstone Direct Power",
   "mcotelcore.observation_sources.mcotelcore.redstone_scraper.comparator": "Redstone Comparator",
   "key.mcotelcore.category": "MC Telemetry",
-  "key.mcotelcore.open_instrument_manager": "Instrument Manager"
+  "key.mcotelcore.open_instrument_manager": "Instrument Manager",
+  "mcotelcore.attribute_types.minecraft.string": "String",
+  "mcotelcore.attribute_types.minecraft.boolean": "Boolean",
+  "mcotelcore.attribute_types.minecraft.long": "Long",
+  "mcotelcore.attribute_types.minecraft.double": "Double",
+  "mcotelcore.attribute_types.minecraft.string_array": "String[]",
+  "mcotelcore.attribute_types.minecraft.boolean_array": "Boolean[]",
+  "mcotelcore.attribute_types.minecraft.long_array": "Long[]",
+  "mcotelcore.attribute_types.minecraft.double_array": "Double[]",
+  "mcotelcore.attribute_types.minecraft.block_position": "Block Position",
+  "mcotelcore.attribute_types.minecraft.global_position": "Global Position",
+  "mcotelcore.attribute_types.minecraft.direction": "Direction",
+  "mcotelcore.attribute_types.minecraft.uuid": "UUID",
+  "mcotelcore.attribute_types.minecraft.item": "Item"
 }

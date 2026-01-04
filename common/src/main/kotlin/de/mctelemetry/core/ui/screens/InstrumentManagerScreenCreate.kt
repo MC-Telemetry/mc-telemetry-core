@@ -2,6 +2,7 @@ package de.mctelemetry.core.ui.screens
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
+import de.mctelemetry.core.api.instruments.manager.client.sendGaugeInstrument
 import de.mctelemetry.core.ui.components.AttributeCreatorComponent
 import de.mctelemetry.core.ui.components.AttributeCreatorEntry
 import de.mctelemetry.core.utils.childByIdOrThrow
@@ -36,7 +37,7 @@ class InstrumentManagerScreenCreate(
     }
 
     override fun build(rootComponent: FlowLayout) {
-        val backButton = rootComponent.childWidgetByIdOrThrow<ButtonComponent>("back")
+        val saveButton = rootComponent.childWidgetByIdOrThrow<ButtonComponent>("save")
 
         val instrumentNameTextBox = rootComponent.childWidgetByIdOrThrow<TextBoxComponent>("instrument-name")
         val useDecimalsCheckBox = rootComponent.childByIdOrThrow<SmallCheckboxComponent>("instrument-use-decimals")
@@ -45,18 +46,26 @@ class InstrumentManagerScreenCreate(
         val layout = rootComponent.childByIdOrThrow<FlowLayout>("attribute-creator")
         layout.child(AttributeCreatorComponent(attributesList))
 
-        backButton.onPress {
+        saveButton.onPress {
             Minecraft.getInstance().setScreen(parent)
 
             val name = instrumentNameTextBox.value
             val useDecimals = useDecimalsCheckBox.checked()
             val attributes = attributesList.map { it.type.create(it.name, null) }
 
+            instrumentManager.sendGaugeInstrument(name) {
+                supportsFloating = useDecimals
+                persistent = true
+                for(attribute in attributesList) {
+                    addAttribute(attribute.type.create(attribute.name, null))
+                }
+            }
+
             // TODO: create instrument
             print(
                 "TODO: create instrument(name=$name, useDecimals=$useDecimals, attributes=[${
                     attributes.joinToString(", ") {
-                        "${it.baseKey.key}: ${it.type.id.location().path}"
+                        "${it.baseKey.key}: ${it.templateType.id.location().path}"
                     }
                 }])"
             )
