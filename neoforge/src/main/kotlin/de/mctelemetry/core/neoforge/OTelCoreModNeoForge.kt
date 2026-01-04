@@ -2,7 +2,7 @@ package de.mctelemetry.core.neoforge
 
 import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.api.observations.IObservationSource
@@ -42,7 +42,7 @@ object OTelCoreModNeoForge {
         val attributeKeyRegistry =
             RegistryBuilder(OTelCoreModAPI.AttributeTypeMappings)
                 .sync(true)
-                .create() as WritableRegistry<IMappedAttributeKeyType<*, *>>
+                .create() as WritableRegistry<IAttributeKeyTypeTemplate<*, *>>
         OTelCoreMod.registerAttributeTypes(attributeKeyRegistry)
         event.register(attributeKeyRegistry)
 

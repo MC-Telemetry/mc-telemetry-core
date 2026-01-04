@@ -1,10 +1,10 @@
 package de.mctelemetry.core.observations.model
 
+import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.utils.closeAllRethrow
@@ -19,11 +19,11 @@ import kotlin.collections.iterator
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceState.InstrumentSubRegistrationFactory {
+abstract class ObservationSourceContainer<SC> : AutoCloseable, ObservationSourceState.InstrumentSubRegistrationFactory {
 
-    abstract val observationStates: Map<IObservationSource<in C, *>, ObservationSourceState>
+    abstract val observationStates: Map<IObservationSource<in SC, *>, ObservationSourceState>
 
-    abstract val context: C
+    abstract val context: SC
 
     abstract val instrumentManager: IInstrumentManager
 
@@ -71,7 +71,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
             assert(
                 observationStates.getValue(
                     @Suppress("UNCHECKED_CAST")
-                    (source as IObservationSource<in C, *>)
+                    (source as IObservationSource<in SC, *>)
                 ) === sourceState
             )
             doOnDirty(source, sourceState)
@@ -80,7 +80,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
         }
     }
 
-    protected open fun doOnDirty(source: IObservationSource<in C, *>, state: ObservationSourceState) {
+    protected open fun doOnDirty(source: IObservationSource<in SC, *>, state: ObservationSourceState) {
         if (state.cascadeUpdates) {
             val instrumentManager = instrumentManager
             if (instrumentManager is IMutableInstrumentManager) {
@@ -98,11 +98,11 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
         instrument: IInstrumentRegistration.Mutable<*>,
     ): IInstrumentRegistration.Callback<T> {
         @Suppress("UNCHECKED_CAST")
-        return DefaultCallback(source as IObservationSource<C, *>, state)
+        return DefaultCallback(source as IObservationSource<SC, *>, state)
     }
 
     protected inner class DefaultCallback(
-        private val source: IObservationSource<in C, *>,
+        private val source: IObservationSource<in SC, *>,
         private val state: ObservationSourceState,
     ) : IInstrumentRegistration.Callback<IInstrumentRegistration> {
 
@@ -119,7 +119,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
 
     open fun observe(
         recorder: IObservationRecorder.Resolved,
-        source: IObservationSource<in C, *>,
+        source: IObservationSource<in SC, *>,
         forceObservation: Boolean = false,
     ) {
         val state = observationStates.getValue(source)
@@ -138,13 +138,13 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
 
     open fun observe(
         recorder: IObservationRecorder.Resolved,
-        filter: Set<IObservationSource<in C, *>>? = null,
+        filter: Set<IObservationSource<in SC, *>>? = null,
         forceObservation: Boolean = false,
     ) {
         val attributeLookup = createAttributeLookup()
         val context = context
         var mappingResolver: ObservationMappingResolver? = null
-        val unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>> = mutableSetOf()
+        val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
         for ((source, state) in observationStates) {
             if (filter != null && source !in filter) continue
             try {
@@ -174,7 +174,7 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
 
     open fun observe(
         recorder: IObservationRecorder.Unresolved,
-        source: IObservationSource<in C, *>,
+        source: IObservationSource<in SC, *>,
         forceObservation: Boolean = false,
     ) {
         val state = observationStates.getValue(source)
@@ -192,12 +192,12 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
 
     open fun observe(
         recorder: IObservationRecorder.Unresolved,
-        filter: Set<IObservationSource<in C, *>>? = null,
+        filter: Set<IObservationSource<in SC, *>>? = null,
         forceObservation: Boolean = false,
     ) {
         val attributeLookup = createAttributeLookup()
         val context = context
-        val unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>> = mutableSetOf()
+        val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
         for ((source, state) in observationStates) {
             if (filter != null && source !in filter) continue
             withValidMapping(state, forceObservation = forceObservation) { mapping ->
@@ -240,18 +240,22 @@ abstract class ObservationSourceContainer<C> : AutoCloseable, ObservationSourceS
         }
     }
 
-    protected open fun <A : IMappedAttributeValueLookup> doObservation(
-        source: IObservationSource<in C, A>,
-        context: C,
-        parentLookup: IMappedAttributeValueLookup,
-        unusedAttributesSet: MutableSet<MappedAttributeKeyInfo<*, *>>,
+    protected open fun <AS : IMappedAttributeValueLookup> doObservation(
+        source: IObservationSource<in SC, AS>,
+        sourceContext: SC,
+        parentStore: IMappedAttributeValueLookup,
+        unusedAttributesSet: MutableSet<AttributeDataSource<*>>,
         mapping: ObservationAttributeMapping,
         recorder: IObservationRecorder.Unresolved,
     ) {
-        val lookup = source.createAttributeLookup(context, parentLookup)
-        unusedAttributesSet.clear()
-        mapping.findUnusedAttributes(lookup.attributeKeys, unusedAttributesSet)
-        recorder.onNewSource(source)
-        source.observe(context, recorder, lookup, unusedAttributesSet)
+        context(sourceContext) {
+            val attributeStore = source.createAttributeStore(parentStore)
+            unusedAttributesSet.clear()
+            mapping.findUnusedAttributeDataSources(attributeStore.references, unusedAttributesSet)
+            recorder.onNewSource(source)
+            context(attributeStore) {
+                source.observe(recorder, unusedAttributesSet)
+            }
+        }
     }
 }

@@ -2,7 +2,6 @@ package de.mctelemetry.core.api.attributes
 
 @JvmInline
 value class MappedAttributeKeyMap<out T : Any> private constructor(val map: Map<MappedAttributeKeyInfo<*, *>, T>) :
-        IMappedAttributeValueLookup,
         Collection<MappedAttributeKeyValue<*, *>> {
 
     constructor() : this(emptyMap())
@@ -11,22 +10,34 @@ value class MappedAttributeKeyMap<out T : Any> private constructor(val map: Map<
 
     constructor(entries: Collection<MappedAttributeKeyValue<T, *>>) : this(entries.associate { it.pair })
 
-    override fun <T2 : Any> get(info: MappedAttributeKeyInfo<T2, *>): T2? {
-        @Suppress("UNCHECKED_CAST") // if info matches, the associated value has to be of type T2
+    operator fun <T2 : Any> get(info: MappedAttributeKeyInfo<T2, *>): T2? {
+        @Suppress("UNCHECKED_CAST") // if reference matches, the associated value has to be of type T2
         return map[info] as T2?
     }
 
-    private fun <T2 : Any> getOrThrow(info: MappedAttributeKeyInfo<T2, *>): T2 {
-        @Suppress("UNCHECKED_CAST")  // if info matches, the associated value has to be of type T2
+    operator fun <T2 : Any> get(reference: AttributeDataSource.Reference.TypedSlot<T2>): T2? =
+        get(reference.info)
+
+    private fun <T2 : Any> getOrThrow(reference: AttributeDataSource.Reference.TypedSlot<T2>): T2 {
+        @Suppress("UNCHECKED_CAST")  // if reference matches, the associated value has to be of type T2
+        return map.getValue(reference.info) as T2
+    }
+    private fun <T2 : Any> getOrThrow(info: MappedAttributeKeyInfo<T2,*>): T2 {
+        @Suppress("UNCHECKED_CAST")  // if reference matches, the associated value has to be of type T2
         return map.getValue(info) as T2
     }
 
-    override fun <T2 : Any> prepareLookup(info: MappedAttributeKeyInfo<T2, *>): ((MappedAttributeKeyInfo<T2, *>) -> T2)? {
+    fun <T2 : Any> prepareLookup(reference: AttributeDataSource.Reference.TypedSlot<T2>): ((AttributeDataSource.Reference.TypedSlot<T2>) -> T2)? {
+        if (reference.info !in map) return null
+        return this::getOrThrow
+    }
+
+    fun <T2 : Any> prepareLookup(info: MappedAttributeKeyInfo<T2,*>): ((AttributeDataSource.Reference.TypedSlot<T2>) -> T2)? {
         if (info !in map) return null
         return this::getOrThrow
     }
 
-    override val attributeKeys: Set<MappedAttributeKeyInfo<*, *>>
+    val attributeKeys: Set<MappedAttributeKeyInfo<*, *>>
         get() = map.keys
 
     override fun contains(element: MappedAttributeKeyValue<*, *>): Boolean {

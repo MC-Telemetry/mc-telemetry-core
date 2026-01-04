@@ -1,12 +1,13 @@
 package de.mctelemetry.core.observations.scrapers.redstone
 
+import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.AttributeDataSource
+import de.mctelemetry.core.api.attributes.AttributeDataSource.Companion.asObservationDataReference
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.BlockPos
 import net.minecraft.core.GlobalPos
@@ -27,28 +28,26 @@ object RedstoneScraperComparatorObservationSource : IObservationSource.SingleAtt
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.comparator")
     )
 
-    override val contextType: Class<BlockEntity> = BlockEntity::class.java
+    override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
 
-    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
+    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos").asObservationDataReference(this)
 
-    override val attributeKey: MappedAttributeKeyInfo<GlobalPos, *> = POS_KEY
+    override val reference: AttributeDataSource.Reference.ObservationSourceAttributeReference<GlobalPos> = POS_KEY
 
+    context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.PairLookup<GlobalPos>)
     override fun observe(
-        context: BlockEntity,
         recorder: IObservationRecorder.Unresolved,
-        attributes: IMappedAttributeValueLookup.PairLookup<GlobalPos>,
-        unusedAttributes: Set<MappedAttributeKeyInfo<*, *>>,
+        unusedAttributes: Set<AttributeDataSource<*>>,
     ) {
-        val level = context.level
-        if (level == null || context.isRemoved) return
-        val scraperPos = context.blockPos
+        val level = sourceContext.level
+        if (level == null || sourceContext.isRemoved) return
+        val scraperPos = sourceContext.blockPos
         if (!(level.isLoaded(scraperPos) && level.shouldTickBlocksAt(scraperPos))) return
-        val facing = context.blockState.getValue(ObservationSourceContainerBlock.FACING)
+        val facing = sourceContext.blockState.getValue(ObservationSourceContainerBlock.FACING)
         val observationPos = scraperPos.relative(facing)
-        attributes.value = GlobalPos(level.dimension(), observationPos)
+        POS_KEY.set(GlobalPos(level.dimension(), observationPos))
         val state = level.getBlockState(observationPos)
         if (state.hasAnalogOutputSignal()) {
-
             var analogValue = 0
             var advancedAnalogValue = 0.0
             val server = level.server
@@ -68,13 +67,11 @@ object RedstoneScraperComparatorObservationSource : IObservationSource.SingleAtt
                 recorder.observePreferred(
                     advancedAnalogValue,
                     analogValue.toLong(),
-                    attributes,
                     this,
                 )
             } else {
                 recorder.observe(
                     analogValue.toLong(),
-                    attributes,
                     this,
                 )
             }

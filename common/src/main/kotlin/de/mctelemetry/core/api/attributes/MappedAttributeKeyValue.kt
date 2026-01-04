@@ -8,7 +8,7 @@ value class MappedAttributeKeyValue<out T : Any, I : MappedAttributeKeyInfo<out 
     constructor(info: I, value: T): this(info to value)
 
     init {
-        require(info.type.valueType.isAssignableFrom(value::class.java)) {"$value cannot be used as a value for $info"}
+        require(info.templateType.valueType.isAssignableFrom(value::class.java)) {"$value cannot be used as a value for $info"}
     }
 
     operator fun component1(): I = pair.first
@@ -23,11 +23,11 @@ value class MappedAttributeKeyValue<out T : Any, I : MappedAttributeKeyInfo<out 
 
     fun encodeValue(buf: RegistryFriendlyByteBuf) {
         @Suppress("UNCHECKED_CAST")
-        (info as MappedAttributeKeyInfo<T,*>).type.valueStreamCodec.encode(buf, value)
+        (info as MappedAttributeKeyInfo<T,*>).templateType.valueStreamCodec.encode(buf, value)
     }
     companion object {
         fun <T: Any> MappedAttributeKeyInfo<T,*>.decodeToValue(buf: RegistryFriendlyByteBuf): MappedAttributeKeyValue<T, *> {
-            return MappedAttributeKeyValue(this, this.type.valueStreamCodec.decode(buf))
+            return MappedAttributeKeyValue(this, this.templateType.valueStreamCodec.decode(buf))
         }
     }
 }

@@ -4,7 +4,7 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
+import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
@@ -43,7 +43,7 @@ class RedstoneScraperBlockScreenDetails(
     val sourceState: ObservationSourceState,
     instrumentName: String,
     mapping: ObservationAttributeMapping = sourceState.configuration?.mapping ?: ObservationAttributeMapping.empty(),
-    val sourceAttributes: IMappedAttributeKeySet = sourceState.source.attributes,
+    val sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.source.attributes,
 ) : BaseUIModelScreen<FlowLayout>(
     FlowLayout::class.java, DataSource.asset(
         ResourceLocation.fromNamespaceAndPath(
@@ -57,7 +57,7 @@ class RedstoneScraperBlockScreenDetails(
         position: GlobalPos,
         sourceState: ObservationSourceState,
         configuration: ObservationSourceConfiguration? = sourceState.configuration,
-        sourceAttributes: IMappedAttributeKeySet = sourceState.source.attributes,
+        sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.source.attributes,
     ) : this(
         parent,
         position,

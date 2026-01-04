@@ -1,13 +1,10 @@
 package de.mctelemetry.core.observations.scrapers.redstone
 
-import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.*
+import de.mctelemetry.core.api.attributes.AttributeDataSource.Companion.asObservationDataReference
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeySet
-import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
@@ -22,39 +19,37 @@ object RedstoneScraperDirectPowerObservationSource : IObservationSource.MultiAtt
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.direct_power")
     )
 
-    override val contextType: Class<BlockEntity> = BlockEntity::class.java
+    override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
 
-    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
-    private val DIR_KEY = BuiltinAttributeKeyTypes.DirectionType("dir")
+    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos").asObservationDataReference(this)
+    private val DIR_KEY = BuiltinAttributeKeyTypes.DirectionType("dir").asObservationDataReference(this)
 
-    override val attributes: IMappedAttributeKeySet = IMappedAttributeKeySet(POS_KEY, DIR_KEY)
+    override val attributes: IAttributeDateSourceReferenceSet =
+        IAttributeDateSourceReferenceSet(listOf(POS_KEY, DIR_KEY))
 
+    context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
     override fun observe(
-        context: BlockEntity,
         recorder: IObservationRecorder.Unresolved,
-        attributes: IMappedAttributeValueLookup.MapLookup,
-        unusedAttributes: Set<MappedAttributeKeyInfo<*, *>>,
+        unusedAttributes: Set<AttributeDataSource<*>>,
     ) {
-        val level = context.level
-        if (level == null || context.isRemoved) return
-        val scraperPos = context.blockPos
+        val level = sourceContext.level
+        if (level == null || sourceContext.isRemoved) return
+        val scraperPos = sourceContext.blockPos
         if (!(level.isLoaded(scraperPos) && level.shouldTickBlocksAt(scraperPos))) return
-        val facing = context.blockState.getValue(ObservationSourceContainerBlock.FACING)
+        val facing = sourceContext.blockState.getValue(ObservationSourceContainerBlock.FACING)
         val observationPos = scraperPos.relative(facing)
-        attributes[POS_KEY] = GlobalPos(level.dimension(), observationPos)
+        POS_KEY.set(GlobalPos(level.dimension(), observationPos))
         if (DIR_KEY in unusedAttributes) {
-            attributes[DIR_KEY] = null
+            DIR_KEY.unset()
             recorder.observe(
                 level.getDirectSignal(observationPos, facing).toLong(),
-                attributes,
                 this
             )
         } else {
             for (dir in Direction.entries) {
-                attributes[DIR_KEY] = dir
+                DIR_KEY.set(dir)
                 recorder.observe(
                     level.getDirectSignal(observationPos, dir.opposite).toLong(),
-                    attributes,
                     this
                 )
             }

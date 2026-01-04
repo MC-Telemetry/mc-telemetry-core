@@ -262,7 +262,7 @@ abstract class ObservationSourceContainerBlockEntity(
 
         override val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState> by lazy {
             observationSources.mapNotNull {
-                if (!it.contextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
+                if (!it.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
                     return@mapNotNull null
                 @Suppress("UNCHECKED_CAST") // cast indirectly checked by contextType
                 it as IObservationSource<in ObservationSourceContainerBlockEntity, *>
