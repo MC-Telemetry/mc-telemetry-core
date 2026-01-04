@@ -1,7 +1,6 @@
 package de.mctelemetry.core.api
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.observations.IObservationSource
 import net.minecraft.core.Registry
@@ -19,9 +18,6 @@ object OTelCoreModAPI {
     )
     val ObservationSources: ResourceKey<Registry<IObservationSource<*, *>>> = ResourceKey.createRegistryKey(
         ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "observation_sources")
-    )
-    val ObservationSourceAttributes: ResourceKey<Registry<AttributeDataSource.Reference.ObservationSourceAttributeReference<*>>> = ResourceKey.createRegistryKey(
-        ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "observation_attributes")
     )
 
     object Limits {

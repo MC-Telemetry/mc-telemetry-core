@@ -54,7 +54,7 @@ interface IObservationSource<SC, AS : IMappedAttributeValueLookup> {
 
     interface SingleAttribute<SC, T : Any> : IObservationSource<SC, IMappedAttributeValueLookup.PairLookup<T>> {
 
-        val reference: AttributeDataSource.ObservationSourceAttributeReference<T>
+        val reference: AttributeDataSource.Reference<T>
 
         override val attributes: IAttributeDateSourceReferenceSet
             get() = IAttributeDateSourceReferenceSet(listOf(reference))

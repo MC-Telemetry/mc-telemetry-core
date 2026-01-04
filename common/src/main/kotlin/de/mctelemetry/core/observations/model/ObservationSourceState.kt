@@ -3,17 +3,14 @@ package de.mctelemetry.core.observations.model
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentSubRegistration
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.ListTag
-import net.minecraft.nbt.NbtOps
 import net.minecraft.network.RegistryFriendlyByteBuf
-import net.minecraft.network.chat.ComponentSerialization
 
 open class ObservationSourceState(
     val source: IObservationSource<*, *>,
@@ -339,7 +336,8 @@ open class ObservationSourceState(
         val errorState = loadErrorState(tag)
         val delayedConfiguration = ObservationSourceConfiguration.loadDelayedFromTag(
             tag.getCompound("configuration"),
-            holderLookupProvider
+            holderLookupProvider,
+            source,
         )
         var modified: Boolean
         runWithExceptionCleanup(::triggerOnDirty, runCleanup = !initialSilent) {
@@ -369,6 +367,7 @@ open class ObservationSourceState(
             tag.getCompound("configuration"),
             holderLookupProvider,
             instrumentManager,
+            source,
         )
         var modified: Boolean
         runWithExceptionCleanup(::triggerOnDirty, runCleanup = !silent) {

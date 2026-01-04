@@ -2,11 +2,11 @@ package de.mctelemetry.core.api.attributes
 
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.observations.IObservationSource
-import net.minecraft.core.HolderGetter
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
+import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.IdDispatchCodec
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.resources.ResourceKey
@@ -23,6 +23,8 @@ sealed interface AttributeDataSource<T : Any> {
     val value: T?
 
     sealed interface Reference<T : Any> : AttributeDataSource<T> {
+
+        val info: MappedAttributeKeyInfo<T, *>
 
         context(attributeStore: IMappedAttributeValueLookup)
         override val value: T?
@@ -44,45 +46,43 @@ sealed interface AttributeDataSource<T : Any> {
             override val type: IAttributeKeyTypeInstance<T, *>,
         ) : Reference<T> {
 
+            constructor(source: IObservationSource<*, *>, info: MappedAttributeKeyInfo<T, *>) : this(
+                source,
+                info.baseKey.key,
+                info,
+            )
+
+            override val info: MappedAttributeKeyInfo<T, *> by lazy {
+                if (type is MappedAttributeKeyInfo<T, *> && type.baseKey.key == attributeName) {
+                    type
+                } else {
+                    type.create(attributeName)
+                }
+            }
+
             companion object {
-
-                fun find(
-                    source: ResourceLocation,
-                    attributeName: String,
-                    holderProvider: HolderGetter<IObservationSource<*, *>>,
-                ): ObservationSourceAttributeReference<*> {
-                    return find(
-                        ResourceKey.create(OTelCoreModAPI.ObservationSources, source),
-                        attributeName,
-                        holderProvider
-                    )
-                }
-
-                fun find(
-                    source: ResourceKey<IObservationSource<*, *>>,
-                    attributeName: String,
-                    holderProvider: HolderGetter<IObservationSource<*, *>>,
-                ): ObservationSourceAttributeReference<*> {
-                    val resolvedSource = holderProvider.getOrThrow(source).value()
-                    return find(resolvedSource, attributeName)
-                }
 
                 fun find(
                     source: IObservationSource<*, *>,
                     attributeName: String,
                 ): ObservationSourceAttributeReference<*> {
-                    for (ref in source.attributes.references) {
-                        if (ref !is ObservationSourceAttributeReference<*>) continue
-                        if (ref.attributeName != attributeName) continue
-                        return ref
-                    }
-                    throw NoSuchElementException("Could not find ObservationSourceAttributeReference named $attributeName in $source")
+                    return source.attributes.findObservationSourceAttributeReference(attributeName)
+                        ?: throw NoSuchElementException("Could not find ObservationSourceAttributeReference named $attributeName in $source")
                 }
+
+                val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationSourceAttributeReference<*>> =
+                    StreamCodec.composite(
+                        ByteBufCodecs.registry(OTelCoreModAPI.ObservationSources),
+                        ObservationSourceAttributeReference<*>::source,
+                        ByteBufCodecs.STRING_UTF8,
+                        ObservationSourceAttributeReference<*>::attributeName,
+                        ::find
+                    )
             }
         }
 
         @JvmInline
-        value class TypedSlot<T : Any>(val info: MappedAttributeKeyInfo<T, *>) : Reference<T> {
+        value class TypedSlot<T : Any>(override val info: MappedAttributeKeyInfo<T, *>) : Reference<T> {
 
             override val type: IAttributeKeyTypeInstance<T, *>
                 get() = info
@@ -90,11 +90,9 @@ sealed interface AttributeDataSource<T : Any> {
             companion object {
 
                 val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, TypedSlot<*>>
-                    get() = REFERENCE_STREAM_CODEC
+                    get() = TYPED_SLOT_STREAM_CODEC
             }
         }
-
-
     }
 
     class ConstantAttributeData<T : Any>(
@@ -153,25 +151,43 @@ sealed interface AttributeDataSource<T : Any> {
     companion object {
 
 
-        private val REFERENCE_STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationSourceAttributeReference<*>> =
+        private val TYPED_SLOT_STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, Reference.TypedSlot<*>> =
             MappedAttributeKeyInfo.STREAM_CODEC.map(
-                { ObservationSourceAttributeReference(it) },
-                ObservationSourceAttributeReference<*>::info
+                { Reference.TypedSlot(it) },
+                Reference.TypedSlot<*>::info
             )
 
-        fun <T : Any> MappedAttributeKeyInfo<T, *>.asReference(): ObservationSourceAttributeReference<T> =
-            ObservationSourceAttributeReference(this)
+        fun <T : Any> MappedAttributeKeyInfo<T, *>.asAttributeDataSlot(): Reference.TypedSlot<T> =
+            Reference.TypedSlot(this)
 
-        fun fromNbt(tag: CompoundTag, lookupProvider: HolderLookup.Provider): AttributeDataSource<*> {
+        fun <T : Any> MappedAttributeKeyInfo<T, *>.asObservationDataReference(source: IObservationSource<*, *>): Reference.ObservationSourceAttributeReference<T> =
+            Reference.ObservationSourceAttributeReference(
+                source,
+                this,
+            )
+
+        fun fromNbt(
+            tag: CompoundTag,
+            lookupProvider: HolderLookup.Provider,
+            sourceContext: IObservationSource<*, *>,
+        ): AttributeDataSource<*> {
             var typeString = tag.getString("type").lowercase()
             if (typeString.isEmpty()) {
-                if (!tag.getCompound("reference").isEmpty)
+                if (!tag.getCompound("slot").isEmpty)
+                    typeString = "slot"
+                else if (!tag.getString("reference").isEmpty())
                     typeString = "reference"
                 else if (tag.get("value") != null)
                     typeString = "constant"
             }
             return when (typeString) {
-                "reference" -> ObservationSourceAttributeReference(
+                "reference" -> Reference.ObservationSourceAttributeReference.find(
+                    sourceContext,
+                    tag.getString("reference").also {
+                        require(it.isNotEmpty()) { "Reference name must not be empty" }
+                    }
+                )
+                "slot" -> Reference.TypedSlot(
                     MappedAttributeKeyInfo.load(
                         tag.getCompound("reference"),
                         lookupProvider.lookupOrThrow(
@@ -187,28 +203,35 @@ sealed interface AttributeDataSource<T : Any> {
                         ).value()
                     ConstantAttributeData(
                         @Suppress("UNCHECKED_CAST")
-                        (valueType as IAttributeKeyTypeTemplate<Any, *>),
+                        (valueType as IAttributeKeyTypeTemplate<Any, *>).create(
+                            tag.getCompound("type_data").takeUnless(CompoundTag::isEmpty)
+                        ),
                         valueType.fromNbt(tag.get("value")!!, lookupProvider),
-                        tag.getCompound("type_data").takeUnless(CompoundTag::isEmpty)
                     )
                 }
-                else -> throw IllegalArgumentException("Unknown AttributeDataSource type $typeString")
+                "" -> throw IllegalArgumentException("No AttributeDataSource type found")
+                else -> throw IllegalArgumentException("Unknown AttributeDataSource type \"$typeString\"")
             }
         }
 
         fun toNbt(data: AttributeDataSource<*>, explicitType: Boolean = false): CompoundTag {
             return CompoundTag().also { tag ->
                 when (data) {
-                    is ObservationSourceAttributeReference<*> -> {
+                    is Reference.ObservationSourceAttributeReference -> {
                         if (explicitType) tag.putString("type", "reference")
-                        tag.put("reference", data.info.save())
+                        tag.putString("reference", data.attributeName)
+                    }
+                    is Reference.TypedSlot<*> -> {
+                        if (explicitType) tag.putString("type", "slot")
+                        tag.put("slot", data.info.save())
                     }
                     is ConstantAttributeData<*> -> {
                         if (explicitType) tag.putString("type", "constant")
-                        tag.putString("value_type", data.type.id.location().toString())
+                        tag.putString("value_type", data.type.templateType.id.location().toString())
                         tag.put("value", data.valueTag)
-                        if (data.additionalTypeData != null) {
-                            tag.put("type_data", data.additionalTypeData)
+                        val additionalTypeData = data.additionalTypeData
+                        if (additionalTypeData != null) {
+                            tag.put("type_data", additionalTypeData)
                         }
                     }
                 }
@@ -219,8 +242,11 @@ sealed interface AttributeDataSource<T : Any> {
             IdDispatchCodec.builder<RegistryFriendlyByteBuf, AttributeDataSource<*>, Class<*>> {
                 it::class.java
             }.add(
-                ObservationSourceAttributeReference::class.java,
-                REFERENCE_STREAM_CODEC,
+                Reference.TypedSlot::class.java,
+                TYPED_SLOT_STREAM_CODEC,
+            ).add(
+                Reference.ObservationSourceAttributeReference::class.java,
+                Reference.ObservationSourceAttributeReference.STREAM_CODEC,
             ).add(
                 ConstantAttributeData::class.java,
                 ConstantAttributeData.STREAM_CODEC,

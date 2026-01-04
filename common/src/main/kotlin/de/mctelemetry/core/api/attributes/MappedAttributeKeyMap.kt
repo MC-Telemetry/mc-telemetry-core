@@ -15,10 +15,10 @@ value class MappedAttributeKeyMap<out T : Any> private constructor(val map: Map<
         return map[info] as T2?
     }
 
-    operator fun <T2 : Any> get(reference: AttributeDataSource.ObservationSourceAttributeReference<T2>): T2? =
+    operator fun <T2 : Any> get(reference: AttributeDataSource.Reference.TypedSlot<T2>): T2? =
         get(reference.info)
 
-    private fun <T2 : Any> getOrThrow(reference: AttributeDataSource.ObservationSourceAttributeReference<T2>): T2 {
+    private fun <T2 : Any> getOrThrow(reference: AttributeDataSource.Reference.TypedSlot<T2>): T2 {
         @Suppress("UNCHECKED_CAST")  // if reference matches, the associated value has to be of type T2
         return map.getValue(reference.info) as T2
     }
@@ -27,12 +27,12 @@ value class MappedAttributeKeyMap<out T : Any> private constructor(val map: Map<
         return map.getValue(info) as T2
     }
 
-    fun <T2 : Any> prepareLookup(reference: AttributeDataSource.ObservationSourceAttributeReference<T2>): ((AttributeDataSource.ObservationSourceAttributeReference<T2>) -> T2)? {
+    fun <T2 : Any> prepareLookup(reference: AttributeDataSource.Reference.TypedSlot<T2>): ((AttributeDataSource.Reference.TypedSlot<T2>) -> T2)? {
         if (reference.info !in map) return null
         return this::getOrThrow
     }
 
-    fun <T2 : Any> prepareLookup(info: MappedAttributeKeyInfo<T2,*>): ((AttributeDataSource.ObservationSourceAttributeReference<T2>) -> T2)? {
+    fun <T2 : Any> prepareLookup(info: MappedAttributeKeyInfo<T2,*>): ((AttributeDataSource.Reference.TypedSlot<T2>) -> T2)? {
         if (info !in map) return null
         return this::getOrThrow
     }

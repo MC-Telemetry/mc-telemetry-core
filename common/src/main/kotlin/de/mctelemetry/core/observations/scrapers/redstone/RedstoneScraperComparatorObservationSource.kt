@@ -1,13 +1,13 @@
 package de.mctelemetry.core.observations.scrapers.redstone
 
-import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
-import de.mctelemetry.core.api.observations.IObservationRecorder
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.AttributeDataSource.Companion.asReference
+import de.mctelemetry.core.api.attributes.AttributeDataSource.Companion.asObservationDataReference
+import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
+import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.attributes.invoke
+import de.mctelemetry.core.api.observations.IObservationRecorder
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.BlockPos
 import net.minecraft.core.GlobalPos
@@ -30,9 +30,9 @@ object RedstoneScraperComparatorObservationSource : IObservationSource.SingleAtt
 
     override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
 
-    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos").asReference()
+    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos").asObservationDataReference(this)
 
-    override val reference: AttributeDataSource.ObservationSourceAttributeReference<GlobalPos> = POS_KEY
+    override val reference: AttributeDataSource.Reference.ObservationSourceAttributeReference<GlobalPos> = POS_KEY
 
     context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.PairLookup<GlobalPos>)
     override fun observe(

@@ -44,8 +44,9 @@ interface IAttributeKeyTypeTemplate<T : Any, B : Any> {
     }
 }
 
-infix fun IAttributeKeyTypeTemplate<*, *>.canConvertTo(supertype: IAttributeKeyTypeTemplate<*, *>): Boolean {
-
+infix fun IAttributeKeyTypeTemplate<*, *>.canConvertTo(
+    supertype: IAttributeKeyTypeTemplate<*, *>,
+): Boolean {
     return this === supertype ||
             canConvertDirectlyTo(supertype) ||
             canConvertFormatTo(supertype) ||
@@ -53,7 +54,9 @@ infix fun IAttributeKeyTypeTemplate<*, *>.canConvertTo(supertype: IAttributeKeyT
 }
 
 @Suppress("unused")
-infix fun IAttributeKeyTypeTemplate<*, *>.canConvertFrom(subtype: IAttributeKeyTypeTemplate<*, *>): Boolean {
+infix fun IAttributeKeyTypeTemplate<*, *>.canConvertFrom(
+    subtype: IAttributeKeyTypeTemplate<*, *>,
+): Boolean {
     return subtype canConvertTo this
 }
 
@@ -70,17 +73,25 @@ fun <T : Any, R : Any> IAttributeKeyTypeTemplate<T, *>.convertTo(
 }
 
 
-fun <T : Any, R : Any> MappedAttributeKeyValue<T, *>.convertTo(supertype: IAttributeKeyTypeTemplate<R, *>): R? {
+fun <T : Any, R : Any> MappedAttributeKeyValue<T, *>.convertTo(
+    supertype: IAttributeKeyTypeTemplate<R, *>,
+): R? {
     @Suppress("UNCHECKED_CAST") // relevant part of cast (T) is still retained, only wildcard is cascaded
     return (info.templateType as IAttributeKeyTypeTemplate<T, *>).convertTo(supertype, value)
 }
 
-fun <T : Any, R : Any> AttributeDataSource.ConstantAttributeData<T>.convertValueTo(supertype: IAttributeKeyTypeTemplate<R, *>): R? {
-    return type.convertTo(supertype, value)
+fun <T : Any, R : Any> AttributeDataSource.ConstantAttributeData<T>.convertValueTo(
+    supertype: IAttributeKeyTypeTemplate<R, *>,
+): R? {
+    return type.templateType.convertTo(supertype, value)
 }
 
-fun <T : Any, R : Any> AttributeDataSource.ConstantAttributeData<T>.convertTo(supertype: IAttributeKeyTypeTemplate<R, *>): AttributeDataSource.ConstantAttributeData<R>? {
-    return AttributeDataSource.ConstantAttributeData(supertype,type.convertTo(supertype, value) ?: return null)
+fun <T : Any, R : Any> AttributeDataSource.ConstantAttributeData<T>.convertTo(
+    supertype: IAttributeKeyTypeInstance<R, *>,
+): AttributeDataSource.ConstantAttributeData<R>? {
+    return AttributeDataSource.ConstantAttributeData(
+        supertype, type.templateType.convertTo(supertype.templateType, value) ?: return null
+    )
 }
 
 fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(
@@ -90,19 +101,27 @@ fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(
     return subtype.convertTo(this, value)
 }
 
-fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(subtypeValue: MappedAttributeKeyValue<T, *>): R? {
+fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(
+    subtypeValue: MappedAttributeKeyValue<T, *>,
+): R? {
     return subtypeValue.convertTo(this)
 }
 
-fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertValueFrom(subtypeValue: AttributeDataSource.ConstantAttributeData<T>): R? {
+fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertValueFrom(
+    subtypeValue: AttributeDataSource.ConstantAttributeData<T>,
+): R? {
     return subtypeValue.convertValueTo(this)
 }
 
-fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(subtypeValue: AttributeDataSource.ConstantAttributeData<T>): AttributeDataSource.ConstantAttributeData<R>? {
+fun <T : Any, R : Any> IAttributeKeyTypeInstance<R, *>.convertFrom(
+    subtypeValue: AttributeDataSource.ConstantAttributeData<T>,
+): AttributeDataSource.ConstantAttributeData<R>? {
     return subtypeValue.convertTo(this)
 }
 
-private fun IAttributeKeyTypeTemplate<*, *>.canConvertFormatTo(supertype: IAttributeKeyTypeTemplate<*, *>): Boolean {
+private fun IAttributeKeyTypeTemplate<*, *>.canConvertFormatTo(
+    supertype: IAttributeKeyTypeTemplate<*, *>,
+): Boolean {
     return baseType.mappedType === supertype
 }
 

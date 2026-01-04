@@ -1,14 +1,10 @@
 package de.mctelemetry.core.observations.scrapers.redstone
 
-import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.*
+import de.mctelemetry.core.api.attributes.AttributeDataSource.Companion.asObservationDataReference
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.AttributeDataSource.Companion.asReference
-import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
-import de.mctelemetry.core.api.attributes.invoke
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
@@ -25,8 +21,8 @@ object RedstoneScraperDirectPowerObservationSource : IObservationSource.MultiAtt
 
     override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
 
-    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos").asReference()
-    private val DIR_KEY = BuiltinAttributeKeyTypes.DirectionType("dir").asReference()
+    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos").asObservationDataReference(this)
+    private val DIR_KEY = BuiltinAttributeKeyTypes.DirectionType("dir").asObservationDataReference(this)
 
     override val attributes: IAttributeDateSourceReferenceSet =
         IAttributeDateSourceReferenceSet(listOf(POS_KEY, DIR_KEY))

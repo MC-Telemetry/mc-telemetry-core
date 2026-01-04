@@ -1,14 +1,10 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
-import de.mctelemetry.core.api.attributes.canConvertTo
-import de.mctelemetry.core.api.attributes.convertFrom
+import de.mctelemetry.core.api.attributes.*
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
@@ -22,7 +18,6 @@ import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.codec.StreamCodec
 import org.intellij.lang.annotations.MagicConstant
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.iterator
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
@@ -90,7 +85,7 @@ class ObservationAttributeMapping(
 
     fun validateTypes(force: Boolean = false): MutableComponent? = cacheableValidation(VALIDATION_FLAG_TYPES, force) {
         for ((target, source) in mapping) {
-            if (!(source.type canConvertTo target.templateType))
+            if (!(source.type.templateType canConvertTo target.templateType))
                 return TranslationKeys.Errors.attributeTypesIncompatible(source, target)
         }
         return null
@@ -223,11 +218,15 @@ class ObservationAttributeMapping(
         ): T {
             val value = attributeDataSource.value
                 ?: throw NoSuchElementException("Could not obtain value for $attributeDataSource")
-            return metricAttributeType.convertFrom(attributeDataSource.type, value)
+            return metricAttributeType.convertFrom(attributeDataSource.type.templateType, value)
                 ?: throw IllegalArgumentException("Could not convert value from ${attributeDataSource.type} to $metricAttributeType: $value")
         }
 
-        fun loadFromTag(tag: Tag, holderLookupProvider: HolderLookup.Provider): ObservationAttributeMapping {
+        fun loadFromTag(
+            tag: Tag,
+            holderLookupProvider: HolderLookup.Provider,
+            sourceContext: IObservationSource<*, *>,
+        ): ObservationAttributeMapping {
             tag as ListTag
             if (tag.isEmpty()) return empty()
             require(tag.elementType == Tag.TAG_COMPOUND)
@@ -243,7 +242,7 @@ class ObservationAttributeMapping(
                             )
                         )
                         val value = AttributeDataSource.fromNbt(
-                            valueTag, holderLookupProvider
+                            valueTag, holderLookupProvider, sourceContext
                         )
                         put(key, value)
                     }

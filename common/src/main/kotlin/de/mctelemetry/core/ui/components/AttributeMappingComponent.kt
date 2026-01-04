@@ -1,14 +1,8 @@
 package de.mctelemetry.core.ui.components
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
-import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
+import de.mctelemetry.core.api.attributes.*
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes.StringType.convertValueToString
-import de.mctelemetry.core.api.attributes.canConvertFrom
-import de.mctelemetry.core.api.attributes.convertFrom
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import io.github.pixix4.kobserve.base.ObservableProperty
@@ -23,7 +17,6 @@ import io.wispforest.owo.ui.core.Sizing
 import io.wispforest.owo.ui.core.VerticalAlignment
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.util.CommonColors
-import kotlin.collections.plus
 
 class AttributeMappingComponent(
     val sourceAttributes: IAttributeDateSourceReferenceSet,
@@ -47,9 +40,9 @@ class AttributeMappingComponent(
         object None : AttributeMappingSources() {
             override val type: IAttributeKeyTypeTemplate<*,*>? = null
         }
-        class Reference(val reference: AttributeDataSource.ObservationSourceAttributeReference<*>) :
+        class Reference(val reference: AttributeDataSource.Reference<*>) :
             AttributeMappingSources() {
-            override val type: IAttributeKeyTypeTemplate<*, *> = reference.type
+            override val type: IAttributeKeyTypeTemplate<*, *> = reference.type.templateType
         }
 
         object Custom : AttributeMappingSources() {
@@ -59,7 +52,7 @@ class AttributeMappingComponent(
 
     private fun makeCustomConstantValue(
         text: String,
-        targetType: IAttributeKeyTypeTemplate<*, *>,
+        targetType: IAttributeKeyTypeInstance<*, *>,
         input: TextBoxComponent? = null,
     ): AttributeDataSource.ConstantAttributeData<*> {
         val stringConstantData = AttributeDataSource.ConstantAttributeData(
@@ -122,7 +115,7 @@ class AttributeMappingComponent(
 
             val selectedOption: SelectBoxComponentEntry<AttributeMappingSources> = when (selected) {
                 null -> noneOption
-                is AttributeDataSource.ObservationSourceAttributeReference<*> -> options.firstOrNull {
+                is AttributeDataSource.Reference<*> -> options.firstOrNull {
                     (it.value as? AttributeMappingSources.Reference)?.reference == selected
                 } ?: noneOption
 
@@ -149,7 +142,7 @@ class AttributeMappingComponent(
                         AttributeMappingSources.Custom -> {
                             makeCustomConstantValue(
                                 customInput.value,
-                                instrumentationSourceAttribute.templateType,
+                                instrumentationSourceAttribute,
                                 customInput,
                             )
                         }
@@ -172,7 +165,7 @@ class AttributeMappingComponent(
             // Initial coloring
             makeCustomConstantValue(
                 customInput.value,
-                instrumentationSourceAttribute.templateType,
+                instrumentationSourceAttribute,
                 customInput,
             )
 
@@ -180,7 +173,7 @@ class AttributeMappingComponent(
             customInput.onChanged().subscribe {
                 mapping += instrumentationSourceAttribute to makeCustomConstantValue(
                     it,
-                    instrumentationSourceAttribute.templateType,
+                    instrumentationSourceAttribute,
                     customInput,
                 )
             }

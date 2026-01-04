@@ -1,10 +1,10 @@
 package de.mctelemetry.core
 
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.attributes.AttributeDataSource
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.resources.ResourceKey
@@ -110,21 +110,24 @@ object TranslationKeys {
             Component.translatableWithFallback(
                 ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED,
                 $$"Incompatible attribute types: Cannot assign from %1$s to %2$s ('%3$s')",
-                source.type.id.location().toString(),
+                source.type.templateType.id.location().toString(),
                 target.templateType.id.location().toString(),
                 target.baseKey.key,
             )
 
         fun attributeTypesIncompatible(
-            source: AttributeDataSource.ObservationSourceAttributeReference<*>,
+            source: AttributeDataSource.Reference<*>,
             target: MappedAttributeKeyInfo<*, *>,
         ): MutableComponent =
             Component.translatableWithFallback(
                 ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED,
                 $$"Incompatible attribute types: Cannot assign from %1$s ('%3$s') to %2$s ('%4$s')",
-                source.type.id.location().toString(),
+                source.type.templateType.id.location().toString(),
                 target.templateType.id.location().toString(),
-                source.info.baseKey.key,
+                when(source) {
+                    is AttributeDataSource.Reference.TypedSlot<*> -> source.info.baseKey.key
+                    is AttributeDataSource.Reference.ObservationSourceAttributeReference<*> -> source.attributeName
+                },
                 target.baseKey.key,
             )
 
@@ -133,7 +136,7 @@ object TranslationKeys {
             target: MappedAttributeKeyInfo<*, *>,
         ): MutableComponent = when (source) {
             is AttributeDataSource.ConstantAttributeData<*> -> attributeTypesIncompatible(source, target)
-            is AttributeDataSource.ObservationSourceAttributeReference<*> -> attributeTypesIncompatible(source, target)
+            is AttributeDataSource.Reference<*> -> attributeTypesIncompatible(source, target)
         }
 
         fun attributeMappingMissing(

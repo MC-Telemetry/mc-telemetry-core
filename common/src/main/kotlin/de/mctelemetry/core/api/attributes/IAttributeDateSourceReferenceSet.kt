@@ -4,6 +4,12 @@ interface IAttributeDateSourceReferenceSet {
 
     val references: Set<AttributeDataSource.Reference<*>>
 
+    fun findObservationSourceAttributeReference(name: String): AttributeDataSource.Reference.ObservationSourceAttributeReference<*>? {
+        return references.firstOrNull {
+            it is AttributeDataSource.Reference.ObservationSourceAttributeReference<*> && it.attributeName == name
+        } as AttributeDataSource.Reference.ObservationSourceAttributeReference<*>?
+    }
+
     companion object {
 
         private val empty = Default(emptySet())
