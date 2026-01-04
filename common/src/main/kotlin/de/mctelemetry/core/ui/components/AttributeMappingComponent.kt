@@ -135,8 +135,6 @@ class AttributeMappingComponent(
                     },
                     selectedOption,
                 ) { old, new ->
-                    println(new)
-
                     customInput.setEditable(new.value == AttributeMappingSources.Custom)
                     val newValue: AttributeDataSource<*> = when (new.value) {
                         AttributeMappingSources.Custom -> {

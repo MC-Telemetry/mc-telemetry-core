@@ -51,7 +51,6 @@ class InstrumentManagerScreenCreate(
 
             val name = instrumentNameTextBox.value
             val useDecimals = useDecimalsCheckBox.checked()
-            val attributes = attributesList.map { it.type.create(it.name, null) }
 
             instrumentManager.sendGaugeInstrument(name) {
                 supportsFloating = useDecimals
@@ -60,15 +59,6 @@ class InstrumentManagerScreenCreate(
                     addAttribute(attribute.type.create(attribute.name, null))
                 }
             }
-
-            // TODO: create instrument
-            print(
-                "TODO: create instrument(name=$name, useDecimals=$useDecimals, attributes=[${
-                    attributes.joinToString(", ") {
-                        "${it.baseKey.key}: ${it.templateType.id.location().path}"
-                    }
-                }])"
-            )
         }
     }
 }
