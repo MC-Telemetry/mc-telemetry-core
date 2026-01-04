@@ -1,6 +1,7 @@
 package de.mctelemetry.core.ui.components
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.attributes.*
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes.StringType.convertValueToString
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
@@ -80,11 +81,8 @@ class AttributeMappingComponent(
         val observationSourceAttributes = sourceAttributes.references
         val instrumentAttributes = instrumentAttributes?.values?.toList() ?: emptyList()
 
-        val noneOption = SelectBoxComponentEntry<AttributeMappingSources>(
-            AttributeMappingSources.None,
-            buildComponent("None")
-        )
-        val customOption = SelectBoxComponentEntry<AttributeMappingSources>(AttributeMappingSources.Custom, buildComponent("Custom"))
+        val noneOption = SelectBoxComponentEntry<AttributeMappingSources>(AttributeMappingSources.None, TranslationKeys.Ui.none())
+        val customOption = SelectBoxComponentEntry<AttributeMappingSources>(AttributeMappingSources.Custom, TranslationKeys.Ui.custom())
         val options = listOf(
             noneOption
         ) + observationSourceAttributes.map { reference ->

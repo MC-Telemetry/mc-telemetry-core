@@ -55,7 +55,7 @@ class AttributeCreatorComponent(
 
             val attributeType =
                 SelectBoxComponent(
-                    buildComponent("Types"),
+                    TranslationKeys.Ui.types(),
                     options,
                     options.firstOrNull { it.value == attributeEntry.type } ?: options.first()
                 ) { _, new ->
@@ -64,7 +64,7 @@ class AttributeCreatorComponent(
             valueCol.child(attributeType)
             row.child(valueCol)
 
-            val deleteButton = Components.button(buildComponent("Delete")) {
+            val deleteButton = Components.button(TranslationKeys.Ui.delete()) {
                 attributes -= attributeEntry
             } as Component
             deleteButton.horizontalSizing(Sizing.fill(16))
@@ -74,7 +74,7 @@ class AttributeCreatorComponent(
             child(row)
         }
 
-        val createButton = Components.button(buildComponent("Add attribute")) {
+        val createButton = Components.button(TranslationKeys.Ui.addAttributes()) {
             attributes += AttributeCreatorEntry("", types.first())
         } as Component
         createButton.margins(Insets.of(4))

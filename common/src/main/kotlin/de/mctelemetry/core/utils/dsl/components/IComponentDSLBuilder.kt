@@ -42,6 +42,11 @@ interface IComponentDSLBuilder {
         }
 
         @ComponentDSL
+        inline fun buildComponent(component: MutableComponent, block: IComponentDSLBuilder.() -> Unit): MutableComponent {
+            return ComponentDSLBuilder(component).apply(block).component
+        }
+
+        @ComponentDSL
         fun buildComponent(text: String): MutableComponent {
             return Component.literal(text)
         }

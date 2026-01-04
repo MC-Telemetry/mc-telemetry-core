@@ -149,8 +149,8 @@ class RedstoneScraperBlockScreenDetails(
     }
 
     override fun build(rootComponent: FlowLayout) {
-        val backButton = rootComponent.childWidgetByIdOrThrow<ButtonComponent>("back")
-        backButton.onPress {
+        val saveButton = rootComponent.childWidgetByIdOrThrow<ButtonComponent>("save")
+        saveButton.onPress {
             sendToServer(allowDelete = true)
             Minecraft.getInstance().setScreen(parent)
         }
