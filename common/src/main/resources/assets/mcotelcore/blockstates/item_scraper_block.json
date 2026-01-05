@@ -1,0 +1,64 @@
+{
+  "variants": {
+    "facing=east,error=ok": {
+      "model": "mcotelcore:block/item_scraper_block",
+      "y": 90
+    },
+    "facing=north,error=ok": {
+      "model": "mcotelcore:block/item_scraper_block"
+    },
+    "facing=south,error=ok": {
+      "model": "mcotelcore:block/item_scraper_block",
+      "y": 180
+    },
+    "facing=west,error=ok": {
+      "model": "mcotelcore:block/item_scraper_block",
+      "y": 270
+    },
+    "facing=east,error=notconfigured": {
+      "model": "mcotelcore:block/item_scraper_block_not_configured",
+      "y": 90
+    },
+    "facing=north,error=notconfigured": {
+      "model": "mcotelcore:block/item_scraper_block_not_configured"
+    },
+    "facing=south,error=notconfigured": {
+      "model": "mcotelcore:block/item_scraper_block_not_configured",
+      "y": 180
+    },
+    "facing=west,error=notconfigured": {
+      "model": "mcotelcore:block/item_scraper_block_not_configured",
+      "y": 270
+    },
+    "facing=east,error=warnings": {
+      "model": "mcotelcore:block/item_scraper_block_warning",
+      "y": 90
+    },
+    "facing=north,error=warnings": {
+      "model": "mcotelcore:block/item_scraper_block_warning"
+    },
+    "facing=south,error=warnings": {
+      "model": "mcotelcore:block/item_scraper_block_warning",
+      "y": 180
+    },
+    "facing=west,error=warnings": {
+      "model": "mcotelcore:block/item_scraper_block_warning",
+      "y": 270
+    },
+    "facing=east,error=errors": {
+      "model": "mcotelcore:block/item_scraper_block_error",
+      "y": 90
+    },
+    "facing=north,error=errors": {
+      "model": "mcotelcore:block/item_scraper_block_error"
+    },
+    "facing=south,error=errors": {
+      "model": "mcotelcore:block/item_scraper_block_error",
+      "y": 180
+    },
+    "facing=west,error=errors": {
+      "model": "mcotelcore:block/item_scraper_block_error",
+      "y": 270
+    }
+  }
+}

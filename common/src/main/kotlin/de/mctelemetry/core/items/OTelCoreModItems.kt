@@ -11,10 +11,22 @@ import net.minecraft.world.item.Item
 import java.util.function.Supplier
 
 object OTelCoreModItems {
-    val ITEMS: DeferredRegister<Item> = DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.ITEM);
+    val ITEMS: DeferredRegister<Item> = DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.ITEM)
 
     val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("redstone_scraper_block") {
         BlockItem(OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(), Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB))
+    }
+
+    val ITEM_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("item_scraper_block") {
+        BlockItem(OTelCoreModBlocks.ITEM_SCRAPER_BLOCK.get(), Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB))
+    }
+
+    val FLUID_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("fluid_scraper_block") {
+        BlockItem(OTelCoreModBlocks.FLUID_SCRAPER_BLOCK.get(), Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB))
+    }
+
+    val ENERGY_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("energy_scraper_block") {
+        BlockItem(OTelCoreModBlocks.ENERGY_SCRAPER_BLOCK.get(), Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB))
     }
 
     fun init() {

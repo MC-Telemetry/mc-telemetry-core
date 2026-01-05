@@ -1,5 +1,5 @@
 {
-  "parent": "mcotelcore:block/redstone_scraper_block",
+  "parent": "mcotelcore:block/fluid_scraper_block",
   "textures": {
     "3": "mcotelcore:block/scraper_block_status_red"
   }

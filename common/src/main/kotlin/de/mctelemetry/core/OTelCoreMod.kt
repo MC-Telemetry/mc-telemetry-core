@@ -59,7 +59,6 @@ object OTelCoreMod {
         ) { ItemStack(OTelCoreModItems.REDSTONE_SCRAPER_BLOCK) }
     }
 
-
     fun registerCallbacks() {
         ServerInstrumentMetaManager.register()
         BuiltinInstruments.register()

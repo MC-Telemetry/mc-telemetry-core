@@ -2,11 +2,11 @@
 	"format_version": "1.9.0",
 	"credit": "Made with Blockbench",
 	"textures": {
-		"0": "mcotelcore:block/redstone_scraper_block_base",
-		"1": "mcotelcore:block/redstone_scraper_block_frame",
-		"2": "mcotelcore:block/redstone_scraper_block_core",
+		"0": "mcotelcore:block/item_scraper_block_base",
+		"1": "mcotelcore:block/item_scraper_block_frame",
+		"2": "mcotelcore:block/item_scraper_block_core",
 		"3": "mcotelcore:block/scraper_block_status_green",
-		"particle": "mcotelcore:block/redstone_scraper_block_base"
+		"particle": "mcotelcore:block/item_scraper_block_base"
 	},
 	"elements": [
 		{

@@ -16,6 +16,18 @@ object OTelCoreModBlocks {
         RedstoneScraperBlock(BlockBehaviour.Properties.of())
     }
 
+    val ITEM_SCRAPER_BLOCK: RegistrySupplier<ItemScraperBlock> = registerBlock("item_scraper_block") {
+        ItemScraperBlock(BlockBehaviour.Properties.of())
+    }
+
+    val FLUID_SCRAPER_BLOCK: RegistrySupplier<FluidScraperBlock> = registerBlock("fluid_scraper_block") {
+        FluidScraperBlock(BlockBehaviour.Properties.of())
+    }
+
+    val ENERGY_SCRAPER_BLOCK: RegistrySupplier<EnergyScraperBlock> = registerBlock("energy_scraper_block") {
+        EnergyScraperBlock(BlockBehaviour.Properties.of())
+    }
+
     fun init() {
         BLOCKS.register()
     }
