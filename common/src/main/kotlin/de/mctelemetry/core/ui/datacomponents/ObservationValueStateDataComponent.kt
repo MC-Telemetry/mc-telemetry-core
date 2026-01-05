@@ -1,6 +1,7 @@
 package de.mctelemetry.core.ui.datacomponents
 
 import de.mctelemetry.core.TranslationKeys
+import de.mctelemetry.core.join
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder
@@ -41,8 +42,7 @@ class ObservationValueStateDataComponent(
 
             val tooltipComponent = if (errorState.errors.isNotEmpty() || errorState.warnings.isNotEmpty()) {
                 listOf(
-                    TranslationKeys.join(
-                        TranslationKeys.Ui.and(),
+                    TranslationKeys.Ui.and().join(
                         TranslationKeys.Ui.stateErrorCount(errorState.errors.size),
                         TranslationKeys.Ui.stateWarningCount(errorState.warnings.size)
                     )

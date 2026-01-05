@@ -5,6 +5,7 @@ import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes.StringType.convertValueToString
 import de.mctelemetry.core.commands.scrape.CommandScrapeCardinality
+import de.mctelemetry.core.join
 import de.mctelemetry.core.network.observations.container.observationrequest.RecordedObservationPoint
 import de.mctelemetry.core.network.observations.container.observationrequest.RecordedObservations
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -185,14 +186,9 @@ class ObservationValuePreviewDataComponent(
             tooltipValuePointLimit: Int = 10,
         ): TextTooltipPair {
             val textComponent = buildComponent {
-                append("[")
-                for ((idx, cardinality) in cardinalities.values.withIndex()) {
-                    if (idx != 0) {
-                        append("⨉")
-                    }
-                    append(cardinality.toString())
-                }
-                append("]")
+                +"["
+                +Component.literal("⨉").join(cardinalities.values.map { Component.literal(it.toString()) })
+                +"]"
 
                 style {
                     isItalic = true

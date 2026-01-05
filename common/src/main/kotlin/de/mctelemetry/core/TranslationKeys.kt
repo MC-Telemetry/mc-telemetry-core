@@ -15,20 +15,6 @@ import net.minecraft.resources.ResourceLocation
 import kotlin.toString
 
 object TranslationKeys {
-    fun join(separator: Component, vararg values: Component): MutableComponent {
-        return buildComponent {
-            var first = true
-            for (value in values) {
-                if (first) {
-                    first = false
-                } else {
-                    +", "
-                }
-
-                append(value)
-            }
-        }
-    }
 
     object Errors {
 
@@ -318,4 +304,24 @@ object TranslationKeys {
         fun and(): MutableComponent =
             Component.translatable(AND)
     }
+}
+
+fun Component.join(values: Collection<Component>): MutableComponent {
+    return buildComponent {
+        var first = true
+        for (value in values) {
+            if (first) {
+                first = false
+            } else {
+                append(this@join)
+            }
+
+            append(value)
+        }
+    }
+}
+
+
+fun Component.join(vararg values: Component): MutableComponent {
+    return this.join(values.toList())
 }
