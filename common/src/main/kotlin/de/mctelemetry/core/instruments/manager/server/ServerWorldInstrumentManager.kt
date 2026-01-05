@@ -2,7 +2,7 @@ package de.mctelemetry.core.instruments.manager.server
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
@@ -268,7 +268,7 @@ internal class ServerWorldInstrumentManager private constructor(
 
             private fun loadEntryTag(
                 tag: CompoundTag,
-                attributeKeyTypeHolderGetter: HolderGetter<IMappedAttributeKeyType<*, *>>,
+                attributeKeyTypeHolderGetter: HolderGetter<IAttributeKeyTypeTemplate<*, *>>,
             ): Pair<String, InstrumentManagerBaseRegistrationUnion> {
                 val name: String? = tag.getString("name")
                 if (name.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'name'")
@@ -309,7 +309,7 @@ internal class ServerWorldInstrumentManager private constructor(
             )
 
             fun load(tag: CompoundTag, lookupProvider: HolderLookup.Provider): WorldInstrumentSavedData {
-                val attributeKeyTypeGetter: HolderGetter<IMappedAttributeKeyType<*, *>> =
+                val attributeKeyTypeGetter: HolderGetter<IAttributeKeyTypeTemplate<*, *>> =
                     lookupProvider.lookupOrThrow(OTelCoreModAPI.AttributeTypeMappings)
                 val data: Map<String, InstrumentManagerBaseRegistrationUnion> =
                     buildMap {

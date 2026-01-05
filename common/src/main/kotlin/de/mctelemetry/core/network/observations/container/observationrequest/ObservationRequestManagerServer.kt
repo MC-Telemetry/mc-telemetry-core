@@ -281,9 +281,23 @@ class ObservationRequestManagerServer(
         val entity = level.getBlockEntity(pos)
         if (entity !is ObservationSourceContainerBlockEntity) return
         val container = entity.containerIfInitialized ?: return
-        val memoryRecorder = MemoryObservationRecorder()
-        container.observe(memoryRecorder, forceObservation = true)
-        observations = memoryRecorder.recordedAsMap()
+        val memoryRecorders: MutableList<MemoryObservationRecorder> = mutableListOf()
+        container.observe(
+            { mapping -> MemoryObservationRecorder(mapping).also { memoryRecorders.add(it) } },
+            forceObservation = true
+        )
+        observations = memoryRecorders.fold(emptyMap()) { acc, recorder ->
+            val newMap = recorder.recordedAsMap()
+            if (newMap.keys.none { it in acc })
+                acc + newMap
+            else {
+                acc + newMap.mapValues {
+                    val accValue = acc[it.key] ?: return@mapValues it.value
+                    val instrument = it.value.instrument ?: accValue.instrument
+                    it.value.copy(instrument = instrument, observations = accValue.observations + it.value.observations)
+                }
+            }
+        }
         subLogger.trace(
             "Sending {} observation-points for {}@{} to players {}",
             observations.values.sumOf { it.observations.size },

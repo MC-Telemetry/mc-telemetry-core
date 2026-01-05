@@ -7,8 +7,8 @@
                     <children>
                         <flow-layout direction="horizontal">
                             <children>
-                                <button id="back">
-                                    <text>Back</text>
+                                <button id="save">
+                                    <text translate="true">ui.mcotelcore.save</text>
                                     <sizing>
                                         <horizontal method="fill">20</horizontal>
                                     </sizing>
@@ -55,69 +55,6 @@
                         <scroll direction="vertical">
                             <flow-layout direction="vertical" id="attribute-mapping">
                                 <children>
-                                    <grid-layout rows="2" columns="3">
-                                        <children>
-                                            <label row="0" column="0">
-                                                <text>instr_met_1</text>
-                                            </label>
-                                            <collapsible row="0" column="1">
-                                                <children>
-                                                    <dropdown row="1" column="1">
-                                                        <entries>
-                                                            <button>
-                                                                <text>source_met_1</text>
-                                                            </button>
-                                                            <button>
-                                                                <text>source_met_2</text>
-                                                            </button>
-                                                            <button>
-                                                                <text>source_met_3</text>
-                                                            </button>
-                                                            <button>
-                                                                <text>source_met_4</text>
-                                                            </button>
-                                                        </entries>
-                                                    </dropdown>
-                                                </children>
-                                                <text>Select</text>
-                                            </collapsible>
-                                            <label row="0" column="2">
-                                                <text>Optional</text>
-                                            </label>
-                                            <label row="1" column="0">
-                                                <text>instr_met_2</text>
-                                            </label>
-                                            <collapsible row="1" column="1">
-                                                <children>
-                                                    <dropdown row="1" column="1">
-                                                        <entries>
-                                                            <button>
-                                                                <text>source_met_1</text>
-                                                            </button>
-                                                            <button>
-                                                                <text>source_met_2</text>
-                                                            </button>
-                                                            <button>
-                                                                <text>source_met_3</text>
-                                                            </button>
-                                                            <button>
-                                                                <text>source_met_4</text>
-                                                            </button>
-                                                        </entries>
-                                                    </dropdown>
-                                                </children>
-                                                <text>Select</text>
-                                            </collapsible>
-                                            <label row="1" column="2">
-                                                <text>Optional</text>
-                                            </label>
-                                        </children>
-                                        <horizontal-alignment>center</horizontal-alignment>
-                                        <vertical-alignment>center</vertical-alignment>
-                                        <sizing>
-                                            <horizontal method="fill">100</horizontal>
-                                        </sizing>
-                                    </grid-layout>
                                 </children>
 
                                 <padding>
@@ -126,7 +63,7 @@
                             </flow-layout>
 
                             <sizing>
-                                <vertical method="fill">40</vertical>
+                                <vertical method="fill">52</vertical>
                                 <horizontal method="fill">60</horizontal>
                             </sizing>
 

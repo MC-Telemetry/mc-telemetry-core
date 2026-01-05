@@ -4,12 +4,15 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponent
+import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
 import de.mctelemetry.core.utils.childByIdOrThrow
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
+import de.mctelemetry.core.utils.closeConsumeAllRethrow
 import de.mctelemetry.core.utils.coroutineDispatcher
 import de.mctelemetry.core.utils.globalPosOrThrow
 import de.mctelemetry.core.utils.runWithExceptionCleanup
@@ -22,7 +25,6 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
@@ -59,13 +61,7 @@ class RedstoneScraperBlockScreen(
     private val observationValuePreviews: MutableMap<IObservationSource<*, *>, ObservationValuePreviewDataComponent> =
         mutableMapOf()
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private fun currentValue(): ObservationSourceObservationMap? {
-        val deferred = observationFlowRef.get() ?: return null
-        if (!deferred.isCompleted) return null
-        deferred.getCompletionExceptionOrNull()?.let { throw it }
-        return deferred.getCompleted().value
-    }
+    private val closable = mutableListOf<AutoCloseable>()
 
     override fun isPauseScreen(): Boolean {
         return false
@@ -88,6 +84,7 @@ class RedstoneScraperBlockScreen(
                     continue
                 }
             }
+
             preview.value = observations
         }
     }
@@ -115,15 +112,21 @@ class RedstoneScraperBlockScreen(
     }
 
     override fun added() {
+        @Suppress("DeferredResultUnused")
         configureFlow()
     }
 
     override fun close() {
-        scope.cancel()
+        try {
+            scope.cancel()
+        } finally {
+            closable.closeConsumeAllRethrow()
+        }
         OTelCoreMod.logger.trace("Cancelled coroutine scope for {}", this)
     }
 
     override fun onClose() {
+        @Suppress("ConvertTryFinallyToUseCall")
         try {
             super.onClose()
         } finally {
@@ -132,6 +135,12 @@ class RedstoneScraperBlockScreen(
     }
 
     override fun build(rootComponent: FlowLayout) {
+        val instrumentManagerButton: ButtonComponent = rootComponent.childWidgetByIdOrThrow("instrument-manager")
+        instrumentManagerButton.onPress {
+            val instrumentManager = ClientInstrumentMetaManager.activeWorldManager ?: return@onPress
+            Minecraft.getInstance().setScreen(InstrumentManagerScreen(instrumentManager))
+        }
+
         val list: FlowLayout = rootComponent.childByIdOrThrow("list")
 
         for ((source, state) in observationSourceContainer.observationStates) {
@@ -144,6 +153,13 @@ class RedstoneScraperBlockScreen(
                 TranslationKeys.ObservationSources[source]
             )
             list.child(template)
+
+            closable.add(
+                ObservationValueStateDataComponent(
+                    template.childByIdOrThrow<LabelComponent>("observation-source-state"),
+                    state
+                )
+            )
 
             observationValuePreviews[source] = ObservationValuePreviewDataComponent(
                 template.childByIdOrThrow<LabelComponent>("observation-source-value")

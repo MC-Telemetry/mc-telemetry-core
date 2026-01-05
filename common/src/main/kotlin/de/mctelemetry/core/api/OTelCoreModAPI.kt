@@ -1,7 +1,7 @@
 package de.mctelemetry.core.api
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.observations.IObservationSource
 import net.minecraft.core.Registry
 import net.minecraft.resources.ResourceKey
@@ -13,7 +13,7 @@ object OTelCoreModAPI {
     val MOD_ID = OTelCoreMod.MOD_ID
 
 
-    val AttributeTypeMappings: ResourceKey<Registry<IMappedAttributeKeyType<*, *>>> = ResourceKey.createRegistryKey(
+    val AttributeTypeMappings: ResourceKey<Registry<IAttributeKeyTypeTemplate<*, *>>> = ResourceKey.createRegistryKey(
         ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "attribute_type_mappings")
     )
     val ObservationSources: ResourceKey<Registry<IObservationSource<*, *>>> = ResourceKey.createRegistryKey(

@@ -67,3 +67,7 @@ interface IClientWorldInstrumentManager : IClientInstrumentManager, IWorldInstru
             get() = ClientInstrumentMetaManager.activeWorldManager
     }
 }
+
+inline fun IClientWorldInstrumentManager.sendGaugeInstrument(name: String, block: IRemoteWorldInstrumentDefinitionBuilder<*>.()->Unit) {
+    gaugeInstrument(name).apply(block).sendToServer()
+}

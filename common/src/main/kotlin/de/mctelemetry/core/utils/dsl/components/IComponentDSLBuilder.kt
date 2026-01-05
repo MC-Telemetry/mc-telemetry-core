@@ -30,6 +30,7 @@ interface IComponentDSLBuilder {
         fun buildComponent(): MutableComponent {
             return Component.empty()
         }
+
         @ComponentDSL
         inline fun buildComponent(block: IComponentDSLBuilder.() -> Unit): MutableComponent {
             return ComponentDSLBuilder(Component.empty()).apply(block).component
@@ -38,6 +39,16 @@ interface IComponentDSLBuilder {
         @ComponentDSL
         inline fun buildComponent(text: String, block: IComponentDSLBuilder.() -> Unit): MutableComponent {
             return ComponentDSLBuilder(Component.literal(text)).apply(block).component
+        }
+
+        @ComponentDSL
+        inline fun buildComponent(component: MutableComponent, block: IComponentDSLBuilder.() -> Unit): MutableComponent {
+            return ComponentDSLBuilder(component).apply(block).component
+        }
+
+        @ComponentDSL
+        fun buildComponent(text: String): MutableComponent {
+            return Component.literal(text)
         }
     }
 }

@@ -19,6 +19,9 @@ import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.utils.InstrumentAvailabilityLogger
 import de.mctelemetry.core.utils.Union2
 import de.mctelemetry.core.utils.Validators
+import de.mctelemetry.core.utils.consumeAllRethrow
+import de.mctelemetry.core.utils.forEachCollect
+import de.mctelemetry.core.utils.forEachRethrow
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.Attributes
@@ -264,12 +267,8 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
                 exceptionAccumulator = ex
             }
         }
-        for (callback in localCallbacks) {
-            try {
-                callback.instrumentRemoved(this, instrument, phase)
-            } catch (ex: Exception) {
-                exceptionAccumulator += ex
-            }
+        exceptionAccumulator = localCallbacks.forEachCollect(exceptionAccumulator) {
+            it.instrumentRemoved(this, instrument, phase)
         }
         if (!cascadeEarly) {
             try {
@@ -404,14 +403,9 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
             } catch (ex: Exception) {
                 exceptionAccumulator = ex
             }
-            for (callback in globalCallbacks) {
-                try {
-                    callback.instrumentRemoved(manager, instrument, phase)
-                } catch (ex: Exception) {
-                    exceptionAccumulator += ex
-                }
+            globalCallbacks.forEachRethrow(exceptionAccumulator) {
+                it.instrumentRemoved(manager, instrument, phase)
             }
-            if (exceptionAccumulator != null) throw exceptionAccumulator
         }
 
         override fun addGlobalCallback(callback: IInstrumentAvailabilityCallback<IMetricDefinition>): AutoCloseable {
@@ -737,18 +731,12 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
             } catch (ex: Exception) {
                 accumulator = ex
             }
-            do {
-                val callback = callbacks.pollFirst() ?: break
-                try {
-                    callback.onRemove(
-                        @Suppress("UNCHECKED_CAST")
-                        (this@MutableGaugeInstrumentRegistration as T)
-                    )
-                } catch (ex: Exception) {
-                    accumulator += ex
-                }
-            } while (true)
-            if (accumulator != null) throw accumulator
+            callbacks.consumeAllRethrow(accumulator) {
+                it.onRemove(
+                    @Suppress("UNCHECKED_CAST")
+                    (this@MutableGaugeInstrumentRegistration as T)
+                )
+            }
         }
     }
 }

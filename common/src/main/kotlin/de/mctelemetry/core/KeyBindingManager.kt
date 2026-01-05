@@ -1,0 +1,26 @@
+package de.mctelemetry.core
+
+import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
+import de.mctelemetry.core.ui.screens.InstrumentManagerScreen
+import dev.architectury.event.events.client.ClientTickEvent
+import dev.architectury.registry.client.keymappings.KeyMappingRegistry
+import net.fabricmc.api.EnvType
+import net.fabricmc.api.Environment
+import net.minecraft.client.KeyMapping
+import org.lwjgl.glfw.GLFW
+
+@Environment(EnvType.CLIENT)
+object KeyBindingManager {
+    private val INSTRUMENT_MANAGER_MAPPING =
+        KeyMapping(TranslationKeys.KeyMappings.OPEN_INSTRUMENT_MANAGER, GLFW.GLFW_KEY_O, TranslationKeys.KeyMappings.CATEGORY)
+
+    fun register() {
+        KeyMappingRegistry.register(INSTRUMENT_MANAGER_MAPPING)
+        ClientTickEvent.CLIENT_POST.register {
+            while (INSTRUMENT_MANAGER_MAPPING.consumeClick()) {
+                val instrumentManager = ClientInstrumentMetaManager.activeWorldManager ?: continue
+                it.setScreen(InstrumentManagerScreen(instrumentManager))
+            }
+        }
+    }
+}

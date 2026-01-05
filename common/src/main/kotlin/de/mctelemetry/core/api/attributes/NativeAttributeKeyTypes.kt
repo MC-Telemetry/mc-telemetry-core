@@ -9,6 +9,16 @@ import it.unimi.dsi.fastutil.booleans.BooleanList
 import it.unimi.dsi.fastutil.booleans.BooleanLists
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList
 import it.unimi.dsi.fastutil.longs.LongArrayList
+import net.minecraft.core.HolderLookup
+import net.minecraft.nbt.ByteArrayTag
+import net.minecraft.nbt.ByteTag
+import net.minecraft.nbt.DoubleTag
+import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.LongArrayTag
+import net.minecraft.nbt.LongTag
+import net.minecraft.nbt.NumericTag
+import net.minecraft.nbt.StringTag
+import net.minecraft.nbt.Tag
 import net.minecraft.network.FriendlyByteBuf
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
@@ -34,7 +44,7 @@ object NativeAttributeKeyTypes {
         ::attributeKeyForType,
     )
 
-    val ALL: List<IMappedAttributeKeyType<*, *>> = listOf(
+    val ALL: List<IAttributeKeyTypeInstance.InstanceType<*, *>> = listOf(
         StringType,
         BooleanType,
         LongType,
@@ -72,7 +82,7 @@ object NativeAttributeKeyTypes {
         } as AttributeKey<T>
     }
 
-    operator fun get(keyType: AttributeType): IMappedAttributeKeyType<*, *> {
+    operator fun get(keyType: AttributeType): IAttributeKeyTypeTemplate<*, *> {
         return when (keyType) {
             AttributeType.STRING -> StringType
             AttributeType.BOOLEAN -> BooleanType
@@ -85,10 +95,10 @@ object NativeAttributeKeyTypes {
         }
     }
 
-    operator fun <T : Any> get(attributeType: GenericAttributeType<T>): IMappedAttributeKeyType<T, T> =
+    operator fun <T : Any> get(attributeType: GenericAttributeType<T>): IAttributeKeyTypeTemplate<T, T> =
         attributeType.mappedType
 
-    operator fun <T : Any> get(attributeKey: AttributeKey<T>): IMappedAttributeKeyType<T, T> {
+    operator fun <T : Any> get(attributeKey: AttributeKey<T>): IAttributeKeyTypeTemplate<T, T> {
         @Suppress("UNCHECKED_CAST")
         return when (attributeKey.type) {
             AttributeType.STRING -> StringType
@@ -99,12 +109,12 @@ object NativeAttributeKeyTypes {
             AttributeType.BOOLEAN_ARRAY -> BooleanArrayType
             AttributeType.LONG_ARRAY -> LongArrayType
             AttributeType.DOUBLE_ARRAY -> DoubleArrayType
-        } as IMappedAttributeKeyType<T, T>
+        } as IAttributeKeyTypeTemplate<T, T>
     }
 
-    object StringType : IMappedAttributeKeyType<String, String> {
+    object StringType : IAttributeKeyTypeInstance.InstanceType<String, String> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "string")
         )
@@ -113,24 +123,36 @@ object NativeAttributeKeyTypes {
         override val valueStreamCodec: StreamCodec<ByteBuf, String> = ByteBufCodecs.STRING_UTF8
         override val valueType: Class<String> = String::class.java
 
-        override fun canConvertDirectlyFrom(subtype: IMappedAttributeKeyType<*, *>): Boolean {
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *>): Boolean {
             return true
         }
 
-        override fun <R : Any> convertDirectlyFrom(subtype: IMappedAttributeKeyType<R, *>, value: R): String {
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *>, value: R): String {
             return value.toString()
         }
 
         override fun format(value: String): String = value
 
-        fun MappedAttributeKeyValue<*,*>.convertValueToString(): String {
+        fun MappedAttributeKeyValue<*, *>.convertValueToString(): String {
             return convertTo(StringType)!!
+        }
+
+        fun AttributeDataSource.ConstantAttributeData<*>.convertValueToString(): String {
+            return convertValueTo(StringType)!!
+        }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): String {
+            return (tag as StringTag).asString
+        }
+
+        override fun toNbt(value: String): StringTag {
+            return StringTag.valueOf(value)
         }
     }
 
-    object BooleanType : IMappedAttributeKeyType<Boolean, Boolean> {
+    object BooleanType : IAttributeKeyTypeInstance.InstanceType<Boolean, Boolean> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "boolean")
         )
@@ -140,11 +162,19 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<Boolean> = Boolean::class.java
 
         override fun format(value: Boolean): Boolean = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Boolean {
+            return (tag as NumericTag).asByte > 0
+        }
+
+        override fun toNbt(value: Boolean): NumericTag {
+            return ByteTag.valueOf(value)
+        }
     }
 
-    object LongType : IMappedAttributeKeyType<Long, Long> {
+    object LongType : IAttributeKeyTypeInstance.InstanceType<Long, Long> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "long")
         )
@@ -154,11 +184,19 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<Long> = Long::class.java
 
         override fun format(value: Long): Long = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Long {
+            return (tag as NumericTag).asLong
+        }
+
+        override fun toNbt(value: Long): LongTag {
+            return LongTag.valueOf(value)
+        }
     }
 
-    object DoubleType : IMappedAttributeKeyType<Double, Double> {
+    object DoubleType : IAttributeKeyTypeInstance.InstanceType<Double, Double> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "double")
         )
@@ -168,11 +206,19 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<Double> = Double::class.java
 
         override fun format(value: Double): Double = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Double {
+            return (tag as NumericTag).asDouble
+        }
+
+        override fun toNbt(value: Double): DoubleTag {
+            return DoubleTag.valueOf(value)
+        }
     }
 
-    object StringArrayType : IMappedAttributeKeyType<List<String>, List<String>> {
+    object StringArrayType : IAttributeKeyTypeInstance.InstanceType<List<String>, List<String>> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "string_array")
         )
@@ -185,12 +231,24 @@ object NativeAttributeKeyTypes {
             ByteBufCodecs.collection({ if (it == 0) emptyList() else ArrayList(it) }, ByteBufCodecs.STRING_UTF8)
 
         override fun format(value: List<String>): List<String> = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): List<String> {
+            return (tag as ListTag).map { (it as StringTag).asString }
+        }
+
+        override fun toNbt(value: List<String>): ListTag {
+            return ListTag().apply {
+                value.forEach {
+                    add(StringTag.valueOf(it))
+                }
+            }
+        }
     }
 
-    object BooleanArrayType : IMappedAttributeKeyType<List<Boolean>, List<Boolean>>,
+    object BooleanArrayType : IAttributeKeyTypeInstance.InstanceType<List<Boolean>, List<Boolean>>,
             StreamCodec<FriendlyByteBuf, List<Boolean>> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "boolean_array")
         )
@@ -244,11 +302,19 @@ object NativeAttributeKeyTypes {
                 `object`.writeByte(currentByte)
             }
         }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): List<Boolean> {
+            return (tag as ByteArrayTag).map { it.asByte > 0 }
+        }
+
+        override fun toNbt(value: List<Boolean>): Tag {
+            return ByteArrayTag(value.map { if (it) 1 else 0 })
+        }
     }
 
-    object LongArrayType : IMappedAttributeKeyType<List<Long>, List<Long>> {
+    object LongArrayType : IAttributeKeyTypeInstance.InstanceType<List<Long>, List<Long>> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "long_array")
         )
@@ -261,11 +327,19 @@ object NativeAttributeKeyTypes {
             ByteBufCodecs.collection({ if (it == 0) emptyList() else LongArrayList(it) }, ByteBufCodecs.VAR_LONG)
 
         override fun format(value: List<Long>): List<Long> = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): List<Long> {
+            return (tag as LongArrayTag).asLongArray.toList()
+        }
+
+        override fun toNbt(value: List<Long>): LongArrayTag {
+            return LongArrayTag(value)
+        }
     }
 
-    object DoubleArrayType : IMappedAttributeKeyType<List<Double>, List<Double>> {
+    object DoubleArrayType : IAttributeKeyTypeInstance.InstanceType<List<Double>, List<Double>> {
 
-        override val id: ResourceKey<IMappedAttributeKeyType<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "double_array")
         )
@@ -278,5 +352,13 @@ object NativeAttributeKeyTypes {
             ByteBufCodecs.collection({ if (it == 0) emptyList() else DoubleArrayList(it) }, ByteBufCodecs.DOUBLE)
 
         override fun format(value: List<Double>): List<Double> = value
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): List<Double> {
+            return (tag as LongArrayTag).asLongArray.map { Double.fromBits(it) }
+        }
+
+        override fun toNbt(value: List<Double>): Tag {
+            return LongArrayTag(value.map { it.toRawBits() })
+        }
     }
 }

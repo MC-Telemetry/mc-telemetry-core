@@ -1,8 +1,8 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
-import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
+import de.mctelemetry.core.api.observations.IObservationSource
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.RegistryFriendlyByteBuf
@@ -63,13 +63,17 @@ data class ObservationSourceConfiguration(
                 ::Template
             )
 
-            fun loadFromTag(tag: CompoundTag, holderLookupProvider: HolderLookup.Provider): Template? {
+            fun loadFromTag(
+                tag: CompoundTag,
+                holderLookupProvider: HolderLookup.Provider,
+                sourceContext: IObservationSource<*, *>,
+            ): Template? {
                 val name = tag.getString("name")
                 if (name.isBlank()) return null
                 val mappingTag = tag.get("mapping") ?: return Template(name, ObservationAttributeMapping.empty())
                 return Template(
                     instrumentName = name,
-                    mapping = ObservationAttributeMapping.loadFromTag(mappingTag, holderLookupProvider),
+                    mapping = ObservationAttributeMapping.loadFromTag(mappingTag, holderLookupProvider, sourceContext),
                 )
             }
         }
@@ -85,17 +89,19 @@ data class ObservationSourceConfiguration(
             tag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
             instrumentManager: IMutableInstrumentManager?,
+            sourceContext: IObservationSource<*, *>,
         ): ObservationSourceConfiguration? {
             if (tag.isEmpty) return null
-            return Template.loadFromTag(tag, holderLookupProvider)?.resolveOrMock(instrumentManager)
+            return Template.loadFromTag(tag, holderLookupProvider, sourceContext)?.resolveOrMock(instrumentManager)
         }
 
         fun loadDelayedFromTag(
             tag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
+            sourceContext: IObservationSource<*, *>,
         ): (IMutableInstrumentManager?) -> (ObservationSourceConfiguration?) {
             if (tag.isEmpty) return { _ -> null }
-            val template = Template.loadFromTag(tag, holderLookupProvider) ?: return { _ -> null }
+            val template = Template.loadFromTag(tag, holderLookupProvider, sourceContext) ?: return { _ -> null }
             return template::resolveOrMock
         }
 

@@ -1,26 +1,20 @@
 package de.mctelemetry.core
 
 import com.mojang.serialization.Lifecycle
-import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IMappedAttributeKeyType
-import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.blocks.OTelCoreModBlocks
-import de.mctelemetry.core.commands.scrape.CommandScrape
-import de.mctelemetry.core.items.OTelCoreModItems
-import de.mctelemetry.core.commands.metrics.CommandMetrics
-import de.mctelemetry.core.instruments.builtin.BuiltinInstruments
-import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
+import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
+import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
-import de.mctelemetry.core.network.instrumentsync.A2AInstrumentAddedPayload
-import de.mctelemetry.core.network.instrumentsync.A2AInstrumentRemovedPayload
-import de.mctelemetry.core.network.instrumentsync.C2SAllInstrumentRequestPayload
-import de.mctelemetry.core.network.instrumentsync.S2CAllInstrumentsPayload
-import de.mctelemetry.core.network.instrumentsync.S2CReservedNameAddedPayload
-import de.mctelemetry.core.network.instrumentsync.S2CReservedNameRemovedPayload
-import de.mctelemetry.core.network.instrumentsync.SyncSubscriptions
+import de.mctelemetry.core.commands.metrics.CommandMetrics
+import de.mctelemetry.core.commands.scrape.CommandScrape
+import de.mctelemetry.core.instruments.builtin.BuiltinInstruments
+import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
+import de.mctelemetry.core.items.OTelCoreModItems
+import de.mctelemetry.core.network.instrumentsync.*
 import de.mctelemetry.core.network.observations.container.observationrequest.C2SObservationsRequestPayload
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerServer
 import de.mctelemetry.core.network.observations.container.observationrequest.S2CObservationsPayload
@@ -39,13 +33,13 @@ import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.metrics.Meter
 import net.minecraft.core.RegistrationInfo
 import net.minecraft.core.WritableRegistry
-import java.util.function.Supplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
-import net.minecraft.world.item.*
+import net.minecraft.world.item.CreativeModeTab
+import net.minecraft.world.item.ItemStack
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import java.util.Optional
+import java.util.*
 
 object OTelCoreMod {
 
@@ -58,22 +52,15 @@ object OTelCoreMod {
     }
 
     val TABS: DeferredRegister<CreativeModeTab> = DeferredRegister.create(MOD_ID, Registries.CREATIVE_MODE_TAB)
-    val OTEL_TAB: RegistrySupplier<CreativeModeTab>
-
-    init {
-        OTEL_TAB = TABS.register(
-            "mcotelcore_tab",
-            {
-                CreativeTabRegistry.create(
-                    Component.translatable("category.mcotelcore_tab"),
-                    Supplier { ItemStack(OTelCoreModItems.REDSTONE_SCRAPER_BLOCK) }
-                )
-            }
-        )
+    val OTEL_TAB: RegistrySupplier<CreativeModeTab> = TABS.register("mcotelcore_tab")
+    {
+        CreativeTabRegistry.create(
+            Component.translatable("key.mcotelcore.category")
+        ) { ItemStack(OTelCoreModItems.REDSTONE_SCRAPER_BLOCK) }
     }
 
-    fun registerCallbacks() {
 
+    fun registerCallbacks() {
         ServerInstrumentMetaManager.register()
         BuiltinInstruments.register()
         CommandRegistrationEvent.EVENT.register { evt, ctx, _ ->
@@ -94,6 +81,10 @@ object OTelCoreMod {
         C2SObservationsRequestPayload.register()
         C2SObservationSourceSettingsUpdatePayload.register()
         SyncSubscriptions.register()
+
+        if (Platform.getEnvironment() == Env.CLIENT) {
+            KeyBindingManager.register()
+        }
     }
 
     fun registerContent() {
@@ -113,8 +104,8 @@ object OTelCoreMod {
         registerContent()
     }
 
-    fun registerAttributeTypes(registry: WritableRegistry<IMappedAttributeKeyType<*, *>>?) {
-        val attributeTypes: List<IMappedAttributeKeyType<*, *>> =
+    fun registerAttributeTypes(registry: WritableRegistry<IAttributeKeyTypeTemplate<*, *>>?) {
+        val attributeTypes: List<IAttributeKeyTypeTemplate<*, *>> =
             NativeAttributeKeyTypes.ALL + BuiltinAttributeKeyTypes.ALL
         if (registry == null) {
             DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.AttributeTypeMappings).apply {

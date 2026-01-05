@@ -1,15 +1,13 @@
 package de.mctelemetry.core.observations.scrapers.redstone
 
-import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
+import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.invoke
-import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
+import de.mctelemetry.core.api.observations.base.PositionObservationSourceBase
 import net.minecraft.core.BlockPos
-import net.minecraft.core.GlobalPos
+import net.minecraft.core.Direction
 import net.minecraft.core.component.DataComponents
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
@@ -20,61 +18,47 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.LecternBlockEntity
 import net.minecraft.world.level.block.state.BlockState
 
-object RedstoneScraperComparatorObservationSource : IObservationSource.SingleAttribute<BlockEntity, GlobalPos> {
+object RedstoneScraperComparatorObservationSource : PositionObservationSourceBase() {
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.comparator")
     )
 
-    override val contextType: Class<BlockEntity> = BlockEntity::class.java
-
-    private val POS_KEY = BuiltinAttributeKeyTypes.GlobalPosType("pos")
-
-    override val attributeKey: MappedAttributeKeyInfo<GlobalPos, *> = POS_KEY
-
-    override fun observe(
-        context: BlockEntity,
+    context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
+    override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
-        attributes: IMappedAttributeValueLookup.PairLookup<GlobalPos>,
-        unusedAttributes: Set<MappedAttributeKeyInfo<*, *>>,
+        level: Level,
+        position: BlockPos,
+        facing: Direction?,
+        unusedAttributes: Set<AttributeDataSource<*>>
     ) {
-        val level = context.level
-        if (level == null || context.isRemoved) return
-        val scraperPos = context.blockPos
-        if (!(level.isLoaded(scraperPos) && level.shouldTickBlocksAt(scraperPos))) return
-        val facing = context.blockState.getValue(ObservationSourceContainerBlock.FACING)
-        val observationPos = scraperPos.relative(facing)
-        attributes.value = GlobalPos(level.dimension(), observationPos)
-        val state = level.getBlockState(observationPos)
+        val state = level.getBlockState(position)
         if (state.hasAnalogOutputSignal()) {
-
             var analogValue = 0
             var advancedAnalogValue = 0.0
             val server = level.server
             if (server != null) {
                 server.executeBlocking {
-                    analogValue = state.getAnalogOutputSignal(level, observationPos)
+                    analogValue = state.getAnalogOutputSignal(level, position)
                     if (recorder.supportsFloating)
-                        advancedAnalogValue = getAdvancedAnalogValue(level, state, observationPos, analogValue)
+                        advancedAnalogValue = getAdvancedAnalogValue(level, state, position, analogValue)
                 }
             } else {
-                analogValue = state.getAnalogOutputSignal(level, observationPos)
+                analogValue = state.getAnalogOutputSignal(level, position)
                 if (recorder.supportsFloating)
-                    advancedAnalogValue = getAdvancedAnalogValue(level, state, observationPos, analogValue)
+                    advancedAnalogValue = getAdvancedAnalogValue(level, state, position, analogValue)
             }
 
             if (recorder.supportsFloating) {
                 recorder.observePreferred(
                     advancedAnalogValue,
                     analogValue.toLong(),
-                    attributes,
                     this,
                 )
             } else {
                 recorder.observe(
                     analogValue.toLong(),
-                    attributes,
                     this,
                 )
             }
@@ -96,6 +80,7 @@ object RedstoneScraperComparatorObservationSource : IObservationSource.SingleAtt
                     false
                 ), fallback
             )
+
             blockEntity is Container -> getContainerAdvancedAnalogOutput(blockEntity, fallback)
             else -> fallback.toDouble()
         }

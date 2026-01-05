@@ -1,0 +1,91 @@
+<owo-ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/wisp-forest/owo-lib/1.20/owo-ui.xsd">
+    <components>
+        <flow-layout direction="vertical">
+            <children>
+                <flow-layout direction="vertical">
+                    <children>
+                        <label>
+                            <text translate="true">container.mcotelcore.instrument_manager</text>
+                            <color>black</color>
+                            <margins>
+                                <top>6</top>
+                                <bottom>11</bottom>
+                            </margins>
+                        </label>
+
+                        <button id="instrument-create">
+                            <text translate="true">ui.mcotelcore.create</text>
+                            <sizing>
+                                <horizontal method="fill">15</horizontal>
+                            </sizing>
+                            <positioning type="relative">100,0</positioning>
+                        </button>
+
+                        <scroll direction="vertical">
+                            <flow-layout direction="vertical" id="list">
+                                <children>
+                                </children>
+
+                                <padding>
+                                    <all>5</all>
+                                </padding>
+                            </flow-layout>
+
+                            <sizing>
+                                <vertical method="fill">70</vertical>
+                                <horizontal method="fill">60</horizontal>
+                            </sizing>
+
+                            <surface>
+                                <panel-inset/>
+                            </surface>
+                        </scroll>
+                    </children>
+
+                    <horizontal-alignment>left</horizontal-alignment>
+                    <vertical-alignment>center</vertical-alignment>
+
+                    <padding>
+                        <all>10</all>
+                    </padding>
+
+                    <surface>
+                        <panel dark="false"/>
+                    </surface>
+                </flow-layout>
+            </children>
+
+            <horizontal-alignment>center</horizontal-alignment>
+            <vertical-alignment>center</vertical-alignment>
+
+            <surface>
+                <vanilla-translucent/>
+            </surface>
+        </flow-layout>
+    </components>
+    <templates>
+        <template name="list-row">
+            <flow-layout direction="horizontal">
+                <children>
+                    <label id="instrument-name">
+                        <sizing>
+                            <horizontal method="fill">78</horizontal>
+                        </sizing>
+                    </label>
+                    <button id="instrument-delete">
+                        <text translate="true">ui.mcotelcore.delete</text>
+                        <sizing>
+                            <horizontal method="fill">20</horizontal>
+                        </sizing>
+                    </button>
+                </children>
+                <vertical-alignment>center</vertical-alignment>
+                <margins>
+                    <vertical>2</vertical>
+                    <horizontal>2</horizontal>
+                </margins>
+            </flow-layout>
+        </template>
+    </templates>
+</owo-ui>

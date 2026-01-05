@@ -15,6 +15,7 @@ plugins {
 
 val MOD_ID: String = rootProject.property("mod_id").toString()
 val otelVersion: String = rootProject.property("otel_version") as String
+val kobserveVersion: String = rootProject.property("kobserve_version") as String
 val relocatePrefix = rootProject.property("relocate_prefix") as String
 val commonProject: Project = project(":common")
 
@@ -156,6 +157,11 @@ dependencies {
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
     common("io.opentelemetry:opentelemetry-api:$otelVersion")
     shadowBundle("io.opentelemetry:opentelemetry-api:$otelVersion")
+
+    // KObserve
+    api("io.github.pixix4:KObserve:$kobserveVersion")
+    common("io.github.pixix4:KObserve:$kobserveVersion")
+    shadowBundle("io.github.pixix4:KObserve:$kobserveVersion")
 }
 
 tasks.named("configureLaunch") {

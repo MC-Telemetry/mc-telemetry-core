@@ -28,7 +28,9 @@ import de.mctelemetry.core.observations.model.ObservationSourceErrorState.Compan
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.utils.ArgLazy
 import de.mctelemetry.core.utils.Validators
-import de.mctelemetry.core.utils.plus
+import de.mctelemetry.core.utils.closeAllRethrow
+import de.mctelemetry.core.utils.consumeAllCollect
+import de.mctelemetry.core.utils.consumeAllRethrow
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.Attributes
 import net.minecraft.core.BlockPos
@@ -202,36 +204,15 @@ class InstrumentGameTestHelper(
         val completedInstruments = ArrayDeque<AutoCloseable>(observationSourceMap.size)
         val originalConfigurations = ArrayDeque<Pair<ObservationSourceState, ObservationSourceConfiguration?>>()
         gameTestHelper.finalizer(registerFinalizer) {
-            var exceptionAccumulator: Exception? = null
-            do {
-                val (state, config) = originalConfigurations.removeFirstOrNull() ?: break
-                try {
-                    state.configuration = config
-                } catch (ex: Exception) {
-                    exceptionAccumulator += ex
-                }
-            } while (true)
-            if (exceptionAccumulator != null) throw exceptionAccumulator
+            originalConfigurations.consumeAllRethrow { (state, config) ->
+                state.configuration = config
+            }
         }
         return runWithExceptionCleanup(cleanup = {
-            var exceptionAccumulator: Exception? = null
-            do {
-                val (state, config) = originalConfigurations.removeFirstOrNull() ?: break
-                try {
-                    state.configuration = config
-                } catch (ex: Exception) {
-                    exceptionAccumulator += ex
-                }
-            } while (true)
-            do {
-                val instrument = completedInstruments.removeFirstOrNull() ?: break
-                try {
-                    instrument.close()
-                } catch (ex: Exception) {
-                    exceptionAccumulator += ex
-                }
-            } while (true)
-            if (exceptionAccumulator != null) throw exceptionAccumulator
+            var exceptionAccumulator = originalConfigurations.consumeAllCollect { (state, config) ->
+                state.configuration = config
+            }
+            completedInstruments.closeAllRethrow(exceptionAccumulator)
         }) {
             observationSourceMap.mapValues { (baseName, statePairs) ->
                 val shouldUseDouble = useDouble(baseName)
@@ -523,10 +504,14 @@ internal fun <T : Any> GameTestHelper.withConfiguredStartupSequence(
                 val errorStateValue = state.getValue(ObservationSourceContainerBlock.ERROR)
                 if (errorStateValue != ObservationSourceErrorState.Type.Ok) {
                     val problems = entity.observationStatesIfInitialized.orEmpty()
-                        .mapValues { (_, value) ->
-                            value.errorState.withoutWarning(ObservationSourceErrorState.NotConfigured.warnings.single())
-                        }
-                        .filterValues { it != ObservationSourceErrorState.Ok }
+                        .mapNotNull { (source, value) ->
+                            source to when (val errorState = value.errorState) {
+                                ObservationSourceErrorState.NotConfigured,
+                                ObservationSourceErrorState.Configured.Ok,
+                                    -> return@mapNotNull null
+                                else -> errorState as ObservationSourceErrorState.Configured
+                            }
+                        }.toMap()
                     if (problems.isEmpty()) {
                         failC("Unexpected error state without stored errors/warnings: $errorStateValue", blockPos)
                     }

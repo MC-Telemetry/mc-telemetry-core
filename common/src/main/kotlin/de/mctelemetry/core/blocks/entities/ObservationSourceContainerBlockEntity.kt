@@ -113,33 +113,33 @@ abstract class ObservationSourceContainerBlockEntity(
         return updateTag
     }
 
-    override fun getUpdatePacket(): Packet<ClientGamePacketListener?>? {
+    override fun getUpdatePacket(): Packet<ClientGamePacketListener> {
         return ClientboundBlockEntityDataPacket.create(this)
     }
 
     private fun updateState() {
         if (level?.isClientSide == true) return
         val container = _container ?: return
-        var targetState: ObservationSourceErrorState.Type? = null
-        for (state in container.observationStates.values) {
-            targetState = when (state.errorState) {
-                ObservationSourceErrorState.Ok -> {
-                    targetState ?: ObservationSourceErrorState.Type.Ok
+        val targetState: ObservationSourceErrorState.Type =
+            container.observationStates.values.map { it.errorState.type }
+                .fold(ObservationSourceErrorState.Type.NotConfigured) { acc, type ->
+                    when (type) {
+                        ObservationSourceErrorState.Type.NotConfigured -> acc
+                        ObservationSourceErrorState.Type.Ok -> {
+                            if (acc == ObservationSourceErrorState.Type.NotConfigured)
+                                ObservationSourceErrorState.Type.Ok
+                            else
+                                acc
+                        }
+                        ObservationSourceErrorState.Type.Warnings -> {
+                            if (acc != ObservationSourceErrorState.Type.Errors)
+                                ObservationSourceErrorState.Type.Warnings
+                            else
+                                ObservationSourceErrorState.Type.Errors
+                        }
+                        ObservationSourceErrorState.Type.Errors -> ObservationSourceErrorState.Type.Errors
+                    }
                 }
-                is ObservationSourceErrorState.Warnings -> {
-                    if (state.errorState.warnings.singleOrNull() === ObservationSourceErrorState.notConfiguredWarning)
-                        continue
-                    if (targetState == ObservationSourceErrorState.Type.Errors || targetState == null)
-                        continue
-                    ObservationSourceErrorState.Type.Warnings
-                }
-                is ObservationSourceErrorState.Errors -> {
-                    targetState = ObservationSourceErrorState.Type.Errors
-                    break
-                }
-            }
-        }
-        targetState = targetState ?: ObservationSourceErrorState.Type.Warnings
         val currentState = blockState.getValue(ObservationSourceContainerBlock.ERROR)
         if (currentState != targetState) {
             level!!.setBlock(
@@ -262,7 +262,7 @@ abstract class ObservationSourceContainerBlockEntity(
 
         override val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState> by lazy {
             observationSources.mapNotNull {
-                if (!it.contextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
+                if (!it.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
                     return@mapNotNull null
                 @Suppress("UNCHECKED_CAST") // cast indirectly checked by contextType
                 it as IObservationSource<in ObservationSourceContainerBlockEntity, *>
