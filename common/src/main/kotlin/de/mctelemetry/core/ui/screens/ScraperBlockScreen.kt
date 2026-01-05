@@ -52,7 +52,7 @@ class ScraperBlockScreen(
 
     constructor(entity: ObservationSourceContainerBlockEntity) : this(
         entity.globalPosOrThrow, entity.container,
-        Component.translatable("block.${entity.blockState.blockHolder.unwrapKey().get().location().toLanguageKey()}")
+        Component.translatable(entity.blockState.blockHolder.unwrapKey().get().location().toLanguageKey("block"))
     )
 
     private val scope: CoroutineScope = CoroutineScope(Minecraft.getInstance().coroutineDispatcher)

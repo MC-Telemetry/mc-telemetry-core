@@ -1,0 +1,7 @@
+{
+  "values": [
+    "mcotelcore:redstone_scraper.comparator",
+    "mcotelcore:redstone_scraper.direct_power",
+    "mcotelcore:redstone_scraper.power"
+  ]
+}
