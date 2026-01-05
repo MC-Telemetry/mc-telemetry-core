@@ -1,4 +1,13 @@
 {
+  "item.mcotelcore.energy_scraper_block": "Energy Scraper",
+  "block.mcotelcore.energy_scraper_block": "Energy Scraper",
+  "container.mcotelcore.energy_scraper_block": "Energy Scraper",
+  "item.mcotelcore.fluid_scraper_block": "Fluid Scraper",
+  "block.mcotelcore.fluid_scraper_block": "Fluid Scraper",
+  "container.mcotelcore.fluid_scraper_block": "Fluid Scraper",
+  "item.mcotelcore.item_scraper_block": "Item Scraper",
+  "block.mcotelcore.item_scraper_block": "Item Scraper",
+  "container.mcotelcore.item_scraper_block": "Item Scraper",
   "item.mcotelcore.redstone_scraper_block": "Redstone Scraper",
   "block.mcotelcore.redstone_scraper_block": "Redstone Scraper",
   "container.mcotelcore.redstone_scraper_block": "Redstone Scraper",
