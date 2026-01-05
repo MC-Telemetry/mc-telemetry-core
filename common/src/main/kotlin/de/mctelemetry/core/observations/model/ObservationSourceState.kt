@@ -278,14 +278,14 @@ open class ObservationSourceState(
                         )
                 } else {
                     configuredErrorState
-                        .withoutTranslatableError(TranslationKeys.Errors.ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND)
+                        .withoutTranslatableError(TranslationKeys.Errors.OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND)
                         .withError(ObservationSourceErrorState.uninitializedError)
                 }
             } else {
                 errorState = configuredErrorState
                     .withoutError(ObservationSourceErrorState.uninitializedError)
                     .withoutTranslatableError(
-                        TranslationKeys.Errors.ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND
+                        TranslationKeys.Errors.OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND
                     )
             }
         }

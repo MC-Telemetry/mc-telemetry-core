@@ -1,7 +1,5 @@
 package de.mctelemetry.core
 
-import de.mctelemetry.core.TranslationKeys.Commands.COMMANDS_METRIC_DATAPOINT_NOT_FOUND
-import de.mctelemetry.core.TranslationKeys.Commands.COMMANDS_METRIC_NONE
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
@@ -12,51 +10,50 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
-import kotlin.toString
 
 object TranslationKeys {
 
     object Errors {
 
-        const val ERRORS_METRICSACCESSOR_MISSING = "errors.${OTelCoreMod.MOD_ID}.metricsaccessor.missing"
-        const val ERRORS_METRIC_NAME_EMPTY = "errors.${OTelCoreMod.MOD_ID}.metric.name.empty"
-        const val ERRORS_METRIC_NAME_INVALID_CHAR = "errors.${OTelCoreMod.MOD_ID}.metric.name.invalid_char"
-        const val ERRORS_METRIC_NAME_BAD_START = "errors.${OTelCoreMod.MOD_ID}.metric.name.bad_start"
-        const val ERRORS_METRIC_NAME_BAD_END = "errors.${OTelCoreMod.MOD_ID}.metric.name.bad_end"
-        const val ERRORS_METRIC_NAME_DOUBLE_DELIMITER = "errors.${OTelCoreMod.MOD_ID}.metric.name.double_delimiter"
-        const val ERRORS_METRIC_RESPONSE_TYPE_UNEXPECTED =
+        const val METRICSACCESSOR_MISSING = "errors.${OTelCoreMod.MOD_ID}.metricsaccessor.missing"
+        const val METRIC_NAME_EMPTY = "errors.${OTelCoreMod.MOD_ID}.metric.name.empty"
+        const val METRIC_NAME_INVALID_CHAR = "errors.${OTelCoreMod.MOD_ID}.metric.name.invalid_char"
+        const val METRIC_NAME_BAD_START = "errors.${OTelCoreMod.MOD_ID}.metric.name.bad_start"
+        const val METRIC_NAME_BAD_END = "errors.${OTelCoreMod.MOD_ID}.metric.name.bad_end"
+        const val METRIC_NAME_DOUBLE_DELIMITER = "errors.${OTelCoreMod.MOD_ID}.metric.name.double_delimiter"
+        const val METRIC_RESPONSE_TYPE_UNEXPECTED =
             "errors.${OTelCoreMod.MOD_ID}.metric.response_type.unexpected"
-        const val ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING =
+        const val WORLD_INSTRUMENT_MANAGER_MISSING =
             "errors.${OTelCoreMod.MOD_ID}.world.instrument_manager.missing"
-        const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE = "errors.${OTelCoreMod.MOD_ID}.attributes.type.incompatible"
-        const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED =
+        const val ATTRIBUTES_TYPE_INCOMPATIBLE = "errors.${OTelCoreMod.MOD_ID}.attributes.type.incompatible"
+        const val ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED =
             "errors.${OTelCoreMod.MOD_ID}.attributes.type.incompatible.target_detailed"
-        const val ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED =
+        const val ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED =
             "errors.${OTelCoreMod.MOD_ID}.attributes.type.incompatible.detailed"
-        const val ERRORS_ATTRIBUTES_MAPPING_MISSING = "errors.${OTelCoreMod.MOD_ID}.attributes.mapping.missing"
-        const val ERRORS_OBSERVATIONS_UNINITIALIZED = "errors.${OTelCoreMod.MOD_ID}.observations.uninitialized"
-        const val ERRORS_OBSERVATIONS_NOT_CONFIGURED = "errors.${OTelCoreMod.MOD_ID}.observations.not_configured"
-        const val ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND =
+        const val ATTRIBUTES_MAPPING_MISSING = "errors.${OTelCoreMod.MOD_ID}.attributes.mapping.missing"
+        const val OBSERVATIONS_UNINITIALIZED = "errors.${OTelCoreMod.MOD_ID}.observations.uninitialized"
+        const val OBSERVATIONS_NOT_CONFIGURED = "errors.${OTelCoreMod.MOD_ID}.observations.not_configured"
+        const val OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND =
             "errors.${OTelCoreMod.MOD_ID}.observations.configuration.instrument.not_found"
-        const val ERRORS_ENUM_VALUE_NOT_FOUND = "errors.${OTelCoreMod.MOD_ID}.enum.value.not_found"
+        const val ENUM_VALUE_NOT_FOUND = "errors.${OTelCoreMod.MOD_ID}.enum.value.not_found"
 
         fun metricsAccessorMissing(): MutableComponent =
-            Component.translatable(ERRORS_METRICSACCESSOR_MISSING)
+            Component.translatable(METRICSACCESSOR_MISSING)
 
         fun metricNameEmpty(): MutableComponent =
-            Component.translatable(ERRORS_METRIC_NAME_EMPTY)
+            Component.translatable(METRIC_NAME_EMPTY)
 
         fun metricNameInvalidChar(char: String, index: Int): MutableComponent =
-            Component.translatable(ERRORS_METRIC_NAME_INVALID_CHAR, char, index)
+            Component.translatable(METRIC_NAME_INVALID_CHAR, char, index)
 
         fun metricNameBadStart(): MutableComponent =
-            Component.translatable(ERRORS_METRIC_NAME_BAD_START)
+            Component.translatable(METRIC_NAME_BAD_START)
 
         fun metricNameBadEnd(): MutableComponent =
-            Component.translatable(ERRORS_METRIC_NAME_BAD_END)
+            Component.translatable(METRIC_NAME_BAD_END)
 
         fun metricNameDoubleDelimiter(): MutableComponent =
-            Component.translatable(ERRORS_METRIC_NAME_DOUBLE_DELIMITER)
+            Component.translatable(METRIC_NAME_DOUBLE_DELIMITER)
 
         fun metricResponseTypeUnexpected(
             metricName: String,
@@ -64,21 +61,21 @@ object TranslationKeys {
             expectedType: String,
         ): MutableComponent =
             Component.translatable(
-                ERRORS_METRIC_RESPONSE_TYPE_UNEXPECTED,
+                METRIC_RESPONSE_TYPE_UNEXPECTED,
                 metricName,
                 actualType,
                 expectedType,
             )
 
         fun worldInstrumentManagerMissing(): MutableComponent =
-            Component.translatable(ERRORS_WORLD_INSTRUMENT_MANAGER_MISSING)
+            Component.translatable(WORLD_INSTRUMENT_MANAGER_MISSING)
 
         fun attributeTypesIncompatible(
             sourceType: IAttributeKeyTypeTemplate<*, *>,
             targetType: IAttributeKeyTypeTemplate<*, *>,
         ): MutableComponent =
             Component.translatable(
-                ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE,
+                ATTRIBUTES_TYPE_INCOMPATIBLE,
                 sourceType.id.location().toString(),
                 targetType.id.location().toString(),
             )
@@ -88,7 +85,7 @@ object TranslationKeys {
             target: MappedAttributeKeyInfo<*, *>,
         ): MutableComponent =
             Component.translatable(
-                ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED,
+                ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED,
                 source.type.templateType.id.location().toString(),
                 target.templateType.id.location().toString(),
                 target.baseKey.key,
@@ -99,7 +96,7 @@ object TranslationKeys {
             target: MappedAttributeKeyInfo<*, *>,
         ): MutableComponent =
             Component.translatable(
-                ERRORS_ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED,
+                ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED,
                 source.type.templateType.id.location().toString(),
                 target.templateType.id.location().toString(),
                 when (source) {
@@ -121,67 +118,67 @@ object TranslationKeys {
             target: MappedAttributeKeyInfo<*, *>,
         ): MutableComponent =
             Component.translatable(
-                ERRORS_ATTRIBUTES_MAPPING_MISSING,
+                ATTRIBUTES_MAPPING_MISSING,
                 target.baseKey.key,
                 target.templateType.id.location().toString(),
             )
 
         fun observationsUninitialized(): MutableComponent =
-            Component.translatable(ERRORS_OBSERVATIONS_UNINITIALIZED)
+            Component.translatable(OBSERVATIONS_UNINITIALIZED)
 
         fun observationsNotConfigured(): MutableComponent =
-            Component.translatable(ERRORS_OBSERVATIONS_NOT_CONFIGURED)
+            Component.translatable(OBSERVATIONS_NOT_CONFIGURED)
 
         fun observationsConfigurationInstrumentNotFound(name: String): MutableComponent =
-            Component.translatable(ERRORS_OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND, name)
+            Component.translatable(OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND, name)
 
         fun enumValueNotFound(name: String, enumName: String): MutableComponent =
-            Component.translatable(ERRORS_ENUM_VALUE_NOT_FOUND, name, enumName)
+            Component.translatable(ENUM_VALUE_NOT_FOUND, name, enumName)
     }
 
     object Commands {
 
-        const val COMMANDS_METRIC_NAME_NOT_FOUND = "commands.${OTelCoreMod.MOD_ID}.metric.name.not_found"
-        const val COMMANDS_METRIC_DATAPOINT_NOT_FOUND = "commands.${OTelCoreMod.MOD_ID}.metric.datapoint.not_found"
-        const val COMMANDS_METRIC_NONE = "commands.${OTelCoreMod.MOD_ID}.metric.none"
-        const val COMMANDS_MCOTEL_SCRAPE_INFO_SUCCESS = "commands.${OTelCoreMod.MOD_ID}.mcotel.scrape.info.success"
-        const val COMMANDS_MCOTEL_SCRAPE_CARDINALITY_SUCCESS =
+        const val METRIC_NAME_NOT_FOUND = "commands.${OTelCoreMod.MOD_ID}.metric.name.not_found"
+        const val METRIC_DATAPOINT_NOT_FOUND = "commands.${OTelCoreMod.MOD_ID}.metric.datapoint.not_found"
+        const val METRIC_NONE = "commands.${OTelCoreMod.MOD_ID}.metric.none"
+        const val MCOTEL_SCRAPE_INFO_SUCCESS = "commands.${OTelCoreMod.MOD_ID}.mcotel.scrape.info.success"
+        const val MCOTEL_SCRAPE_CARDINALITY_SUCCESS =
             "commands.${OTelCoreMod.MOD_ID}.mcotel.scrape.cardinality.success"
-        const val COMMANDS_MCOTEL_SCRAPE_VALUE_SUCCESS =
+        const val MCOTEL_SCRAPE_VALUE_SUCCESS =
             "commands.${OTelCoreMod.MOD_ID}.mcotel.scrape.value.success"
-        const val COMMANDS_MCOTEL_METRICS_CREATE_SUCCESS =
+        const val MCOTEL_METRICS_CREATE_SUCCESS =
             "commands.${OTelCoreMod.MOD_ID}.mcotel.metrics.create.success"
-        const val COMMANDS_MCOTEL_METRICS_LIST_SUCCESS =
+        const val MCOTEL_METRICS_LIST_SUCCESS =
             "commands.${OTelCoreMod.MOD_ID}.mcotel.metrics.list.success"
-        const val COMMANDS_MCOTEL_METRICS_DELETE_SUCCESS =
+        const val MCOTEL_METRICS_DELETE_SUCCESS =
             "commands.${OTelCoreMod.MOD_ID}.mcotel.metrics.delete.success"
 
         fun metricNameNotFound(name: String): MutableComponent =
-            Component.translatable(COMMANDS_METRIC_NAME_NOT_FOUND, name)
+            Component.translatable(METRIC_NAME_NOT_FOUND, name)
 
         fun metricDatapointNotFound(name: String, labelMap: Map<String, String>): MutableComponent =
-            Component.translatable(COMMANDS_METRIC_DATAPOINT_NOT_FOUND, name, labelMap.toString())
+            Component.translatable(METRIC_DATAPOINT_NOT_FOUND, name, labelMap.toString())
 
         fun noMetrics(): MutableComponent =
-            Component.translatable(COMMANDS_METRIC_NONE)
+            Component.translatable(METRIC_NONE)
 
         fun scrapeInfoSuccess(count: Int): MutableComponent =
-            Component.translatable(COMMANDS_MCOTEL_SCRAPE_INFO_SUCCESS, count)
+            Component.translatable(MCOTEL_SCRAPE_INFO_SUCCESS, count)
 
         fun scrapeCardinalitySuccess(count: Int, totalCardinality: Long): MutableComponent =
-            Component.translatable(COMMANDS_MCOTEL_SCRAPE_CARDINALITY_SUCCESS, count, totalCardinality)
+            Component.translatable(MCOTEL_SCRAPE_CARDINALITY_SUCCESS, count, totalCardinality)
 
         fun scrapeValueSuccess(count: Int, sum: Double): MutableComponent =
-            Component.translatable(COMMANDS_MCOTEL_SCRAPE_VALUE_SUCCESS, count, sum)
+            Component.translatable(MCOTEL_SCRAPE_VALUE_SUCCESS, count, sum)
 
         fun metricsDeleteSuccess(definition: IInstrumentDefinition): MutableComponent =
-            Component.translatable(COMMANDS_MCOTEL_METRICS_DELETE_SUCCESS, definition.name)
+            Component.translatable(MCOTEL_METRICS_DELETE_SUCCESS, definition.name)
 
         fun metricsListSuccess(count: Int, scope: String): MutableComponent =
-            Component.translatable(COMMANDS_MCOTEL_METRICS_LIST_SUCCESS, count, scope)
+            Component.translatable(MCOTEL_METRICS_LIST_SUCCESS, count, scope)
 
         fun metricsCreateSuccess(definition: IInstrumentDefinition): MutableComponent =
-            Component.translatable(COMMANDS_MCOTEL_METRICS_CREATE_SUCCESS, definition.name)
+            Component.translatable(MCOTEL_METRICS_CREATE_SUCCESS, definition.name)
     }
 
     object ObservationSources {
@@ -284,6 +281,9 @@ object TranslationKeys {
         fun previewValues(): MutableComponent =
             Component.translatable(PREVIEW_VALUES)
 
+        fun and(): MutableComponent =
+            Component.translatable(AND)
+
         private fun numbering(singular: Component, plural: Component, count: Int): MutableComponent {
             return if (count <= 0) {
                 Component.empty()
@@ -300,9 +300,6 @@ object TranslationKeys {
                 }
             }
         }
-
-        fun and(): MutableComponent =
-            Component.translatable(AND)
     }
 }
 
