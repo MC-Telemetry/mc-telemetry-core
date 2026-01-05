@@ -15,7 +15,7 @@
                         </label>
 
                         <button id="instrument-manager">
-                            <text>Manager</text>
+                            <text translate="true">ui.mcotelcore.open_instrument_manager</text>
                             <sizing>
                                 <horizontal method="fill">17</horizontal>
                             </sizing>

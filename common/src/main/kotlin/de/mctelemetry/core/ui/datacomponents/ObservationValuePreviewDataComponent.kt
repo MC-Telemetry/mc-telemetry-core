@@ -1,16 +1,19 @@
 package de.mctelemetry.core.ui.datacomponents
 
+import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes.StringType.convertValueToString
 import de.mctelemetry.core.commands.scrape.CommandScrapeCardinality
+import de.mctelemetry.core.join
 import de.mctelemetry.core.network.observations.container.observationrequest.RecordedObservationPoint
 import de.mctelemetry.core.network.observations.container.observationrequest.RecordedObservations
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder
+import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import de.mctelemetry.core.utils.dsl.components.append
 import de.mctelemetry.core.utils.dsl.components.style
 import io.wispforest.owo.ui.component.LabelComponent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.MutableComponent
 
 class ObservationValuePreviewDataComponent(
     private val label: LabelComponent,
@@ -64,35 +67,33 @@ class ObservationValuePreviewDataComponent(
     companion object {
 
         private val pendingValueComponentPair = TextTooltipPair(
-            IComponentDSLBuilder.buildComponent("???") {
+            buildComponent("???") {
                 style {
                     isObfuscated = true
                 }
             },
-            IComponentDSLBuilder.buildComponent("Pending observation-data") //TODO: use translatable component
+            TranslationKeys.Ui.previewPending()
         )
 
         private val noValueComponentPair = TextTooltipPair(
-            IComponentDSLBuilder.buildComponent("∅"),
-            IComponentDSLBuilder.buildComponent("No observations") //TODO: use translatable component
+            buildComponent("∅"),
+            TranslationKeys.Ui.previewNone()
         )
 
         private fun attributeMapListing(
             map: MappedAttributeKeyMap<*>,
             limit: Int = Int.MAX_VALUE,
             initialLinebreak: Boolean = true,
-            baseContent: String = "",
+            baseContent: MutableComponent,
         ): Component {
-            return IComponentDSLBuilder.buildComponent(baseContent) {
+            return buildComponent(baseContent) {
                 var nextSeparator: String = if (initialLinebreak) "\n  - " else "  - "
                 val totalSize = map.size
                 for ((idx, attributeValue) in map.withIndex()) {
                     append(nextSeparator) {
                         nextSeparator = "\n  - "
                         if (idx >= limit) {
-                            append("[")
-                            append((totalSize - idx).toString())
-                            append(" more]") //TODO: use translatable component
+                            +TranslationKeys.Ui.previewMore(totalSize - idx)
                             return@buildComponent
                         }
                         append(attributeValue.info.baseKey.key)
@@ -108,7 +109,7 @@ class ObservationValuePreviewDataComponent(
         }
 
         private fun valueComponent(value: RecordedObservationPoint, details: Boolean = true): Component {
-            return IComponentDSLBuilder.buildComponent {
+            return buildComponent {
                 if (details) {
                     if (value.hasDouble) {
                         append(String.format("%.6fd", value.doubleValue))
@@ -132,18 +133,16 @@ class ObservationValuePreviewDataComponent(
             commonAttributes: Set<MappedAttributeKeyInfo<*, *>>,
             limit: Int = Int.MAX_VALUE,
             initialLinebreak: Boolean = true,
-            baseContent: String = "",
+            baseContent: MutableComponent,
         ): Component {
-            return IComponentDSLBuilder.buildComponent(baseContent) {
+            return buildComponent(baseContent) {
                 var nextSeparator: String = if (initialLinebreak) "\n  - " else "  - "
                 val totalSize = values.size
                 for ((idx, valuePoint) in values.withIndex()) {
                     append(nextSeparator) {
                         nextSeparator = "\n  - "
                         if (idx >= limit) {
-                            append("[")
-                            append((totalSize - idx).toString())
-                            append(" more]") //TODO: use translatable component
+                            +TranslationKeys.Ui.previewMore(totalSize - idx)
                             return@buildComponent
                         }
                         var firstAttributeValue = true
@@ -173,9 +172,9 @@ class ObservationValuePreviewDataComponent(
         private fun directComponentForValue(value: RecordedObservationPoint): TextTooltipPair {
             return TextTooltipPair(
                 textComponent = valueComponent(value, details = false),
-                tooltipComponent = IComponentDSLBuilder.buildComponent {
+                tooltipComponent = buildComponent {
                     append(valueComponent(value, details = true))
-                    append(attributeMapListing(value.attributes))
+                    append(attributeMapListing(value.attributes, baseContent = Component.empty()))
                 }
             )
         }
@@ -186,21 +185,16 @@ class ObservationValuePreviewDataComponent(
             cardinalitiesWithoutCommon: Map<MappedAttributeKeyInfo<*, *>, Int>,
             tooltipValuePointLimit: Int = 10,
         ): TextTooltipPair {
-            val textComponent = IComponentDSLBuilder.buildComponent {
-                append("[")
-                for ((idx, cardinality) in cardinalities.values.withIndex()) {
-                    if (idx != 0) {
-                        append("⨉")
-                    }
-                    append(cardinality.toString())
-                }
-                append("]")
+            val textComponent = buildComponent {
+                +"["
+                +Component.literal("⨉").join(cardinalities.values.map { Component.literal(it.toString()) })
+                +"]"
 
                 style {
                     isItalic = true
                 }
             }
-            val tooltipComponent = IComponentDSLBuilder.buildComponent {
+            val tooltipComponent = buildComponent {
                 val commonAttributeKeys: Set<MappedAttributeKeyInfo<*, *>>
                 if (cardinalitiesWithoutCommon.size != cardinalities.size) {
                     val commonAttributeValues: MappedAttributeKeyMap<*> = MappedAttributeKeyMap(
@@ -210,7 +204,10 @@ class ObservationValuePreviewDataComponent(
                     append(
                         attributeMapListing(
                             commonAttributeValues,
-                            baseContent = "Common attributes:"
+                            baseContent = buildComponent {
+                                +TranslationKeys.Ui.previewCommonAttributes()
+                                +":"
+                            }
                         )
                     )
                     append("\n")
@@ -222,7 +219,10 @@ class ObservationValuePreviewDataComponent(
                         values,
                         commonAttributes = commonAttributeKeys,
                         limit = tooltipValuePointLimit,
-                        baseContent = "Values:"
+                        baseContent = buildComponent {
+                            +TranslationKeys.Ui.previewValues()
+                            +":"
+                        }
                     )
                 )
             }

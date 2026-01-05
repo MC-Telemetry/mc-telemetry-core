@@ -1,5 +1,7 @@
 package de.mctelemetry.core.ui.datacomponents
 
+import de.mctelemetry.core.TranslationKeys
+import de.mctelemetry.core.join
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder
@@ -26,32 +28,30 @@ class ObservationValueStateDataComponent(
         val (textComponent, tooltipComponent) = if (errorState is ObservationSourceErrorState.Configured) {
             val textComponent = when (errorState) {
                 ObservationSourceErrorState.Configured.Ok -> {
-                    IComponentDSLBuilder.buildComponent("Ok")
+                    TranslationKeys.Ui.stateOkay()
                 }
 
                 is ObservationSourceErrorState.Configured.Warnings -> {
-                    IComponentDSLBuilder.buildComponent("Warn")
+                    TranslationKeys.Ui.stateWarning()
                 }
 
                 is ObservationSourceErrorState.Configured.Errors -> {
-                    IComponentDSLBuilder.buildComponent("Err")
+                    TranslationKeys.Ui.stateError()
                 }
             }
 
             val tooltipComponent = if (errorState.errors.isNotEmpty() || errorState.warnings.isNotEmpty()) {
                 listOf(
-                    IComponentDSLBuilder.buildComponent(
-                        andConcat(
-                            numbering("Error", "Errors", errorState.errors.size),
-                            numbering("Warning", "Warnings", errorState.warnings.size)
-                        )
-                    )) +
-                        (errorState.errors + errorState.warnings).map {
-                            IComponentDSLBuilder.buildComponent {
-                                +"• "
-                                +it
-                            }
-                        }
+                    TranslationKeys.Ui.and().join(
+                        TranslationKeys.Ui.stateErrorCount(errorState.errors.size),
+                        TranslationKeys.Ui.stateWarningCount(errorState.warnings.size)
+                    )
+                ) + (errorState.errors + errorState.warnings).map {
+                    IComponentDSLBuilder.buildComponent {
+                        +"• "
+                        +it
+                    }
+                }
             } else {
                 emptyList()
             }
@@ -67,21 +67,6 @@ class ObservationValueStateDataComponent(
 
         label.text(textComponent)
         label.tooltip(tooltipComponent)
-    }
-
-
-    private fun numbering(singular: String, plural: String, count: Int): String {
-        return if (count <= 0) {
-            ""
-        } else if (count == 1) {
-            "1 $singular"
-        } else {
-            "$count $plural"
-        }
-    }
-
-    private fun andConcat(vararg numbers: String): String {
-        return numbers.filter { it.isNotEmpty() }.joinToString(" and ")
     }
 
     private data class TextTooltipPair(

@@ -55,7 +55,7 @@ object OTelCoreMod {
     val OTEL_TAB: RegistrySupplier<CreativeModeTab> = TABS.register("mcotelcore_tab")
     {
         CreativeTabRegistry.create(
-            Component.translatable("category.mcotelcore_tab")
+            Component.translatable("key.mcotelcore.category")
         ) { ItemStack(OTelCoreModItems.REDSTONE_SCRAPER_BLOCK) }
     }
 

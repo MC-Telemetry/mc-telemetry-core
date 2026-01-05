@@ -15,7 +15,7 @@
                         </label>
 
                         <button id="instrument-create">
-                            <text>Create</text>
+                            <text translate="true">ui.mcotelcore.create</text>
                             <sizing>
                                 <horizontal method="fill">15</horizontal>
                             </sizing>
@@ -74,7 +74,7 @@
                         </sizing>
                     </label>
                     <button id="instrument-delete">
-                        <text>Delete</text>
+                        <text translate="true">ui.mcotelcore.delete</text>
                         <sizing>
                             <horizontal method="fill">20</horizontal>
                         </sizing>

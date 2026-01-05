@@ -9,6 +9,7 @@ import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IWorldMutableInstrumentRegistration
+import de.mctelemetry.core.join
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.invoke
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
@@ -18,6 +19,7 @@ import de.mctelemetry.core.utils.dsl.components.style
 import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandBuildContext
 import net.minecraft.commands.CommandSourceStack
+import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.MutableComponent
 import kotlin.with
 
@@ -93,13 +95,7 @@ class CommandMetricsList internal constructor(
             +")"
             if (definition.attributes.isNotEmpty()) {
                 +": "
-                var first = true
-                for (info in definition.attributes.values) {
-                    if (!first)
-                        +", "
-                    first = false
-                    append(attributeInfoComponent(info))
-                }
+                +Component.literal(", ").join(definition.attributes.values.map { attributeInfoComponent(it) })
             }
         }
     }
