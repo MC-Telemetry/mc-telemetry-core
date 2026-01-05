@@ -5,10 +5,11 @@ import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
+import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
-class MemoryObservationRecorder : IObservationRecorder.Unresolved {
+class MemoryObservationRecorder(val mapping: ObservationAttributeMapping) : IObservationRecorder.Unresolved {
 
     private val backingMap: ConcurrentMap<IObservationSource<*, *>, ConcurrentMap<List<MappedAttributeKeyValue<*, *>>, RecordedObservationPoint>> =
         ConcurrentHashMap()
@@ -33,32 +34,14 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
 
     context(attributeStore: IMappedAttributeValueLookup)
     override fun observe(value: Double, source: IObservationSource<*, *>) {
-        val attributeValues = attributeStore.references.mapNotNull {
-            MappedAttributeKeyValue(
-                it.info,
-                try {
-                    attributeStore[it] ?: return@mapNotNull null
-                } catch (_: NoSuchElementException) {
-                    return@mapNotNull null
-                }
-            )
-        }
+        val attributeValues = mapping.resolveAttributesToKeyValues()
         val point = RecordedObservationPoint(MappedAttributeKeyMap(attributeValues), value)
         mapForSource(source)[attributeValues] = point
     }
 
     context(attributeStore: IMappedAttributeValueLookup)
     override fun observe(value: Long, source: IObservationSource<*, *>) {
-        val attributeValues = attributeStore.references.mapNotNull {
-            MappedAttributeKeyValue(
-                it.info,
-                try {
-                    attributeStore[it] ?: return@mapNotNull null
-                } catch (_: NoSuchElementException) {
-                    return@mapNotNull null
-                }
-            )
-        }
+        val attributeValues = mapping.resolveAttributesToKeyValues()
         val point = RecordedObservationPoint(MappedAttributeKeyMap(attributeValues), value)
         mapForSource(source)[attributeValues] = point
     }
@@ -69,16 +52,7 @@ class MemoryObservationRecorder : IObservationRecorder.Unresolved {
         long: Long,
         source: IObservationSource<*, *>,
     ) {
-        val attributeValues = attributeStore.references.mapNotNull {
-            MappedAttributeKeyValue(
-                it.info,
-                try {
-                    attributeStore[it] ?: return@mapNotNull null
-                } catch (_: NoSuchElementException) {
-                    return@mapNotNull null
-                }
-            )
-        }
+        val attributeValues = mapping.resolveAttributesToKeyValues()
         val point = RecordedObservationPoint(
             MappedAttributeKeyMap(attributeValues),
             doubleValue = double,

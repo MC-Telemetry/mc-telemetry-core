@@ -141,6 +141,16 @@ class ObservationAttributeMapping(
         }.build()
     }
 
+    context(attributeStore: IMappedAttributeValueLookup)
+    fun resolveAttributesToKeyValues(): List<MappedAttributeKeyValue<*,*>> {
+        if(mapping.isEmpty()) {
+            return emptyList()
+        }
+        return mapping.entries.map { (metricAttribute, attributeDataSource) ->
+            makeConverted(metricAttribute, attributeDataSource)
+        }
+    }
+
     fun saveToTag(): Tag {
         return ListTag().also { listTag ->
             for ((key, value) in mapping) {
@@ -209,6 +219,16 @@ class ObservationAttributeMapping(
             val metricAttributeKey: AttributeKey<B> = metricAttribute.baseKey
             val value: T = lookupConverted(metricAttributeType, attributeDataSource)
             return builder.put(metricAttributeKey, metricAttributeType.format(value))
+        }
+
+
+        context(attributeStore: IMappedAttributeValueLookup)
+        private fun <T : Any, I : MappedAttributeKeyInfo<T, *>> makeConverted(
+            metricAttribute: I,
+            attributeDataSource: AttributeDataSource<*>,
+        ): MappedAttributeKeyValue<T,I> {
+            val value: T = lookupConverted(metricAttribute.templateType, attributeDataSource)
+            return MappedAttributeKeyValue(metricAttribute, value)
         }
 
         context(attributeStore: IMappedAttributeValueLookup)

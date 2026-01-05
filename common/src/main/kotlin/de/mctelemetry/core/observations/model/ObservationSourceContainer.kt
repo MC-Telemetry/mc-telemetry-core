@@ -191,6 +191,24 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable, ObservationSource
     }
 
     open fun observe(
+        recorderFactory: (ObservationAttributeMapping) -> IObservationRecorder.Unresolved,
+        source: IObservationSource<in SC, *>,
+        forceObservation: Boolean = false,
+    ) {
+        val state = observationStates.getValue(source)
+        withValidMapping(state, forceObservation = forceObservation) { mapping ->
+            doObservation(
+                source,
+                context,
+                createAttributeLookup(),
+                mutableSetOf(),
+                mapping,
+                recorderFactory(mapping),
+            )
+        }
+    }
+
+    open fun observe(
         recorder: IObservationRecorder.Unresolved,
         filter: Set<IObservationSource<in SC, *>>? = null,
         forceObservation: Boolean = false,
@@ -208,6 +226,28 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable, ObservationSource
                     unusedAttributesSet,
                     mapping,
                     recorder,
+                )
+            }
+        }
+    }
+    open fun observe(
+        recorderFactory: (ObservationAttributeMapping) -> IObservationRecorder.Unresolved,
+        filter: Set<IObservationSource<in SC, *>>? = null,
+        forceObservation: Boolean = false,
+    ) {
+        val attributeLookup = createAttributeLookup()
+        val context = context
+        val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
+        for ((source, state) in observationStates) {
+            if (filter != null && source !in filter) continue
+            withValidMapping(state, forceObservation = forceObservation) { mapping ->
+                doObservation(
+                    source,
+                    context,
+                    attributeLookup,
+                    unusedAttributesSet,
+                    mapping,
+                    recorderFactory(mapping),
                 )
             }
         }

@@ -2,7 +2,6 @@ package de.mctelemetry.core.api.attributes
 
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource.Reference.ObservationSourceAttributeReference
-import de.mctelemetry.core.api.attributes.AttributeDataSource.Reference.ObservationSourceAttributeReference.Companion.find
 import de.mctelemetry.core.api.observations.IObservationSource
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
@@ -159,8 +158,9 @@ sealed interface AttributeDataSource<T : Any> {
                 ObservationSourceAttributeReference<*>::source,
                 ByteBufCodecs.STRING_UTF8,
                 ObservationSourceAttributeReference<*>::attributeName,
-                ::find
-            )
+            ) { source, name ->
+                ObservationSourceAttributeReference.find(source,name)
+            }
 
 
         fun <T : Any> MappedAttributeKeyInfo<T, *>.asAttributeDataSlot(): Reference.TypedSlot<T> =
