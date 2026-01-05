@@ -28,6 +28,7 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.sounds.SoundSource
+import net.minecraft.tags.TagKey
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.Block
@@ -37,6 +38,7 @@ import net.minecraft.world.level.block.state.BlockState
 import kotlin.collections.forEach
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
+import kotlin.jvm.optionals.getOrElse
 
 abstract class ObservationSourceContainerBlockEntity(
     blockEntityType: BlockEntityType<*>,
@@ -71,14 +73,18 @@ abstract class ObservationSourceContainerBlockEntity(
 
     abstract override fun getType(): BlockEntityType<out ObservationSourceContainerBlockEntity>
 
+    protected open fun findObservationSources(provider: HolderLookup.Provider): List<IObservationSource<*, *>> {
+        val sourceLookup = provider.lookupOrThrow(OTelCoreModAPI.ObservationSources)
+        val blockKey = blockState.blockHolder.unwrapKey().getOrElse { return emptyList() }
+        val matchingTagEntries = sourceLookup.get(TagKey.create(OTelCoreModAPI.ObservationSources, blockKey.location()))
+            .getOrElse { return emptyList() }!!
+        return matchingTagEntries.map(Holder<IObservationSource<*, *>>::value)
+    }
+
     override fun loadAdditional(compoundTag: CompoundTag, provider: HolderLookup.Provider) {
         super.loadAdditional(compoundTag, provider)
-        val observationSourceLookup = provider.lookupOrThrow(OTelCoreModAPI.ObservationSources)
         val container = this._container ?: (BlockEntityObservationSourceContainer(
-            observationSourceLookup
-                .listElements()
-                .map(Holder<IObservationSource<*, *>>::value)
-                .toList()
+            findObservationSources(provider)
         ).also {
             this._container = it
         })
@@ -131,12 +137,14 @@ abstract class ObservationSourceContainerBlockEntity(
                             else
                                 acc
                         }
+
                         ObservationSourceErrorState.Type.Warnings -> {
                             if (acc != ObservationSourceErrorState.Type.Errors)
                                 ObservationSourceErrorState.Type.Warnings
                             else
                                 ObservationSourceErrorState.Type.Errors
                         }
+
                         ObservationSourceErrorState.Type.Errors -> ObservationSourceErrorState.Type.Errors
                     }
                 }
@@ -174,8 +182,7 @@ abstract class ObservationSourceContainerBlockEntity(
             setupRun = false
         }) {
             val container = this._container ?: (BlockEntityObservationSourceContainer(
-                level.registryAccess()
-                    .registryOrThrow(OTelCoreModAPI.ObservationSources),
+                findObservationSources(level.registryAccess())
             ).also {
                 this._container = it
             })
