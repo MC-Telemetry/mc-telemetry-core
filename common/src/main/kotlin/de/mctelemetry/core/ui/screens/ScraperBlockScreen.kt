@@ -33,13 +33,15 @@ import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.Minecraft
 import net.minecraft.core.GlobalPos
+import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import java.util.concurrent.atomic.AtomicReference
 
 @Environment(EnvType.CLIENT)
-class RedstoneScraperBlockScreen(
+class ScraperBlockScreen(
     private val globalPos: GlobalPos,
     private val observationSourceContainer: ObservationSourceContainer<*>,
+    private val titleComponent: Component
 ) : BaseUIModelScreen<FlowLayout>(
     FlowLayout::class.java, DataSource.asset(
         ResourceLocation.fromNamespaceAndPath(
@@ -48,7 +50,10 @@ class RedstoneScraperBlockScreen(
     )
 ), AutoCloseable {
 
-    constructor(entity: ObservationSourceContainerBlockEntity) : this(entity.globalPosOrThrow, entity.container)
+    constructor(entity: ObservationSourceContainerBlockEntity) : this(
+        entity.globalPosOrThrow, entity.container,
+        Component.translatable("block.${entity.blockState.blockHolder.unwrapKey().get().location().toLanguageKey()}")
+    )
 
     private val scope: CoroutineScope = CoroutineScope(Minecraft.getInstance().coroutineDispatcher)
     private val observationFlowRef: AtomicReference<Deferred<StateFlow<ObservationSourceObservationMap>>?> =
@@ -94,7 +99,7 @@ class RedstoneScraperBlockScreen(
         val observationManager = ObservationRequestManagerClient.getActiveManager()
         val deferred = scope.async(start = CoroutineStart.LAZY) {
             val observationFlow = observationManager.requestObservations(globalPos, 20u)
-            scope.launch(CoroutineName("${RedstoneScraperBlockScreen::class.java.simpleName}(${globalPos.toShortString()}).uiUpdater")) {
+            scope.launch(CoroutineName("${ScraperBlockScreen::class.java.simpleName}(${globalPos.toShortString()}).uiUpdater")) {
                 observationFlow.collect(::acceptObservations)
             }
             observationFlow
@@ -135,6 +140,8 @@ class RedstoneScraperBlockScreen(
     }
 
     override fun build(rootComponent: FlowLayout) {
+        rootComponent.childByIdOrThrow<LabelComponent>("title").text(titleComponent)
+
         val instrumentManagerButton: ButtonComponent = rootComponent.childWidgetByIdOrThrow("instrument-manager")
         instrumentManagerButton.onPress {
             val instrumentManager = ClientInstrumentMetaManager.activeWorldManager ?: return@onPress
@@ -167,7 +174,7 @@ class RedstoneScraperBlockScreen(
 
             val editButton: ButtonComponent = template.childWidgetByIdOrThrow("observation-source-edit")
             editButton.onPress {
-                Minecraft.getInstance().setScreen(RedstoneScraperBlockScreenDetails(this, globalPos, state))
+                Minecraft.getInstance().setScreen(ScraperBlockScreenDetails(this, globalPos, state))
             }
         }
 

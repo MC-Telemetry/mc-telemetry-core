@@ -37,7 +37,7 @@ import net.minecraft.util.CommonColors
 import java.util.regex.PatternSyntaxException
 
 @Environment(EnvType.CLIENT)
-class RedstoneScraperBlockScreenDetails(
+class ScraperBlockScreenDetails(
     val parent: Screen,
     val globalPos: GlobalPos,
     val sourceState: ObservationSourceState,
