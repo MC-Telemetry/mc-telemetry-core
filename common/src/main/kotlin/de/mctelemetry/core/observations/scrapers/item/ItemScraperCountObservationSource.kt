@@ -15,12 +15,12 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.entity.BlockEntity
 
-object ItemScraperItemsObservationSource : PositionObservationSourceBase() {
+object ItemScraperCountObservationSource : PositionObservationSourceBase() {
     val observedItem = BuiltinAttributeKeyTypes.ItemType.createObservationAttributeReference("item")
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
-        ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "item_scraper.items")
+        ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "item_scraper.count")
     )
 
     context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
@@ -31,7 +31,7 @@ object ItemScraperItemsObservationSource : PositionObservationSourceBase() {
         facing: Direction?,
         unusedAttributes: Set<AttributeDataSource<*>>
     ) {
-        val map = ModPlatformProvider.getPlatform().getItemStorageAccessor(level, position, facing).getItemCounts()
+        val map = ModPlatformProvider.getPlatform().getItemStorageAccessor().getItemCounts(level, position, facing)
 
         for ((item, count) in map) {
             observedItem.set(item)

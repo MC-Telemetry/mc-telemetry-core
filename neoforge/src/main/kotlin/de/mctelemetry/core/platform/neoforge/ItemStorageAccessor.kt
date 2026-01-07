@@ -9,19 +9,11 @@ import net.neoforged.neoforge.capabilities.BlockCapabilityCache
 import net.neoforged.neoforge.capabilities.Capabilities
 import net.neoforged.neoforge.items.IItemHandler
 
-class ItemStorageAccessor(level: ServerLevel, position: BlockPos, facing: Direction?) : IItemStorageAccessor {
-    val capCache: BlockCapabilityCache<IItemHandler, Direction?> = BlockCapabilityCache.create(
-        Capabilities.ItemHandler.BLOCK,
-        level,
-        position,
-        facing
-    )
-
-    override fun getItemCounts(): Map<Item, Long>  {
-        val cap = capCache.capability ?: return mapOf()
+object ItemStorageAccessor : IItemStorageAccessor {
+    override fun getItemCounts(level: ServerLevel, position: BlockPos, facing: Direction?): Map<Item, Long> {
+        val cap = level.getCapability(Capabilities.ItemHandler.BLOCK, position, facing) ?: return mapOf()
 
         val map = mutableMapOf<Item, Long>()
-
         for (i in 0..<cap.slots) {
             val itemStack = cap.getStackInSlot(i)
             if (itemStack.isEmpty) {

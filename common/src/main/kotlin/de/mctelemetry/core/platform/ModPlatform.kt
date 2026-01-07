@@ -8,7 +8,7 @@ interface ModPlatform {
 
     fun getPlatformName(): String
 
-    fun getItemStorageAccessor(level: ServerLevel, position: BlockPos, facing: Direction?): IItemStorageAccessor
+    fun getItemStorageAccessor(): IItemStorageAccessor
 
     companion object : ModPlatform by ModPlatformProvider.getPlatform()
 }

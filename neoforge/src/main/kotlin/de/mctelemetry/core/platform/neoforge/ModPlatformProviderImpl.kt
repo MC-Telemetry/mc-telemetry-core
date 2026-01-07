@@ -16,12 +16,6 @@ object ModPlatformProviderImpl {
     object NeoForgeModPlatform : ModPlatform {
         override fun getPlatformName(): String = "NeoForge"
 
-        override fun getItemStorageAccessor(
-            level: ServerLevel,
-            position: BlockPos,
-            facing: Direction?
-        ): IItemStorageAccessor {
-            return ItemStorageAccessor(level, position, facing)
-        }
+        override fun getItemStorageAccessor(): IItemStorageAccessor = ItemStorageAccessor
     }
 }
