@@ -9,7 +9,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
-import net.minecraft.world.level.Level
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.entity.BlockEntity
 
 object RedstoneScraperDirectPowerObservationSource : PositionObservationSourceBase.PositionSideObservationSourceBase() {
@@ -22,7 +22,7 @@ object RedstoneScraperDirectPowerObservationSource : PositionObservationSourceBa
     context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
     override fun observeSide(
         recorder: IObservationRecorder.Unresolved,
-        level: Level,
+        level: ServerLevel,
         position: BlockPos,
         side: Direction,
         unusedAttributes: Set<AttributeDataSource<*>>
