@@ -276,7 +276,7 @@ sealed class ObservationSourceErrorState(val type: Type) {
         }
 
 
-        internal fun Collection<Component>.asException(): Exception {
+        fun Collection<Component>.asException(): Exception {
             val size = this.size
             require(size > 0)
             return map { it.asException() }.reduce { acc, next ->
@@ -285,7 +285,7 @@ sealed class ObservationSourceErrorState(val type: Type) {
             }
         }
 
-        internal fun Component.asException(): Exception {
+        fun Component.asException(): Exception {
             if (this is ExceptionComponent) return this.exception
             if (this is Exception) return this
             return ThrowingComponent(this)

@@ -6,6 +6,15 @@ loom {
     accessWidenerPath.set(project.layout.projectDirectory.file("src/main/resources/mcotelcore.accesswidener"))
 }
 
+sourceSets {
+    val main by getting
+
+    val gametest by creating {
+        compileClasspath += main.output + main.compileClasspath
+        runtimeClasspath += main.output + main.runtimeClasspath
+    }
+}
+
 dependencies {
     // We depend on fabric loader here to use the fabric @Environment annotations and get the mixin dependencies
     // Do NOT use other classes from fabric loader

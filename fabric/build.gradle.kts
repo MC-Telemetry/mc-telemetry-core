@@ -1,6 +1,13 @@
+import com.google.gson.FormattingStyle
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonArray
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
 import net.fabricmc.loom.configuration.ide.RunConfigSettings
+import org.jetbrains.annotations.Contract
 import java.nio.file.Paths
 import java.util.Properties
+import kotlin.io.path.div
 
 plugins {
     id("com.gradleup.shadow")
@@ -10,6 +17,7 @@ val MOD_ID: String = rootProject.property("mod_id").toString()
 val otelVersion: String = rootProject.property("otel_version") as String
 val kobserveVersion: String = rootProject.property("kobserve_version") as String
 val relocatePrefix = rootProject.property("relocate_prefix") as String
+val commonProject: Project = project(":common")
 
 repositories {
     maven {
@@ -25,7 +33,7 @@ architectury {
 loom {
     accessWidenerPath.set(project(":common").loom.accessWidenerPath)
     runs {
-        named("server") {
+        named<RunConfigSettings>("server") {
             vmArg(
                 "-javaagent:${
                     rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar")
@@ -38,7 +46,7 @@ loom {
             )
             runDir = "serverRun"
         }
-        named("client") {
+        named<RunConfigSettings>("client") {
             vmArg(
                 "-javaagent:${
                     rootProject.layout.buildDirectory.file("downloadOTelAgent/opentelemetry-javaagent.jar")
@@ -59,8 +67,22 @@ loom {
                 rootProject.layout.projectDirectory.file("docker.otel.properties")
             )
         })
+        create("clientGameTest", Action<RunConfigSettings> {
+            client()
+            inherit(this@runs["client"])
+            configName = "Minecraft Client + GameTest"
+            source("gametest")
+        })
+        create("clientGameTestWithDocker", Action<RunConfigSettings> {
+            client()
+            inherit(this@runs["clientWithDocker"])
+            configName = "Minecraft Client + GameTest + Docker"
+            source("gametest")
+        })
         create("gameTestServer", Action<RunConfigSettings> {
             server()
+
+            source("gametest")
 
             vmArg(
                 "-javaagent:${
@@ -80,6 +102,20 @@ loom {
 }
 
 tasks["check"].dependsOn("runGameTestServer")
+
+sourceSets {
+    val main by getting
+    val commonGameTest = project(":common").sourceSets["gametest"]
+
+    val gametest by creating {
+        compileClasspath += commonGameTest.output + commonGameTest.compileClasspath + main.output + main.compileClasspath
+        val pathSep = File.separator
+        val blacklistedSepName = "${pathSep}fabric${pathSep}build${pathSep}resources${pathSep}main"
+        runtimeClasspath += commonGameTest.output + /*commonGameTest.runtimeClasspath +*/ (main.output + main.runtimeClasspath).filter {
+            !(it.path.endsWith("\\fabric\\build\\resources\\main") || it.path.endsWith(blacklistedSepName))
+        }
+    }
+}
 
 val common: Configuration by configurations.creating {
     this.isCanBeResolved = true
@@ -237,4 +273,70 @@ tasks.register("configureGameTestServer") {
         }
     }
     tasks["runGameTestServer"].dependsOn(this)
+}
+
+tasks.processResources {
+    val commonProcessResources = project(":common").tasks.processResources.get()
+    dependsOn(commonProcessResources)
+    inputs.dir(commonProcessResources.destinationDir)
+    from(commonProcessResources.destinationDir)
+}
+
+tasks.named<ProcessResources>("processGametestResources") {
+    val resourcesTask = tasks.processResources.get()
+    val commonGameTestResourcesTask = project(":common").tasks.getByName<ProcessResources>("processGametestResources")
+    dependsOn(resourcesTask, commonGameTestResourcesTask)
+    val fabricModJsonFileMainPath = resourcesTask.destinationDir.toPath() / "fabric.mod.json"
+    val fabricModJsonPartialFileGameTestPath = destinationDir.toPath() / "fabric.mod.partial.json"
+    val fabricModJsonFileGameTestPath = destinationDir.toPath() / "fabric.mod.json"
+    inputs.dir(commonGameTestResourcesTask.destinationDir)
+    from(commonGameTestResourcesTask.destinationDir)
+    inputs.dir(resourcesTask.destinationDir)
+    from(resourcesTask.destinationDir)
+    doLast {
+        val gson =
+            GsonBuilder().serializeNulls().disableHtmlEscaping().setFormattingStyle(FormattingStyle.PRETTY).create()
+        val base = file(fabricModJsonFileMainPath).reader(Charsets.UTF_8).use { reader ->
+            gson.fromJson(reader, JsonElement::class.java)
+        }
+        val override = file(fabricModJsonPartialFileGameTestPath).reader(Charsets.UTF_8).use { reader ->
+            gson.fromJson(reader, JsonElement::class.java)
+        }
+        file(fabricModJsonFileGameTestPath).writer(Charsets.UTF_8).use { writer ->
+            gson.toJson(mergeJson(base, override)!!, writer)
+        }
+    }
+}
+
+@Contract("null,null,_->null; !null,_,_->!null; _,!null,_->!null")
+fun mergeJson(base: JsonElement?, override: JsonElement?, path: String = "[root]"): JsonElement? {
+    if (base == null) return override
+    if (override == null) return base
+    return if (base.isJsonObject && override.isJsonObject) {
+        mergeJsonObjects(base.asJsonObject, override.asJsonObject, path)
+    } else if (base.isJsonArray && base.isJsonArray) {
+        mergeJsonArrays(base.asJsonArray, override.asJsonArray)
+    } else {
+        throw IllegalArgumentException("Cannot merge $base and $override at $path")
+    }
+}
+
+private fun mergeJsonArrays(base: JsonArray, override: JsonArray): JsonArray {
+    val result = JsonArray(base.size() + override.size())
+    result.addAll(base)
+    result.addAll(override)
+    return result
+}
+
+private fun mergeJsonObjects(base: JsonObject, override: JsonObject, path: String): JsonObject {
+    val result = JsonObject()
+    val resultMap = result.asMap() // mutable view which syncs changes to underlying JsonObject
+    resultMap.putAll(base.asMap())
+    for ((key, value) in override.entrySet()) {
+        resultMap.merge(key, value) { baseValue, overrideValue ->
+            mergeJson(baseValue, overrideValue, "$path.$key")
+                ?: throw NullPointerException("mergeJson returned null for merging of $baseValue and $overrideValue at $path.$key")
+        }
+    }
+    return result
 }
