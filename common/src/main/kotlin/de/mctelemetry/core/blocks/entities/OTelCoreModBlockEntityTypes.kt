@@ -16,7 +16,7 @@ object OTelCoreModBlockEntityTypes {
         DeferredRegister.create<BlockEntityType<*>>(OTelCoreMod.MOD_ID, Registries.BLOCK_ENTITY_TYPE)
 
 
-    val SCRAPER_BLOCK_ENTITY: RegistrySupplier<BlockEntityType<ScraperBlockEntity>> = registerBlockEntity("redstone_scraper_block") {
+    val SCRAPER_BLOCK_ENTITY: RegistrySupplier<BlockEntityType<ScraperBlockEntity>> = registerBlockEntity("redstone_scraper") {
         BlockEntityType.Builder
             .of(::ScraperBlockEntity, OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get())
             .build(

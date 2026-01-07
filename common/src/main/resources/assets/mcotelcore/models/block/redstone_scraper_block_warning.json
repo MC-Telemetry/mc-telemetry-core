@@ -1,6 +1,0 @@
-{
-  "parent": "mcotelcore:block/redstone_scraper_block",
-  "textures": {
-    "3": "mcotelcore:block/redstone_scraper_block_status_yellow"
-  }
-}

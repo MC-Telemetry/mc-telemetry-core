@@ -1,0 +1,6 @@
+{
+  "parent": "mcotelcore:block/redstone_scraper",
+  "textures": {
+    "3": "mcotelcore:block/redstone_scraper_status_black"
+  }
+}

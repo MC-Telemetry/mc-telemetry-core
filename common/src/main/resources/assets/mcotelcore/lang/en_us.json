@@ -1,7 +1,7 @@
 {
-  "item.mcotelcore.redstone_scraper_block": "Redstone Scraper",
-  "block.mcotelcore.redstone_scraper_block": "Redstone Scraper",
-  "container.mcotelcore.redstone_scraper_block": "Redstone Scraper",
+  "item.mcotelcore.redstone_scraper": "Redstone Scraper",
+  "block.mcotelcore.redstone_scraper": "Redstone Scraper",
+  "container.mcotelcore.redstone_scraper": "Redstone Scraper",
   "container.mcotelcore.instrument_manager": "Instrument Manager",
   "ui.mcotelcore.open_instrument_manager": "Manager",
   "ui.mcotelcore.save": "Save",

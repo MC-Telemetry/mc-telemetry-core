@@ -13,7 +13,7 @@ import java.util.function.Supplier
 object OTelCoreModItems {
     val ITEMS: DeferredRegister<Item> = DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.ITEM);
 
-    val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("redstone_scraper_block") {
+    val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("redstone_scraper") {
         BlockItem(OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(), Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB))
     }
 
