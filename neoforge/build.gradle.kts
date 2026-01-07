@@ -131,17 +131,6 @@ sourceSets {
         runtimeClasspath += commonGameTest.output + /*commonGameTest.runtimeClasspath +*/ (main.output + main.runtimeClasspath).filter {
             !(it.path.endsWith("\\neoforge\\build\\resources\\main") || it.path.endsWith(blacklistedSepName))
         }
-        /*for ((k, v) in mapOf(
-            "commonOutput" to commonGameTest.output,
-            "commonClasspath" to commonGameTest.runtimeClasspath,
-            "mainOutput" to main.output,
-            "mainClasspath" to main.runtimeClasspath,
-            "total" to runtimeClasspath,
-        )) {
-            println(v.files.joinToString(prefix = "$k\n  - ", separator = "\n  - ") {
-                it.path
-            })
-        }*/
     }
 }
 

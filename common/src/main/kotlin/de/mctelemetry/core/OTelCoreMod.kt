@@ -20,6 +20,7 @@ import de.mctelemetry.core.network.observations.container.observationrequest.Obs
 import de.mctelemetry.core.network.observations.container.observationrequest.S2CObservationsPayload
 import de.mctelemetry.core.network.observations.container.settings.C2SObservationSourceSettingsUpdatePayload
 import de.mctelemetry.core.observations.ObservationSources
+import de.mctelemetry.core.platform.ModPlatform
 import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder.Companion.buildCommand
 import de.mctelemetry.core.utils.dsl.commands.unaryPlus
@@ -100,6 +101,7 @@ object OTelCoreMod {
     }
 
     fun init() {
+        logger.info("Hello from {}", ModPlatform.getPlatformName())
         registerCallbacks()
         registerContent()
     }
