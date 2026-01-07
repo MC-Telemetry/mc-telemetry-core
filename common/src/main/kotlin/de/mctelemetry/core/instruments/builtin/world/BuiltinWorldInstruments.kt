@@ -8,7 +8,8 @@ object BuiltinWorldInstruments {
         PlayersOnlineCount,
         PlayersOnlineCapacity,
         PlayersOnlineByName,
-        PlayersOnlineByUUID
+        PlayersOnlineByUUID,
+        PlayersOnlineScoreboard,
     )
 
     fun register() {
