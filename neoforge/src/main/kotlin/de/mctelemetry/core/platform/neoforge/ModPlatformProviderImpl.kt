@@ -1,7 +1,12 @@
 package de.mctelemetry.core.platform.neoforge
 
+import de.mctelemetry.core.platform.IItemStorageAccessor
 import de.mctelemetry.core.platform.ModPlatform
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.server.level.ServerLevel
 
+@Suppress("unused")
 object ModPlatformProviderImpl {
     @JvmStatic
     fun getPlatform(): ModPlatform {
@@ -10,5 +15,13 @@ object ModPlatformProviderImpl {
 
     object NeoForgeModPlatform : ModPlatform {
         override fun getPlatformName(): String = "NeoForge"
+
+        override fun getItemStorageAccessor(
+            level: ServerLevel,
+            position: BlockPos,
+            facing: Direction?
+        ): IItemStorageAccessor {
+            return ItemStorageAccessor(level, position, facing)
+        }
     }
 }

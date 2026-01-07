@@ -1,6 +1,7 @@
 package de.mctelemetry.core.observations
 
 import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.observations.scrapers.item.ItemScraperItemsObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperComparatorObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperDirectPowerObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperPowerObservationSource
@@ -10,5 +11,6 @@ object ObservationSources {
         RedstoneScraperComparatorObservationSource,
         RedstoneScraperDirectPowerObservationSource,
         RedstoneScraperPowerObservationSource,
+        ItemScraperItemsObservationSource,
     )
 }
