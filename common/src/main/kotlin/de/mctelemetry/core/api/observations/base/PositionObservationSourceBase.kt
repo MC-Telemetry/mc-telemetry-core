@@ -7,7 +7,7 @@ import de.mctelemetry.core.api.observations.IObservationRecorder
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
-import net.minecraft.world.level.Level
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 
@@ -18,7 +18,7 @@ abstract class PositionObservationSourceBase : ObservationSourceBase<BlockEntity
 
     open fun getFacingDirection(sourceContext: BlockEntity): Direction? {
         val state = sourceContext.blockState
-        if(state.hasProperty(BlockStateProperties.FACING))
+        if (state.hasProperty(BlockStateProperties.FACING))
             return state.getValue(BlockStateProperties.FACING)
         else if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING))
             return state.getValue(BlockStateProperties.HORIZONTAL_FACING)
@@ -26,18 +26,21 @@ abstract class PositionObservationSourceBase : ObservationSourceBase<BlockEntity
     }
 
     context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
-    final override fun observe(recorder: IObservationRecorder.Unresolved, unusedAttributes: Set<AttributeDataSource<*>>) {
+    final override fun observe(
+        recorder: IObservationRecorder.Unresolved,
+        unusedAttributes: Set<AttributeDataSource<*>>
+    ) {
         val level = sourceContext.level
         if (level == null || sourceContext.isRemoved) return
+        if (level !is ServerLevel) throw IllegalArgumentException("Observed entity is part of a non-server level: $level")
         val scraperPos = sourceContext.blockPos
         if (!(level.isLoaded(scraperPos) && level.shouldTickBlocksAt(scraperPos))) return
         val facing = getFacingDirection(sourceContext)
         val observationPos: BlockPos
-        if(facing != null) {
+        if (facing != null) {
             observationPos = scraperPos.relative(facing)
             if (!level.isLoaded(observationPos)) return
-        }
-        else {
+        } else {
             observationPos = scraperPos
         }
         observedPosition.set(GlobalPos(level.dimension(), observationPos))
@@ -47,7 +50,7 @@ abstract class PositionObservationSourceBase : ObservationSourceBase<BlockEntity
     context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
     abstract fun observePosition(
         recorder: IObservationRecorder.Unresolved,
-        level: Level,
+        level: ServerLevel,
         position: BlockPos,
         facing: Direction?,
         unusedAttributes: Set<AttributeDataSource<*>>
@@ -65,7 +68,7 @@ abstract class PositionObservationSourceBase : ObservationSourceBase<BlockEntity
         context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
         override fun observePosition(
             recorder: IObservationRecorder.Unresolved,
-            level: Level,
+            level: ServerLevel,
             position: BlockPos,
             facing: Direction?,
             unusedAttributes: Set<AttributeDataSource<*>>
@@ -84,7 +87,7 @@ abstract class PositionObservationSourceBase : ObservationSourceBase<BlockEntity
         context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
         open fun observeUnsided(
             recorder: IObservationRecorder.Unresolved,
-            level: Level,
+            level: ServerLevel,
             position: BlockPos,
             facing: Direction?,
             unusedAttributes: Set<AttributeDataSource<*>>
@@ -95,7 +98,7 @@ abstract class PositionObservationSourceBase : ObservationSourceBase<BlockEntity
         context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
         abstract fun observeSide(
             recorder: IObservationRecorder.Unresolved,
-            level: Level,
+            level: ServerLevel,
             position: BlockPos,
             side: Direction,
             unusedAttributes: Set<AttributeDataSource<*>>

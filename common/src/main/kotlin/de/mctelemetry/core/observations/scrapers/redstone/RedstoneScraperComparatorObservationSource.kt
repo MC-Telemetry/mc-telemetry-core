@@ -11,6 +11,7 @@ import net.minecraft.core.Direction
 import net.minecraft.core.component.DataComponents
 import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.Container
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.ChestBlock
@@ -28,7 +29,7 @@ object RedstoneScraperComparatorObservationSource : PositionObservationSourceBas
     context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
     override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
-        level: Level,
+        level: ServerLevel,
         position: BlockPos,
         facing: Direction?,
         unusedAttributes: Set<AttributeDataSource<*>>
@@ -38,13 +39,7 @@ object RedstoneScraperComparatorObservationSource : PositionObservationSourceBas
             var analogValue = 0
             var advancedAnalogValue = 0.0
             val server = level.server
-            if (server != null) {
-                server.executeBlocking {
-                    analogValue = state.getAnalogOutputSignal(level, position)
-                    if (recorder.supportsFloating)
-                        advancedAnalogValue = getAdvancedAnalogValue(level, state, position, analogValue)
-                }
-            } else {
+            server.executeBlocking {
                 analogValue = state.getAnalogOutputSignal(level, position)
                 if (recorder.supportsFloating)
                     advancedAnalogValue = getAdvancedAnalogValue(level, state, position, analogValue)
@@ -65,7 +60,7 @@ object RedstoneScraperComparatorObservationSource : PositionObservationSourceBas
         }
     }
 
-    fun getAdvancedAnalogValue(level: Level, blockState: BlockState, blockPos: BlockPos, fallback: Int): Double {
+    fun getAdvancedAnalogValue(level: ServerLevel, blockState: BlockState, blockPos: BlockPos, fallback: Int): Double {
         if (!blockState.hasBlockEntity()) return fallback.toDouble()
         val blockEntity = level.getChunkAt(blockPos).getBlockEntity(blockPos) ?: return fallback.toDouble()
         val block = blockState.block
