@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "mcotelcore:item/fluid_scraper_block"
+    "model": "mcotelcore:item/fluid_scraper"
   }
 }

@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "mcotelcore:item/item_scraper_block"
+    "model": "mcotelcore:item/energy_scraper"
   }
 }

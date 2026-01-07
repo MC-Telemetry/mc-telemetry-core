@@ -2,11 +2,11 @@
 	"format_version": "1.9.0",
 	"credit": "Made with Blockbench",
 	"textures": {
-		"0": "mcotelcore:block/fluid_scraper_block_base",
-		"1": "mcotelcore:block/fluid_scraper_block_frame",
-		"2": "mcotelcore:block/fluid_scraper_block_core",
-		"3": "mcotelcore:block/scraper_block_status_green",
-		"particle": "mcotelcore:block/fluid_scraper_block_base"
+		"0": "mcotelcore:block/energy_scraper_base",
+		"1": "mcotelcore:block/energy_scraper_frame",
+		"2": "mcotelcore:block/energy_scraper_core",
+		"3": "mcotelcore:block/scraper_status_green",
+		"particle": "mcotelcore:block/energy_scraper_base"
 	},
 	"elements": [
 		{
