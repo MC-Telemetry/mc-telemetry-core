@@ -15,5 +15,8 @@ object BuiltinPlayerInstruments {
         PlayerFoodInstruments.PlayerExhaustionInstrument,
         PlayerHealthInstruments.PlayerHealthInstrument,
         PlayerHealthInstruments.PlayerMaxHealthInstrument,
+        PlayerExperienceInstruments.PlayerExperienceLevelInstrument,
+        PlayerExperienceInstruments.PlayerTotalExperienceInstrument,
+        PlayerExperienceInstruments.PlayerScoreInstrument,
     )
 }
