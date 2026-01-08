@@ -9,6 +9,7 @@ object BuiltinWorldInstruments {
     val worldInstruments: List<WorldInstrumentBase<*>> = listOf<WorldInstrumentBase<*>>(
         PlayersOnlineCountInstrument,
         PlayersOnlineCapacityInstrument,
+        WorldTickCountInstrument,
     ) + BuiltinLevelInstruments.levelInstruments + BuiltinPlayerInstruments.playerInstruments
 
     fun register() {
