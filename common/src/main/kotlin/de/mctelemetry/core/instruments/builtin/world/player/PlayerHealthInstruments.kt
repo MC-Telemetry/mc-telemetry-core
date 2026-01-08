@@ -9,7 +9,7 @@ import net.minecraft.server.level.ServerPlayer
 object PlayerHealthInstruments {
 
     object PlayerHealthInstrument : PlayerInstrumentBase.Simple(
-        name = "game.title.minecraft.player.health.current",
+        name = "game.player.health.current",
         supportsFloating = true,
     ) {
 
@@ -22,7 +22,7 @@ object PlayerHealthInstruments {
     }
 
     object PlayerMaxHealthInstrument : PlayerInstrumentBase.Simple(
-        name = "game.title.minecraft.player.health.max",
+        name = "game.player.health.max",
         supportsFloating = true,
     ) {
 

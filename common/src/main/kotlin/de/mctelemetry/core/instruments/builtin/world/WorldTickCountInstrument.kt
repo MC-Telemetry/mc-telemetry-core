@@ -6,7 +6,7 @@ import de.mctelemetry.core.utils.observe
 import net.minecraft.server.MinecraftServer
 
 object WorldTickCountInstrument : WorldInstrumentBase.Simple(
-    name = "game.server.world.tick_count",
+    name = "game.title.minecraft.world.tick_count",
     supportsFloating = false,
 ) {
 
