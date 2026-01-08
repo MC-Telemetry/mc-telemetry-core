@@ -35,12 +35,10 @@ loom {
                 neoforgeBuildClasses / "kotlin" / "main",
                 neoforgeBuildClasses / "java" / "gametest",
                 neoforgeBuildClasses / "kotlin" / "gametest",
-//                commonBuildClasses / "java" / "main",
-//                commonBuildClasses / "kotlin" / "main",
                 commonBuildClasses / "java" / "gametest",
                 commonBuildClasses / "kotlin" / "gametest",
                 project.layout.projectDirectory.dir("out").asFile.toPath() / "production" / "classes",
-            ).joinToString(separator = ";") {
+            ).joinToString(separator = File.pathSeparator) {
                 "gametest%%${it.absolutePathString()}"
             }
         }
