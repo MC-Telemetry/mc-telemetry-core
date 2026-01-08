@@ -8,18 +8,21 @@ import net.neoforged.neoforge.capabilities.Capabilities
 
 object EnergyStorageAccessor : IEnergyStorageAccessor {
     override fun getEnergyAmount(level: ServerLevel, position: BlockPos, facing: Direction?): Long {
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         val cap = level.getCapability(Capabilities.EnergyStorage.BLOCK, position, facing) ?: return 0
 
         return cap.energyStored.toLong()
     }
 
     override fun getEnergyCapacity(level: ServerLevel, position: BlockPos, facing: Direction?): Long {
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         val cap = level.getCapability(Capabilities.EnergyStorage.BLOCK, position, facing) ?: return 0
 
         return cap.maxEnergyStored.toLong()
     }
 
     override fun getFillRatio(level: ServerLevel, position: BlockPos, facing: Direction?): Double {
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         val cap = level.getCapability(Capabilities.EnergyStorage.BLOCK, position, facing) ?: return 0.0
 
         return cap.energyStored.toDouble() / cap.maxEnergyStored.toDouble()

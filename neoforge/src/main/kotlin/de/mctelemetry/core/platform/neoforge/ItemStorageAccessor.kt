@@ -9,6 +9,7 @@ import net.neoforged.neoforge.capabilities.Capabilities
 
 object ItemStorageAccessor : IItemStorageAccessor {
     override fun getItemAmounts(level: ServerLevel, position: BlockPos, facing: Direction?): Map<Item, Long> {
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         val cap = level.getCapability(Capabilities.ItemHandler.BLOCK, position, facing) ?: return mapOf()
 
         val map = mutableMapOf<Item, Long>()
@@ -25,6 +26,7 @@ object ItemStorageAccessor : IItemStorageAccessor {
     }
 
     override fun getFillRatio(level: ServerLevel, position: BlockPos, facing: Direction?): Double {
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         val cap = level.getCapability(Capabilities.ItemHandler.BLOCK, position, facing) ?: return 0.0
 
         var count = 0
@@ -38,7 +40,8 @@ object ItemStorageAccessor : IItemStorageAccessor {
             }
 
             val limit = cap.getSlotLimit(i)
-            val stackSize = if (limit == 99) stack.maxStackSize.toDouble() else ((limit.toDouble() / 64.0) * stack.maxStackSize.toDouble())
+            val stackSize =
+                if (limit == 99) stack.maxStackSize.toDouble() else ((limit.toDouble() / 64.0) * stack.maxStackSize.toDouble())
             fillRatio += stack.count.toDouble() / stackSize
         }
 

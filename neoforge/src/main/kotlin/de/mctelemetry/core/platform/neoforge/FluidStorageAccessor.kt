@@ -9,6 +9,7 @@ import net.neoforged.neoforge.capabilities.Capabilities
 
 object FluidStorageAccessor : IFluidStorageAccessor {
     override fun getFluidAmounts(level: ServerLevel, position: BlockPos, facing: Direction?): Map<Fluid, Long> {
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         val cap = level.getCapability(Capabilities.FluidHandler.BLOCK, position, facing) ?: return mapOf()
 
         val map = mutableMapOf<Fluid, Long>()
@@ -25,6 +26,7 @@ object FluidStorageAccessor : IFluidStorageAccessor {
     }
 
     override fun getFillRatio(level: ServerLevel, position: BlockPos, facing: Direction?): Double {
+        @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS")
         val cap = level.getCapability(Capabilities.FluidHandler.BLOCK, position, facing) ?: return 0.0
 
         var count = 0
