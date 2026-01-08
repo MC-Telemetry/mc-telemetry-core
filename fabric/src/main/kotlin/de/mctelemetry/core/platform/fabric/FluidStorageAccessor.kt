@@ -1,31 +1,30 @@
 package de.mctelemetry.core.platform.fabric
 
-import de.mctelemetry.core.platform.IItemStorageAccessor
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants
-import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage
+import de.mctelemetry.core.platform.IFluidStorageAccessor
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
-import net.minecraft.world.item.Item
+import net.minecraft.world.level.material.Fluid
 
-object ItemStorageAccessor : IItemStorageAccessor {
-    override fun getItemAmounts(level: ServerLevel, position: BlockPos, facing: Direction?): Map<Item, Long> {
-        val storage = ItemStorage.SIDED.find(level, position, facing) ?: return mapOf()
+object FluidStorageAccessor : IFluidStorageAccessor {
+    override fun getFluidAmounts(level: ServerLevel, position: BlockPos, facing: Direction?): Map<Fluid, Long> {
+        val storage = FluidStorage.SIDED.find(level, position, facing) ?: return mapOf()
 
-        val map = mutableMapOf<Item, Long>()
+        val map = mutableMapOf<Fluid, Long>()
         for (view in storage) {
             if (view.isResourceBlank) {
                 continue
             }
 
-            map.merge(view.resource.item, view.amount, Long::plus)
+            map.merge(view.resource.fluid, view.amount, Long::plus)
         }
 
         return map
     }
 
     override fun getFillRatio(level: ServerLevel, position: BlockPos, facing: Direction?): Double {
-        val storage = ItemStorage.SIDED.find(level, position, facing) ?: return 0.0
+        val storage = FluidStorage.SIDED.find(level, position, facing) ?: return 0.0
 
         var count = 0
         var fillRatio = 0.0

@@ -1,8 +1,7 @@
-package de.mctelemetry.core.observations.scrapers.item
+package de.mctelemetry.core.observations.scrapers.energy
 
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
@@ -15,12 +14,10 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.entity.BlockEntity
 
-object ItemScraperCountObservationSource : PositionObservationSourceBase() {
-    val observedItem = BuiltinAttributeKeyTypes.ItemType.createObservationAttributeReference("item")
-
+object EnergyScraperCapacityObservationSource : PositionObservationSourceBase() {
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
-        ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "item_scraper.count")
+        ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "energy_scraper.capacity")
     )
 
     context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
@@ -31,11 +28,11 @@ object ItemScraperCountObservationSource : PositionObservationSourceBase() {
         facing: Direction?,
         unusedAttributes: Set<AttributeDataSource<*>>
     ) {
-        val map = ModPlatformProvider.getPlatform().getItemStorageAccessor().getItemCounts(level, position, facing)
-
-        for ((item, count) in map) {
-            observedItem.set(item)
-            recorder.observe(count, this)
+        var capacity = 0L
+        level.server.executeBlocking {
+            capacity = ModPlatformProvider.getPlatform().getEnergyStorageAccessor().getEnergyCapacity(level, position, facing)
         }
+
+        recorder.observe(capacity, this)
     }
 }

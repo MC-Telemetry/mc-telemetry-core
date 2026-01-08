@@ -5,7 +5,8 @@ import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.item.Item
 
-interface IItemStorageAccessor {
-    fun getItemAmounts(level: ServerLevel, position: BlockPos, facing: Direction?): Map<Item, Long>
+interface IEnergyStorageAccessor {
+    fun getEnergyAmount(level: ServerLevel, position: BlockPos, facing: Direction?): Long
+    fun getEnergyCapacity(level: ServerLevel, position: BlockPos, facing: Direction?): Long
     fun getFillRatio(level: ServerLevel, position: BlockPos, facing: Direction?): Double
 }

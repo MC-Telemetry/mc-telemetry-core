@@ -1,5 +1,7 @@
 package de.mctelemetry.core.platform.neoforge
 
+import de.mctelemetry.core.platform.IEnergyStorageAccessor
+import de.mctelemetry.core.platform.IFluidStorageAccessor
 import de.mctelemetry.core.platform.IItemStorageAccessor
 import de.mctelemetry.core.platform.ModPlatform
 import net.minecraft.core.BlockPos
@@ -17,5 +19,7 @@ object ModPlatformProviderImpl {
         override fun getPlatformName(): String = "NeoForge"
 
         override fun getItemStorageAccessor(): IItemStorageAccessor = ItemStorageAccessor
+        override fun getFluidStorageAccessor(): IFluidStorageAccessor = FluidStorageAccessor
+        override fun getEnergyStorageAccessor(): IEnergyStorageAccessor = EnergyStorageAccessor
     }
 }

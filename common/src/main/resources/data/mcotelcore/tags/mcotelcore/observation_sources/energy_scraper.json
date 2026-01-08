@@ -1,0 +1,7 @@
+{
+  "values": [
+    "mcotelcore:energy_scraper.amount",
+    "mcotelcore:energy_scraper.capacity",
+    "mcotelcore:energy_scraper.fill_ratio"
+  ]
+}
