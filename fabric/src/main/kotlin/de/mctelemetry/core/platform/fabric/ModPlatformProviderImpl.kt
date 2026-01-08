@@ -1,7 +1,11 @@
 package de.mctelemetry.core.platform.fabric
 
+import de.mctelemetry.core.platform.IEnergyStorageAccessor
+import de.mctelemetry.core.platform.IFluidStorageAccessor
+import de.mctelemetry.core.platform.IItemStorageAccessor
 import de.mctelemetry.core.platform.ModPlatform
 
+@Suppress("unused")
 object ModPlatformProviderImpl {
     @JvmStatic
     fun getPlatform(): ModPlatform {
@@ -10,5 +14,9 @@ object ModPlatformProviderImpl {
 
     object FabricModPlatform : ModPlatform {
         override fun getPlatformName(): String = "Fabric"
+
+        override fun getItemStorageAccessor(): IItemStorageAccessor = ItemStorageAccessor
+        override fun getFluidStorageAccessor(): IFluidStorageAccessor = FluidStorageAccessor
+        override fun getEnergyStorageAccessor(): IEnergyStorageAccessor = EnergyStorageAccessor
     }
 }

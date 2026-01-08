@@ -148,6 +148,7 @@ dependencies {
 
     // Fabric Kotlin
     modImplementation("net.fabricmc:fabric-language-kotlin:${rootProject.property("fabric_kotlin_version")}")
+    include(modImplementation("teamreborn:energy:4.1.0")!!)
 
     // owo-lib/oωo-lib
     modImplementation("io.wispforest:owo-lib:${rootProject.property("owo_fabric_version")}")

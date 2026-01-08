@@ -1,0 +1,6 @@
+{
+  "parent": "mcotelcore:block/energy_scraper",
+  "textures": {
+    "3": "mcotelcore:block/scraper_status_yellow"
+  }
+}

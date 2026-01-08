@@ -5,8 +5,7 @@
             <children>
                 <flow-layout direction="vertical">
                     <children>
-                        <label>
-                            <text translate="true">container.mcotelcore.redstone_scraper</text>
+                        <label id="title">
                             <color>black</color>
                             <margins>
                                 <top>6</top>

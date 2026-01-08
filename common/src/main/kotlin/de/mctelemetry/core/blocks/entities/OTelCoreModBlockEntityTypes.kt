@@ -11,19 +11,24 @@ import java.util.function.Supplier
 
 object OTelCoreModBlockEntityTypes {
 
-    private val BLOCK_ENTITIES
-            : DeferredRegister<BlockEntityType<*>> =
-        DeferredRegister.create<BlockEntityType<*>>(OTelCoreMod.MOD_ID, Registries.BLOCK_ENTITY_TYPE)
+    private val BLOCK_ENTITIES: DeferredRegister<BlockEntityType<*>> =
+        DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.BLOCK_ENTITY_TYPE)
 
-
-    val SCRAPER_BLOCK_ENTITY: RegistrySupplier<BlockEntityType<ScraperBlockEntity>> = registerBlockEntity("redstone_scraper") {
-        BlockEntityType.Builder
-            .of(::ScraperBlockEntity, OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get())
-            .build(
-                @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS") // null is actually acceptable here
-                null
-            )
-    }
+    val SCRAPER_BLOCK_ENTITY: RegistrySupplier<BlockEntityType<ScraperBlockEntity>> =
+        registerBlockEntity("scraper") {
+            BlockEntityType.Builder
+                .of(
+                    ::ScraperBlockEntity,
+                    OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(),
+                    OTelCoreModBlocks.ITEM_SCRAPER_BLOCK.get(),
+                    OTelCoreModBlocks.FLUID_SCRAPER_BLOCK.get(),
+                    OTelCoreModBlocks.ENERGY_SCRAPER_BLOCK.get()
+                )
+                .build(
+                    @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS") // null is actually acceptable here
+                    null
+                )
+        }
 
     fun init() {
         BLOCK_ENTITIES.register()

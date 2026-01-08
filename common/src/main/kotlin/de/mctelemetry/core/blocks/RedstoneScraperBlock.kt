@@ -11,7 +11,6 @@ class RedstoneScraperBlock(properties: Properties) : ScraperBlock(properties.noO
 
     companion object {
         val CODEC: MapCodec<ObservationSourceContainerBlock> = simpleCodec(::RedstoneScraperBlock)
-
     }
 
 }

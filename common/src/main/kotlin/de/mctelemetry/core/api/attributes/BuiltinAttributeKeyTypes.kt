@@ -20,6 +20,7 @@ import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.Item
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.material.Fluid
 import java.util.UUID
 
 object BuiltinAttributeKeyTypes {
@@ -28,6 +29,7 @@ object BuiltinAttributeKeyTypes {
         BlockPosType,
         GlobalPosType,
         ItemType,
+        FluidType,
         DirectionType,
         UUIDType,
     )
@@ -191,6 +193,43 @@ object BuiltinAttributeKeyTypes {
         }
 
         override fun toNbt(value: Item): Tag {
+            return StringTag.valueOf(
+                value
+                    .`arch$holder`()
+                    .unwrapKey()
+                    .orElseThrow()
+                    .location()
+                    .toString()
+            )
+        }
+    }
+
+    object FluidType : IAttributeKeyTypeInstance.InstanceType<Fluid, String> {
+
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
+            OTelCoreModAPI.AttributeTypeMappings,
+            ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "fluid")
+        )
+
+        override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
+        override val valueStreamCodec: StreamCodec<RegistryFriendlyByteBuf, Fluid> =
+            ByteBufCodecs.registry(Registries.FLUID)
+        override val valueType: Class<Fluid> = Fluid::class.java
+
+        override fun format(value: Fluid): String {
+            val key = value.`arch$holder`().unwrapKey().orElseThrow()
+            return key.location().toString()
+        }
+
+        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Fluid {
+            val resourceLocation = (tag as StringTag).asString
+
+            return lookupProvider.lookupOrThrow(Registries.FLUID).getOrThrow(
+                ResourceKey.create(Registries.FLUID, ResourceLocation.parse(resourceLocation))
+            ).value()
+        }
+
+        override fun toNbt(value: Fluid): Tag {
             return StringTag.valueOf(
                 value
                     .`arch$holder`()
