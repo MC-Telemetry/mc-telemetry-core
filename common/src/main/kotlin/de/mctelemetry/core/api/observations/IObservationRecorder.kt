@@ -5,9 +5,9 @@ import io.opentelemetry.api.common.Attributes
 
 sealed interface IObservationRecorder {
 
-    interface Unresolved : IObservationRecorder {
+    val supportsFloating: Boolean
 
-        val supportsFloating: Boolean
+    interface Unresolved : IObservationRecorder {
 
         context(attributes: IMappedAttributeValueLookup)
         fun observe(value: Long, source: IObservationSource<*, *>)
@@ -22,11 +22,38 @@ sealed interface IObservationRecorder {
         else observe(long, source)
 
         fun onNewSource(source: IObservationSource<*, *>) {}
+
+        interface Sourceless: Unresolved {
+            context(attributes: IMappedAttributeValueLookup)
+            fun observe(value: Long)
+            context(attributes: IMappedAttributeValueLookup)
+            fun observe(value: Double)
+            context(attributes: IMappedAttributeValueLookup)
+            fun observePreferred(
+                double: Double,
+                long: Long,
+            ) = if (supportsFloating) observe(double)
+            else observe(long)
+
+            context(attributes: IMappedAttributeValueLookup)
+            override fun observe(value: Long, source: IObservationSource<*, *>) {
+                observe(value)
+            }
+
+            context(attributes: IMappedAttributeValueLookup)
+            override fun observe(value: Double, source: IObservationSource<*, *>) {
+                observe(value)
+            }
+
+            context(attributes: IMappedAttributeValueLookup)
+            override fun observePreferred(double: Double, long: Long, source: IObservationSource<*, *>) {
+                observePreferred(double, long)
+            }
+        }
     }
 
     interface Resolved : IObservationRecorder {
 
-        val supportsFloating: Boolean
         fun observe(value: Long, attributes: Attributes, source: IObservationSource<*, *>? = null)
         fun observe(value: Double, attributes: Attributes, source: IObservationSource<*, *>? = null)
         fun observePreferred(

@@ -18,6 +18,8 @@ import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.codec.StreamCodec
 import org.intellij.lang.annotations.MagicConstant
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.collections.component1
+import kotlin.collections.component2
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
@@ -208,6 +210,21 @@ class ObservationAttributeMapping(
                     VALIDATION_FLAG_TARGET_ATTRIBUTES
 
         //private val comparator: Comparator<MappedAttributeKeyInfo<*, *>> = Comparator.comparing { it.baseKey.key }
+
+
+        context(attributeStore: IMappedAttributeValueLookup)
+        fun resolveAttributesUnmapped(): Attributes {
+            return attributeStore.references.fold(Attributes.builder()) { builder, reference ->
+                addConverted(reference.info,reference, builder)
+            }.build()
+        }
+
+        context(attributeStore: IMappedAttributeValueLookup)
+        fun resolveAttributesUnmappedToKeyValues(): List<MappedAttributeKeyValue<*,*>> {
+            return attributeStore.references.map { reference ->
+                makeConverted(reference.info, reference)
+            }
+        }
 
         context(attributeStore: IMappedAttributeValueLookup)
         private fun <T : Any, B : Any> addConverted(

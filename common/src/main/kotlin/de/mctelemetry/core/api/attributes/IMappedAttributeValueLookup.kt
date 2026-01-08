@@ -1,5 +1,6 @@
 package de.mctelemetry.core.api.attributes
 
+import kotlin.collections.associateWithTo
 import kotlin.collections.mutableMapOf
 
 interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
@@ -88,6 +89,14 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
 
             @JvmName("newFromReferences")
             operator fun invoke(
+                data: Collection<AttributeDataSource.Reference<*>>,
+                parent: IMappedAttributeValueLookup = empty(),
+            ) = MapLookup(data.associateWithTo(mutableMapOf()) {
+                null
+            }, parent)
+
+            @JvmName("newFromReferences")
+            operator fun invoke(
                 data: Map<AttributeDataSource.Reference<*>, Any?>,
                 parent: IMappedAttributeValueLookup = empty(),
             ) = MapLookup(data.also {
@@ -98,6 +107,14 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
                     }
                 }
             }.toMutableMap(), parent)
+
+            @JvmName("newFromAttributeKeyInfos")
+            operator fun invoke(
+                data: Collection<MappedAttributeKeyInfo<*, *>>,
+                parent: IMappedAttributeValueLookup = empty(),
+            ) = MapLookup(data.associateTo(mutableMapOf()) {
+                AttributeDataSource.Reference.TypedSlot(it) to null
+            }, parent)
 
             @JvmName("newFromAttributeKeyInfos")
             operator fun invoke(

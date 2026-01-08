@@ -33,7 +33,7 @@ interface IObservationSource<SC, AS : IMappedAttributeValueLookup> {
                 parent
             else
                 IMappedAttributeValueLookup.MapLookup(
-                    data = ownAttributes.references.associateWith { null },
+                    data = ownAttributes.references,
                     parent = parent
                 )
         }
@@ -46,7 +46,7 @@ interface IObservationSource<SC, AS : IMappedAttributeValueLookup> {
             parent: IMappedAttributeValueLookup,
         ): IMappedAttributeValueLookup.MapLookup {
             return IMappedAttributeValueLookup.MapLookup(
-                data = this.attributes.references.associateWith { null },
+                data = this.attributes.references,
                 parent = parent
             )
         }

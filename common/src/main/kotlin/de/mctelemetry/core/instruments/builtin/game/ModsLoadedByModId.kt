@@ -1,23 +1,24 @@
 package de.mctelemetry.core.instruments.builtin.game
 
-import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
-import de.mctelemetry.core.api.instruments.manager.gaugeInstrument
+import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
+import de.mctelemetry.core.api.observations.IObservationRecorder
 import dev.architectury.platform.Platform
-import io.opentelemetry.api.common.AttributeKey
-import io.opentelemetry.api.common.Attributes
 
-object ModsLoadedByModId : IGameInstrumentManager.Events.Ready {
+object ModsLoadedByModId : GameInstrumentBase.Simple(
+    name = "game.mods.loaded.by_id",
+    supportsFloating = false,
+) {
 
-    private val modId = AttributeKey.stringKey("mod.id")
+    private val modIdSlot = NativeAttributeKeyTypes.StringType.createAttributeSlot("mod.id")
 
-    override fun gameMetricsManagerReady(manager: IGameInstrumentManager) {
-        manager.gaugeInstrument("game.minecraft.mods.loaded.by_id") {
-            description = "Which mods are currently loaded, by their mod-id."
-            addAttribute(modId)
-        }.registerWithCallbackOfLong { measurement ->
-            for(mod in Platform.getMods()) {
-                measurement.observe(1, Attributes.of(modId, mod.modId))
-            }
+    override val description: String = "Which mods are currently loaded, by their mod-id."
+
+    context(attributeStore: IMappedAttributeValueLookup.Mutable)
+    override fun observeGameSimple(recorder: IObservationRecorder.Unresolved.Sourceless) {
+        for (mod in Platform.getMods()) {
+            modIdSlot.set(mod.modId)
+            recorder.observe(1)
         }
     }
 }

@@ -5,7 +5,7 @@ import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 
 object BuiltinGameInstruments{
 
-    val gameInstruments: List<IGameInstrumentManager.Events.Ready> = listOf(
+    val gameInstruments: List<GameInstrumentBase<*>> = listOf(
         ModsLoadedByModId,
         ModsLoadedByModVersion,
     )

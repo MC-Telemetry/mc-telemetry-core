@@ -1,0 +1,19 @@
+package de.mctelemetry.core.instruments.builtin.world
+
+import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.observations.IObservationRecorder
+import de.mctelemetry.core.utils.observe
+import net.minecraft.server.MinecraftServer
+
+object PlayersOnlineCountInstrument : WorldInstrumentBase.Simple(
+    name = "game.server.players.count",
+    supportsFloating = false,
+) {
+
+    override val description: String = "How many players are currently online."
+
+    context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer)
+    override fun observeWorldSimple(recorder: IObservationRecorder.Unresolved.Sourceless) {
+        recorder.observe(server.playerCount)
+    }
+}

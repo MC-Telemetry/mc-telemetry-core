@@ -13,6 +13,7 @@ abstract class ObservationSourceBase<SC> : IObservationSource<SC, IMappedAttribu
         val attributes =
             pendingAttributeReferences ?: throw IllegalStateException("Internal pending attribute storage broken")
         runWithExceptionCleanup({ pendingAttributeReferences = attributes }) {
+            pendingAttributeReferences = null
             IAttributeDateSourceReferenceSet.Companion(attributes.values)
         }
     }
@@ -37,6 +38,6 @@ abstract class ObservationSourceBase<SC> : IObservationSource<SC, IMappedAttribu
 
     context(sourceContext: SC)
     override fun createAttributeStore(parent: IMappedAttributeValueLookup): IMappedAttributeValueLookup.MapLookup {
-        return IMappedAttributeValueLookup.MapLookup(attributes.references.associateWith { null }, parent)
+        return IMappedAttributeValueLookup.MapLookup(attributes.references, parent)
     }
 }

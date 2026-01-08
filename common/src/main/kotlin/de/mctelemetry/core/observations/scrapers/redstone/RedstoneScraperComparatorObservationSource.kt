@@ -6,6 +6,8 @@ import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.base.PositionObservationSourceBase
+import de.mctelemetry.core.utils.observe
+import de.mctelemetry.core.utils.observePreferred
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.component.DataComponents
@@ -13,7 +15,6 @@ import net.minecraft.resources.ResourceKey
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.Container
-import net.minecraft.world.level.Level
 import net.minecraft.world.level.block.ChestBlock
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.LecternBlockEntity
@@ -48,14 +49,10 @@ object RedstoneScraperComparatorObservationSource : PositionObservationSourceBas
             if (recorder.supportsFloating) {
                 recorder.observePreferred(
                     advancedAnalogValue,
-                    analogValue.toLong(),
-                    this,
+                    analogValue.toLong()
                 )
             } else {
-                recorder.observe(
-                    analogValue.toLong(),
-                    this,
-                )
+                recorder.observe(analogValue)
             }
         }
     }
