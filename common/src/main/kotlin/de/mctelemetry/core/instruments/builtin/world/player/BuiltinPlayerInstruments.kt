@@ -6,5 +6,11 @@ object BuiltinPlayerInstruments {
     val playerInstruments: List<PlayerInstrumentBase<*>> = listOf(
         PlayerInfoInstrument,
         PlayerScoreboardInstrument,
+        PlayerPositionInstrument.PlayerPositionXInstrument,
+        PlayerPositionInstrument.PlayerPositionYInstrument,
+        PlayerPositionInstrument.PlayerPositionZInstrument,
+        PlayerFoodInstruments.PlayerFoodLevelInstrument,
+        PlayerFoodInstruments.PlayerSaturationInstrument,
+        PlayerFoodInstruments.PlayerExhaustionInstrument,
     )
 }
