@@ -44,7 +44,7 @@ jobs:
 
       - name: Build
         run: ./gradlew :common:build
-
+        timeout-minutes: 15
 
   build-mod:
     needs:
@@ -56,6 +56,8 @@ jobs:
       matrix:
         project: [ "neoforge", "fabric" ]
 
+    timeout-minutes: 60
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21
@@ -65,7 +67,8 @@ jobs:
           distribution: 'temurin'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
-
+        timeout-minutes: 30
+        
       - name: Accept EULA
         run: |
           mkdir -p ${{matrix.project}}/gameTestRun
@@ -74,10 +77,12 @@ jobs:
           #Fri Oct 31 15:37:45 CET 2025
           eula=true
           EOF
+        timeout-minutes: 1
 
       - name: Check
         id: check
         run: ./gradlew :${{matrix.project}}:check
+        timeout-minutes: 15
       - name: Upload GameTest logs
         uses: actions/upload-artifact@v4
         if: ${{ success() || (failure() && steps.check.outcome == 'failure') }}
@@ -101,6 +106,7 @@ jobs:
         id: build
         if: ${{startsWith(github.ref_name, 'release/') || (github.ref_name == 'release')}}
         run: ./gradlew :${{matrix.project}}:build -x :${{matrix.project}}:check
+        timeout-minutes: 5
       - name: Upload Build result
         if: ${{success() && (steps.build.outcome == 'success')}} # don't run if build did not run
         uses: actions/upload-artifact@v4
