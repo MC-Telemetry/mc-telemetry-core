@@ -21,19 +21,6 @@ object PlayerFoodInstruments {
         }
     }
 
-    object PlayerFoodMaxInstrument : PlayerInstrumentBase.Simple(
-        name = "game.title.minecraft.player.food.max",
-        supportsFloating = false,
-    ) {
-
-        override val description: String = "The maximum food level of the player."
-
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, player: ServerPlayer)
-        override fun observePlayerSimple(recorder: IObservationRecorder.Unresolved.Sourceless) {
-            recorder.observe(player.foodData.lastFoodLevel)
-        }
-    }
-
     object PlayerSaturationInstrument : PlayerInstrumentBase.Simple(
         name = "game.title.minecraft.player.food.saturation",
         supportsFloating = true,

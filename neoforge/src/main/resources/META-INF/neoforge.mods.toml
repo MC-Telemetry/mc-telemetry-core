@@ -6,11 +6,11 @@ license = "MIT"
 [[mods]]
 modId = "${mod_id}"
 version = "${version}"
+logoFile = "assets/mcotelcore/icon.png"
 displayName = "MC Telemetry Core"
 authors = "pixix4, ZincFox"
 description = '''
 Monitor Minecraft with OpenTelemetry'''
-#logoFile = ""
 
 [[dependencies.${mod_id}]]
 modId = "neoforge"

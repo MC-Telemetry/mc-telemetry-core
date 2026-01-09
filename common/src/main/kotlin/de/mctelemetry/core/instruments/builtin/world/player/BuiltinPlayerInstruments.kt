@@ -11,7 +11,6 @@ object BuiltinPlayerInstruments {
         PlayerPositionInstrument.PlayerPositionYInstrument,
         PlayerPositionInstrument.PlayerPositionZInstrument,
         PlayerFoodInstruments.PlayerFoodLevelInstrument,
-        PlayerFoodInstruments.PlayerFoodMaxInstrument,
         PlayerFoodInstruments.PlayerSaturationInstrument,
         PlayerFoodInstruments.PlayerExhaustionInstrument,
         PlayerHealthInstruments.PlayerHealthInstrument,
