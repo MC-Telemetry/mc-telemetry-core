@@ -31,15 +31,6 @@ jobs:
         run: ./gradlew :common:build
         timeout-minutes: 15
 
-      - name: Upload Build result
-        uses: actions/upload-artifact@v4
-        with:
-          name: common-build
-          path: |
-            ${{matrix.project}}/build/libs/
-          retention-days: 1
-          if-no-files-found: error
-
   build-mod:
     needs:
       - build-common
