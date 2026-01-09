@@ -124,25 +124,21 @@ jobs:
             *-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
             *-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
 
-  publish-mod-platforms:
+
+  publish-modrinth:
     needs:
       - build-mod
     runs-on: ubuntu-latest
     permissions:
       contents: read
 
-    strategy: # separate step with separate matrix to ensure both neoforge and fabric could be built (and passed the check) before publishing
+    strategy: # separate job with separate matrix to ensure both neoforge and fabric could be built (and passed the check) before publishing
       matrix:
         project: [ "neoforge", "fabric" ]
-        platform: [ "modrinth", "curseforge"]
-        include:
-          - platform_url: https://modrinth.com/project/mc-telemetry-core
-            platform: "modrinth"
-          - platform_url: https://legacy.curseforge.com/minecraft/mc-mods/mc-telemetry-core
-            platform: "curseforge"
+
     environment:
-      name: ${{matrix.platform}}
-      url: ${{matrix.platform_url}}
+      name: modrinth
+      url: https://modrinth.com/project/mc-telemetry-core
 
     steps:
       - uses: actions/checkout@v4
@@ -157,6 +153,36 @@ jobs:
           modrinth-id: kc8sbApe
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
 
+          files: |
+            ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+
+
+  publish-curseforge:
+    needs:
+      - build-mod
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    strategy: # separate job with separate matrix to ensure both neoforge and fabric could be built (and passed the check) before publishing
+      matrix:
+        project: [ "neoforge", "fabric" ]
+
+    environment:
+      name: curseforge
+      url: https://legacy.curseforge.com/minecraft/mc-mods/mc-telemetry-core
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7.0.0
+        with:
+          name: ${{matrix.project}}-build
+          path: ${{github.workspace}}/${{matrix.project}}-build
+
+      - uses: Kir-Antipov/mc-publish@v3.3
+        with:
           curseforge-id: 1424812
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
 

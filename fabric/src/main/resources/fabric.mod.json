@@ -30,7 +30,7 @@
   "depends": {
     "fabric-api": "*",
     "java": ">=21",
-    "minecraft": "~${minecraft_version}",
+    "minecraft": "${minecraft_version}",
     "architectury": ">=${architectury_version}",
     "fabric-language-kotlin": ">=${fabric_kotlin_version}",
     "owo": ">=${owo_fabric_version}"
