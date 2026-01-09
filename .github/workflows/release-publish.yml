@@ -150,6 +150,8 @@ jobs:
         uses: actions/download-artifact@v7.0.0
         with:
           name: ${{matrix.project}}-build
+          path: ${{github.workspace}}/${{matrix.project}}-build
+
       - uses: Kir-Antipov/mc-publish@v3.3
         with:
           modrinth-id: kc8sbApe
