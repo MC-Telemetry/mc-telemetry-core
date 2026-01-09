@@ -110,16 +110,48 @@ jobs:
           if-no-files-found: error
   
 
-  publish:
+  publish-github:
     needs:
       - build-mod
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
+    environment: github
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7.0.0
+        with:
+          pattern: "*-build"
+      - uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+          files: |
+            *-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+            *-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+
+  publish-mod-platforms:
+    needs:
+      - build-mod
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
     strategy: # separate step with separate matrix to ensure both neoforge and fabric could be built (and passed the check) before publishing
       matrix:
         project: [ "neoforge", "fabric" ]
+        platform: [ "modrinth", "curseforge"]
+        include:
+          - platform_url: https://modrinth.com/project/mc-telemetry-core
+            platform: "modrinth"
+          - platform_url: https://legacy.curseforge.com/minecraft/mc-mods/mc-telemetry-core
+            platform: "curseforge"
+    environment:
+      name: ${{matrix.platform}}
+      url: ${{matrix.platform_url}}
 
     steps:
       - uses: actions/checkout@v4
@@ -134,9 +166,8 @@ jobs:
 
           curseforge-id: 1424812
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
           files: |
-            ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc).jar
-            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc).jar
+            ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
             
