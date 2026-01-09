@@ -1,0 +1,142 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+# This workflow will build a package using Gradle and then publish it to GitHub packages when a release is created
+# For more information see: https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#Publishing-using-gradle
+
+name: Publish release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-common:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+
+      - name: Build
+        run: ./gradlew :common:build
+        timeout-minutes: 15
+
+      - name: Upload Build result
+        uses: actions/upload-artifact@v4
+        with:
+          name: common-build
+          path: |
+            ${{matrix.project}}/build/libs/
+          retention-days: 1
+          if-no-files-found: error
+
+  build-mod:
+    needs:
+      - build-common
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        project: [ "neoforge", "fabric" ]
+
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+        timeout-minutes: 30
+        
+      - name: Accept EULA
+        run: |
+          mkdir -p ${{matrix.project}}/gameTestRun
+          cat <<EOF > ${{matrix.project}}/gameTestRun/eula.txt
+          #By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).
+          #Fri Oct 31 15:37:45 CET 2025
+          eula=true
+          EOF
+        timeout-minutes: 1
+
+      - name: Check
+        id: check
+        run: ./gradlew :${{matrix.project}}:check
+        timeout-minutes: 15
+      - name: Upload GameTest logs
+        uses: actions/upload-artifact@v4
+        if: ${{ success() || (failure() && steps.check.outcome == 'failure') }}
+        with:
+          name: ${{matrix.project}}-gametest-logs
+          path: |
+            ${{matrix.project}}/gameTestRun/logs/latest.log
+            ${{matrix.project}}/gameTestRun/logs/debug.log
+          if-no-files-found: error
+      - name: Upload GameTest world
+        uses: actions/upload-artifact@v4
+        if: ${{ failure() && steps.check.outcome == 'failure' }}
+        with:
+          name: ${{matrix.project}}-gametest-world
+          path: |
+            ${{matrix.project}}/gameTestRun/world/
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Build
+        id: build
+        run: ./gradlew :${{matrix.project}}:build -x :${{matrix.project}}:check
+        timeout-minutes: 5
+      - name: Upload Build result
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.project}}-build
+          path: |
+            ${{matrix.project}}/build/libs/
+          retention-days: 1
+          if-no-files-found: error
+  
+
+  publish:
+    needs:
+      - build-mod
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    strategy: # separate step with separate matrix to ensure both neoforge and fabric could be built (and passed the check) before publishing
+      matrix:
+        project: [ "neoforge", "fabric" ]
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7.0.0
+        with:
+          name: ${{matrix.project}}-build
+      - uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: kc8sbApe
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+
+          curseforge-id: 1424812
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc).jar
+            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc).jar
+            
