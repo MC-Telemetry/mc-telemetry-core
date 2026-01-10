@@ -31,6 +31,16 @@ jobs:
         run: ./gradlew :common:build
         timeout-minutes: 15
 
+      - name: Upload Build result
+        uses: actions/upload-artifact@v4
+        with:
+          name: common-build
+          path: |
+            common/build/libs/
+            !common/build/libs/*-transformProduction*.jar
+          retention-days: 1
+          if-no-files-found: error
+
   build-mod:
     needs:
       - build-common
@@ -121,7 +131,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
           files: |
-            *-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+            *-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*|*-transformProduction*).jar
             *-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
 
 
@@ -155,6 +165,7 @@ jobs:
 
           files: |
             ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+            ${{matrix.project}}-build/*-sources.jar
 ## disable upload of sources and shadow while testing CI
 #            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
 
@@ -189,5 +200,6 @@ jobs:
 
           files: |
             ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+            ${{matrix.project}}-build/*-sources.jar
 ## disable upload of sources and shadow while testing CI
 #            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar

@@ -234,38 +234,19 @@ tasks.shadowJar {
     exclude("architectury.common.json")
     configurations = listOf(shadowBundle)
     dependencies {
-        this.exclude {
+        exclude {
             it.moduleGroup == "org.jetbrains.kotlin"
                     && it.moduleName.startsWith("kotlin-stdlib")
         }
+        exclude {
+            it.moduleGroup == "org.jetbrains"
+                    && it.moduleName.startsWith("annotation")
+        }
     }
     for (pattern in listOf(
-        "com",
-        "de",
-        "io",
-        "okhttp3",
-        "okio",
-        "org",
-        "zipkin2"
+        "io.github.pixix4",
     )) {
-        relocate("$pattern.", "$relocatePrefix.$pattern.") {
-            this.exclude("org.jetbrains.annotations.**")
-            this.exclude("dev.**")
-            this.exclude("io.wispforest.**")
-            this.exclude("org.sinytra.**")
-            this.exclude("com.mojang.**")
-            this.exclude("io.netty.**")
-            this.exclude("com.google.errorprone.annotations.**")
-            this.exclude("com.google.auto.value.**")
-            this.exclude("org/codehaus/mojo/animal_sniffer/IgnoreJRERequirement")
-            this.exclude("kotlin.**")
-            this.exclude("de.mctelemetry.core.**")
-            this.exclude("io.opentelemetry.**")
-            this.exclude("io.prometheus.**")
-            this.exclude("org.apache.**")
-            this.exclude("org.slf4j.**")
-            this.exclude("org.w3c.**")
-        }
+        relocate("$pattern.", "$relocatePrefix.$pattern.")
     }
     archiveClassifier.set("dev-shadow")
 }
