@@ -166,8 +166,8 @@ jobs:
           files: |
             ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
             ${{matrix.project}}-build/*-sources.jar
-## disable upload of sources and shadow while testing CI
-#            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+  ## disable upload of sources and shadow while testing CI
+  #            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
 
 
   publish-curseforge:
@@ -201,5 +201,36 @@ jobs:
           files: |
             ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
             ${{matrix.project}}-build/*-sources.jar
-## disable upload of sources and shadow while testing CI
-#            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+  ## disable upload of sources and shadow while testing CI
+  #            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+
+  publish-maven:
+    needs:
+      - build-mod
+      - build-common
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    environment:
+      name: maven-central
+      url: https://mvnrepository.com/artifact/de.mctelemetry/mc-telemetry-core
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+      - name: Publish to MavenCentral
+        run: ./gradlew :common:publishToMavenCentral --no-configuration-cache
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_KEY_CONTENTS }}
