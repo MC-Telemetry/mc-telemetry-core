@@ -34,5 +34,15 @@
     "architectury": ">=${architectury_version}",
     "fabric-language-kotlin": ">=${fabric_kotlin_version}",
     "owo": ">=${owo_fabric_version}"
+  },
+  "custom": {
+    "mc-publish": {
+      "dependencies": [
+        "fabric-api(required){modrinth:P7dR8mSH}{curseforge:306612}",
+        "architectury@${architectury_version}(required){modrinth:lhGA9TYQ}{curseforge:419699}",
+        "fabric-language-kotlin@${}(required){modrinth:Ha28R6CL}{curseforge:308769}",
+        "owo@${owo_fabric_version}(required){modrinth:ccKDOlHs}{curseforge:532610}"
+      ]
+    }
   }
 }

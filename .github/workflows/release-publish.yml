@@ -155,7 +155,8 @@ jobs:
 
           files: |
             ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
-            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+## disable upload of sources and shadow while testing CI
+#            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
 
 
   publish-curseforge:
@@ -188,4 +189,5 @@ jobs:
 
           files: |
             ${{matrix.project}}-build/!(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
-            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
+## disable upload of sources and shadow while testing CI
+#            ${{matrix.project}}-build/@(*-sources|*-shadow|*-dev|*-javadoc|*-gametest*).jar
