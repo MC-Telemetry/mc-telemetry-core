@@ -150,7 +150,7 @@ jobs:
 
       - uses: Kir-Antipov/mc-publish@v3.3
         with:
-          modrinth-id: kc8sbApe
+          modrinth-id: vSaayyqb
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
 
           files: |
