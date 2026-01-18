@@ -1,7 +1,7 @@
 package de.mctelemetry.core.instruments.manager
 
 import de.mctelemetry.core.api.observations.IObservationRecorder
-import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
 import io.opentelemetry.api.metrics.ObservableLongMeasurement
@@ -57,7 +57,7 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
         override fun observe(
             value: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
             observableMeasurement.record(value, attributes)
         }
@@ -65,18 +65,18 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
         override fun observe(
             value: Double,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            observe(value.toLong(), attributes, source)
+            observe(value.toLong(), attributes, sourceInstance)
         }
 
         override fun observePreferred(
             double: Double,
             long: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            observe(long, attributes, source)
+            observe(long, attributes, sourceInstance)
         }
     }
 
@@ -88,15 +88,15 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
         override fun observe(
             value: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            observe(value.toDouble(), attributes, source)
+            observe(value.toDouble(), attributes, sourceInstance)
         }
 
         override fun observe(
             value: Double,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
             observableMeasurement.record(value, attributes)
         }
@@ -105,9 +105,9 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
             double: Double,
             long: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            observe(double, attributes, source)
+            observe(double, attributes, sourceInstance)
         }
     }
 
@@ -120,7 +120,7 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
         override fun observe(
             value: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
             observableMeasurement.record(value, attributes)
         }
@@ -128,7 +128,7 @@ internal sealed class ResolvedObservationRecorder<out T : ObservableMeasurement>
         override fun observe(
             value: Double,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
             observableMeasurement.record(value, attributes)
         }

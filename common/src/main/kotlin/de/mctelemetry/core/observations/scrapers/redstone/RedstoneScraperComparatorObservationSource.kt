@@ -2,10 +2,10 @@ package de.mctelemetry.core.observations.scrapers.redstone
 
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.observations.base.PositionObservationSourceBase
+import de.mctelemetry.core.api.observations.position.PositionObservationSourceBase
 import de.mctelemetry.core.utils.observe
 import de.mctelemetry.core.utils.observePreferred
 import net.minecraft.core.BlockPos
@@ -20,14 +20,15 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.LecternBlockEntity
 import net.minecraft.world.level.block.state.BlockState
 
-object RedstoneScraperComparatorObservationSource : PositionObservationSourceBase() {
+object RedstoneScraperComparatorObservationSource :
+    PositionObservationSourceBase.PositionSingletonBase<RedstoneScraperComparatorObservationSource>() {
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.comparator")
     )
 
-    context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
+    context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
     override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

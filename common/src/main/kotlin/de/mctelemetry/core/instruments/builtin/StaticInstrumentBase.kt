@@ -2,7 +2,7 @@ package de.mctelemetry.core.instruments.builtin
 
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeInstance
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.observations.IObservationRecorder
@@ -29,15 +29,15 @@ abstract class StaticInstrumentBase(final override val name: String) : IInstrume
     private var pendingAttributeSlots: MutableMap<String, AttributeDataSource.Reference.TypedSlot<*>>? =
         mutableMapOf()
 
-    protected open fun createAttributeStore(): IMappedAttributeValueLookup.Mutable {
-        return IMappedAttributeValueLookup.MapLookup(
+    protected open fun createAttributeStore(): IAttributeValueStore.Mutable {
+        return IAttributeValueStore.MapAttributeStore(
             slots.values,
         )
     }
 
     protected inline fun <T> withIdentityResolver(
         recorder: IObservationRecorder.Resolved,
-        block: context(IMappedAttributeValueLookup.Mutable) (recorder: IObservationRecorder.Unresolved.Sourceless) -> T
+        block: context(IAttributeValueStore.Mutable) (recorder: IObservationRecorder.Unresolved.Sourceless) -> T
     ): T {
         contract {
             callsInPlace(block, InvocationKind.EXACTLY_ONCE)

@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.world.player
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
@@ -14,7 +14,7 @@ abstract class PlayerPositionInstrument protected constructor(dimensionName: Str
     override val description: String = "The $dimensionName position of the player."
     override val unit: String = "Blocks"
 
-    context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, player: ServerPlayer)
+    context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, player: ServerPlayer)
     override fun observePlayerSimple(recorder: IObservationRecorder.Unresolved.Sourceless) {
         recorder.observe(getValue(player.position()))
     }

@@ -2,12 +2,12 @@ package de.mctelemetry.core.ui.screens
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
+import de.mctelemetry.core.observations.model.source
 import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponent
 import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
 import de.mctelemetry.core.utils.childByIdOrThrow
@@ -21,6 +21,8 @@ import io.wispforest.owo.ui.base.BaseUIModelScreen
 import io.wispforest.owo.ui.component.ButtonComponent
 import io.wispforest.owo.ui.component.LabelComponent
 import io.wispforest.owo.ui.container.FlowLayout
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectMap
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectOpenHashMap
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -63,8 +65,8 @@ class ScraperBlockScreen(
         OTelCoreMod.logger.trace("Opened new coroutine scope for {}", this)
     }
 
-    private val observationValuePreviews: MutableMap<IObservationSource<*, *>, ObservationValuePreviewDataComponent> =
-        mutableMapOf()
+    private val observationValuePreviews: Byte2ObjectMap<ObservationValuePreviewDataComponent> =
+        Byte2ObjectOpenHashMap()
 
     private val closable = mutableListOf<AutoCloseable>()
 
@@ -74,17 +76,19 @@ class ScraperBlockScreen(
 
     private fun acceptObservations(observationBundle: ObservationSourceObservationMap) {
         for ((source, observations) in observationBundle) {
-            val preview = observationValuePreviews.getOrElse(source) {
+            val preview = observationValuePreviews.getOrElse(source.second.toByte()) {
                 if (observationValuePreviews.isEmpty()) {
                     OTelCoreMod.logger.trace(
-                        "No value previews initialized while applying data for observation source {}, skipping further data",
-                        source
+                        "No value previews initialized while applying data for observation source {}/{}, skipping further data",
+                        source.first,
+                        source.second,
                     )
                     return
                 } else {
                     OTelCoreMod.logger.warn(
-                        "Could not find matching value preview for received observation source {}",
-                        source
+                        "Could not find matching value preview for received observation source {}/{}",
+                        source.first,
+                        source.second,
                     )
                     continue
                 }
@@ -150,14 +154,16 @@ class ScraperBlockScreen(
 
         val list: FlowLayout = rootComponent.childByIdOrThrow("list")
 
-        for ((source, state) in observationSourceContainer.observationStates) {
+        for (entry in observationSourceContainer.observationStates.byte2ObjectEntrySet()) {
+            val state = entry.value
+            val instanceID = entry.byteKey.toUByte()
             val template = model.expandTemplate(
                 FlowLayout::class.java,
                 "list-row@${OTelCoreMod.MOD_ID}:source-listing",
                 mapOf()
             )
             template.childByIdOrThrow<LabelComponent>("observation-source-name").text(
-                TranslationKeys.ObservationSources[source]
+                TranslationKeys.ObservationSources[state.source]
             )
             list.child(template)
 
@@ -168,7 +174,7 @@ class ScraperBlockScreen(
                 )
             )
 
-            observationValuePreviews[source] = ObservationValuePreviewDataComponent(
+            observationValuePreviews[instanceID.toByte()] = ObservationValuePreviewDataComponent(
                 template.childByIdOrThrow<LabelComponent>("observation-source-value")
             )
 

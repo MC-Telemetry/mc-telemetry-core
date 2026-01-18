@@ -9,15 +9,20 @@ import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
 import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.network.observations.container.settings.C2SObservationSourceSettingsUpdatePayload
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceState
+import de.mctelemetry.core.observations.model.source
 import de.mctelemetry.core.ui.components.AttributeMappingComponent
 import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
 import de.mctelemetry.core.utils.childByIdOrThrow
+import de.mctelemetry.core.utils.dsl.components.IStyleBuilder
+import de.mctelemetry.core.utils.dsl.components.StyleBuilder
+import de.mctelemetry.core.utils.dsl.components.onHoverShowText
 import dev.architectury.networking.NetworkManager
 import io.github.pixix4.kobserve.base.ObservableProperty
 import io.github.pixix4.kobserve.property.mapBinding
@@ -40,10 +45,10 @@ import java.util.regex.PatternSyntaxException
 class ScraperBlockScreenDetails(
     val parent: Screen,
     val globalPos: GlobalPos,
-    val sourceState: ObservationSourceState,
+    val sourceState: ObservationSourceState<*>,
     instrumentName: String,
     mapping: ObservationAttributeMapping = sourceState.configuration?.mapping ?: ObservationAttributeMapping.empty(),
-    val sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.source.attributes,
+    val sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.instance.attributes,
 ) : BaseUIModelScreen<FlowLayout>(
     FlowLayout::class.java, DataSource.asset(
         ResourceLocation.fromNamespaceAndPath(
@@ -55,9 +60,9 @@ class ScraperBlockScreenDetails(
     constructor(
         parent: Screen,
         position: GlobalPos,
-        sourceState: ObservationSourceState,
+        sourceState: ObservationSourceState<*>,
         configuration: ObservationSourceConfiguration? = sourceState.configuration,
-        sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.source.attributes,
+        sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.instance.attributes,
     ) : this(
         parent,
         position,
@@ -67,8 +72,8 @@ class ScraperBlockScreenDetails(
         sourceAttributes,
     )
 
-    val source: IObservationSource<*, *>
-        get() = sourceState.source
+    val sourceInstance: IObservationSourceInstance<*, *>
+        get() = sourceState.instance
 
     private val instrumentNameObservable: ObservableProperty<String> = property(instrumentName)
     var instrumentName by instrumentNameObservable
@@ -128,10 +133,12 @@ class ScraperBlockScreenDetails(
     }
 
     private fun sendToServer(allowDelete: Boolean = true) {
+        val state = sourceState
         NetworkManager.sendToServer(
             C2SObservationSourceSettingsUpdatePayload(
                 globalPos,
-                source,
+                state.source,
+                state.id,
                 makeConfiguration().takeUnless {
                     allowDelete && it.instrument.name.isEmpty()
                 })
@@ -139,10 +146,12 @@ class ScraperBlockScreenDetails(
     }
 
     private fun deleteFromServer() {
+        val state = sourceState
         NetworkManager.sendToServer(
             C2SObservationSourceSettingsUpdatePayload(
                 globalPos,
-                source,
+                state.source,
+                state.id,
                 null,
             )
         )
@@ -156,7 +165,16 @@ class ScraperBlockScreenDetails(
         }
 
         val observationSourceNameLabel = rootComponent.childByIdOrThrow<LabelComponent>("observation-source-name")
-        observationSourceNameLabel.text(TranslationKeys.ObservationSources[source])
+        observationSourceNameLabel.text(TranslationKeys.ObservationSources[sourceState.source].also {
+            if (minecraft!!.options.advancedItemTooltips)
+                it.withStyle(IStyleBuilder.buildStyle {
+                    onHoverShowText {
+                        append(sourceState.source.id.location().toString())
+                        append("/")
+                        append(sourceState.id.toString())
+                    }
+                })
+        })
 
         val metricNameTextBox = rootComponent.childWidgetByIdOrThrow<SuggestingTextBoxComponent>("metric-name")
         metricNameTextBox.setMaxLength(OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH)

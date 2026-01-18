@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.game
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
@@ -22,7 +22,7 @@ abstract class GameInstrumentBase<T : IInstrumentRegistration?>(name: String) :
 
     protected abstract fun IGaugeInstrumentBuilder<*>.register()
 
-    context(attributeStore: IMappedAttributeValueLookup.Mutable, registration: T)
+    context(attributeStore: IAttributeValueStore.Mutable, registration: T)
     abstract fun observeGame(recorder: IObservationRecorder.Unresolved.Sourceless)
 
     abstract class Simple(name: String, override val supportsFloating: Boolean) : GameInstrumentBase<Nothing?>(name) {
@@ -47,11 +47,11 @@ abstract class GameInstrumentBase<T : IInstrumentRegistration?>(name: String) :
             }
         }
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, registration: Nothing?)
+        context(attributeStore: IAttributeValueStore.Mutable, registration: Nothing?)
         final override fun observeGame(recorder: IObservationRecorder.Unresolved.Sourceless) {
             observeGameSimple(recorder)
         }
-        context(attributeStore: IMappedAttributeValueLookup.Mutable)
+        context(attributeStore: IAttributeValueStore.Mutable)
         abstract fun observeGameSimple(recorder: IObservationRecorder.Unresolved.Sourceless)
     }
 

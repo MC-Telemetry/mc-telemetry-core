@@ -7,16 +7,23 @@ import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallba
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.RegistryFriendlyByteBuf
+import java.util.concurrent.atomic.AtomicReference
 
-open class ObservationSourceState(
-    val source: IObservationSource<*, *>,
+typealias ObservationSourceStateID = UByte
+
+open class ObservationSourceState<SC>(
+    val instance: IObservationSourceInstance<SC, *>,
+    val id: ObservationSourceStateID,
 ) : AutoCloseable, IInstrumentAvailabilityCallback<IInstrumentRegistration.Mutable<*>> {
 
-    protected val onDirtyListeners: MutableSet<(ObservationSourceState) -> Unit> = linkedSetOf()
+
+    protected val onDirtyListeners: MutableSet<(ObservationSourceState<SC>) -> Unit> = linkedSetOf()
+    protected val listenerDelegatedState: AtomicReference<ObservationSourceState<SC>?> = AtomicReference(null)
 
     var cascadeUpdates: Boolean = false
         set(value) {
@@ -147,9 +154,13 @@ open class ObservationSourceState(
 
     override fun close() {
         try {
-            instrumentSubRegistration = null
+            try {
+                instrumentSubRegistration = null
+            } finally {
+                availabilityCallbackCloser = null
+            }
         } finally {
-            availabilityCallbackCloser = null
+            onDirtyListeners.clear()
         }
     }
 
@@ -193,7 +204,7 @@ open class ObservationSourceState(
 
     open fun updateRegistration(
         manager: IMutableInstrumentManager,
-        instrumentSubRegistrationFactory: InstrumentSubRegistrationFactory,
+        instrumentSubRegistrationFactory: InstrumentSubRegistrationFactory<SC>,
     ) {
         val configuration = configuration ?: return
         val configurationInstrument = configuration.instrument
@@ -213,7 +224,7 @@ open class ObservationSourceState(
         } else {
             this.bindMutableInstrument(
                 storedInstrument, instrumentSubRegistrationFactory.createInstrumentCallback(
-                    source, this, configuration, storedInstrument
+                    this, configuration, storedInstrument
                 )
             )
         }
@@ -302,15 +313,41 @@ open class ObservationSourceState(
         }
     }
 
-    fun subscribeToDirty(block: (ObservationSourceState) -> Unit): AutoCloseable {
-        onDirtyListeners.add(block)
-        return AutoCloseable {
-            unsubscribeFromDirty(block)
+    fun subscribeToDirty(block: (ObservationSourceState<SC>) -> Unit): AutoCloseable {
+        val delegate = listenerDelegatedState.get()
+        return if (delegate != null) {
+            delegate.subscribeToDirty(block)
+        } else {
+            onDirtyListeners.add(block)
+            AutoCloseable {
+                unsubscribeFromDirty(block) // internally checks delegate
+            }
         }
     }
 
-    fun unsubscribeFromDirty(block: (ObservationSourceState) -> Unit) {
-        onDirtyListeners.remove(block)
+    fun unsubscribeFromDirty(block: (ObservationSourceState<SC>) -> Unit) {
+        val delegate = listenerDelegatedState.get()
+        if (delegate != null) {
+            delegate.unsubscribeFromDirty(block)
+        } else {
+            onDirtyListeners.remove(block)
+        }
+    }
+
+    fun pushListenersTo(other: ObservationSourceState<SC>, clearOwn: Boolean = true) {
+        val existing = listenerDelegatedState.compareAndExchange(null, other)
+        if (existing != null) {
+            if (existing !== other) {
+                throw IllegalStateException("Attempted to push listeners to $other while already delegating to $existing")
+            }
+            if (clearOwn) {
+                this.onDirtyListeners.clear()
+            }
+            return
+        }
+        other.onDirtyListeners.addAll(this.onDirtyListeners)
+        if (clearOwn)
+            this.onDirtyListeners.clear()
     }
 
     open fun loadFromByteBuf(
@@ -337,7 +374,7 @@ open class ObservationSourceState(
         val delayedConfiguration = ObservationSourceConfiguration.loadDelayedFromTag(
             tag.getCompound("configuration"),
             holderLookupProvider,
-            source,
+            instance.source,
         )
         var modified: Boolean
         runWithExceptionCleanup(::triggerOnDirty, runCleanup = !initialSilent) {
@@ -367,7 +404,7 @@ open class ObservationSourceState(
             tag.getCompound("configuration"),
             holderLookupProvider,
             instrumentManager,
-            source,
+            instance.source,
         )
         var modified: Boolean
         runWithExceptionCleanup(::triggerOnDirty, runCleanup = !silent) {
@@ -398,13 +435,15 @@ open class ObservationSourceState(
             tag.put("errorState", errorStateTag)
     }
 
-    interface InstrumentSubRegistrationFactory {
+    interface InstrumentSubRegistrationFactory<out SC> {
 
         fun <T : IInstrumentRegistration.Mutable<T>> createInstrumentCallback(
-            source: IObservationSource<*, *>,
-            state: ObservationSourceState,
+            state: ObservationSourceState<in SC>,
             configuration: ObservationSourceConfiguration,
             instrument: IInstrumentRegistration.Mutable<*>,
         ): IInstrumentRegistration.Callback<T>
     }
 }
+
+val <SC> ObservationSourceState<SC>.source: IObservationSource<SC, out IObservationSourceInstance<SC, *>>
+    get() = instance.source

@@ -3,6 +3,7 @@ package de.mctelemetry.core.network.observations.container.observationrequest
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.observations.model.ObservationSourceStateID
 import dev.architectury.networking.NetworkManager
 import dev.architectury.platform.Platform
 import dev.architectury.utils.Env
@@ -13,7 +14,7 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 
-typealias ObservationSourceObservationMap = Map<IObservationSource<*, *>, RecordedObservations>
+typealias ObservationSourceObservationMap = Map<Pair<IObservationSource<*, *>, ObservationSourceStateID>, RecordedObservations>
 
 data class S2CObservationsPayload(
     val blockPos: GlobalPos,
@@ -36,7 +37,13 @@ data class S2CObservationsPayload(
             S2CObservationsPayload::blockPos,
             ByteBufCodecs.map(
                 { HashMap(it) },
-                ByteBufCodecs.registry(OTelCoreModAPI.ObservationSources),
+                StreamCodec.composite(
+                    ByteBufCodecs.registry(OTelCoreModAPI.ObservationSources),
+                    Pair<IObservationSource<*, *>,*>::first,
+                    ByteBufCodecs.BYTE,
+                    {it.second.toByte()},
+                    {source,id -> source to id.toUByte()}
+                ),
                 RecordedObservations.STREAM_CODEC,
             ),
             S2CObservationsPayload::observations,

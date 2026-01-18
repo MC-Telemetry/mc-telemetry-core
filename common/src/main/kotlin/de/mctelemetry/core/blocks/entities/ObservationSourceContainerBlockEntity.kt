@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
@@ -8,11 +10,21 @@ import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.useInstrumentManagerWhenAvailable
+import de.mctelemetry.core.api.observations.IObservationSourceInstance
+import de.mctelemetry.core.api.observations.IObservationSourceSingleton
+import de.mctelemetry.core.api.observations.toNbt
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.observations.model.ObservationSourceState
+import de.mctelemetry.core.observations.model.ObservationSourceStateID
+import de.mctelemetry.core.utils.globalPos
 import de.mctelemetry.core.utils.runWithExceptionCleanup
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectMap
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectMaps
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectOpenHashMap
+import it.unimi.dsi.fastutil.bytes.ByteOpenHashSet
+import it.unimi.dsi.fastutil.bytes.ByteSet
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.core.HolderLookup
@@ -35,7 +47,10 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.forEach
+import kotlin.collections.mapNotNullTo
+import kotlin.collections.mutableSetOf
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.jvm.optionals.getOrElse
@@ -63,9 +78,9 @@ abstract class ObservationSourceContainerBlockEntity(
     private var setupRun = false
     private var onLevelCallback: ((Level) -> Unit)? = null
 
-    val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>
+    val observationStates: Byte2ObjectMap<ObservationSourceState<in ObservationSourceContainerBlockEntity>>
         get() = (_container ?: throw IllegalStateException("Container has not been initialized yet")).observationStates
-    val observationStatesIfInitialized: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState>?
+    val observationStatesIfInitialized: Byte2ObjectMap<ObservationSourceState<in ObservationSourceContainerBlockEntity>>?
         get() = _container?.observationStates
 
     protected val blockEntityType: BlockEntityType<*>
@@ -153,7 +168,7 @@ abstract class ObservationSourceContainerBlockEntity(
             level!!.setBlock(
                 blockPos,
                 blockState.setValue(
-                    ObservationSourceContainerBlock.Companion.ERROR,
+                    ObservationSourceContainerBlock.ERROR,
                     targetState
                 ),
                 2
@@ -182,25 +197,22 @@ abstract class ObservationSourceContainerBlockEntity(
             setupRun = false
         }) {
             val container = this._container ?: (BlockEntityObservationSourceContainer(
-                findObservationSources(level.registryAccess())
+                findObservationSources(level.registryAccess()),
             ).also {
                 this._container = it
             })
-            container.setup()
+            container.setupCallbacks()
             if (!level.isClientSide) {
                 (level as ServerLevel).server.useInstrumentManagerWhenAvailable {
-                    container.setCascadeUpdates(true)
+                    container.cascadesUpdates = true
                 }
             } else {
-                container.setCascadeUpdates(false)
+                container.cascadesUpdates = false
             }
             val onLevelCallback = this.onLevelCallback
             if (onLevelCallback != null) {
                 onLevelCallback(level)
                 this.onLevelCallback = null
-            }
-            container.observationStates.values.forEach {
-                it.subscribeToDirty(::onDirty)
             }
             if (!level.isClientSide) {
                 level as ServerLevel
@@ -221,7 +233,7 @@ abstract class ObservationSourceContainerBlockEntity(
         }
     }
 
-    private fun onDirty(state: ObservationSourceState) {
+    private fun onDirty(state: ObservationSourceState<in ObservationSourceContainerBlockEntity>) {
         setChanged()
         val level = level!!
         if (!level.isClientSide) {
@@ -244,12 +256,7 @@ abstract class ObservationSourceContainerBlockEntity(
         super.setRemoved()
         val oldContainer = _container
         try {
-            if (oldContainer != null) {
-                for (state in oldContainer.observationStates.values) {
-                    state.unsubscribeFromDirty(::onDirty)
-                }
-                oldContainer.close()
-            }
+            oldContainer?.close()
         } finally {
             _container = null
         }
@@ -263,26 +270,126 @@ abstract class ObservationSourceContainerBlockEntity(
         }
     }
 
-    private inner class BlockEntityObservationSourceContainer(
+    protected open inner class BlockEntityObservationSourceContainer(
         observationSources: Iterable<IObservationSource<*, *>>,
     ) : ObservationSourceContainer<ObservationSourceContainerBlockEntity>() {
 
-        override val observationStates: Map<IObservationSource<in ObservationSourceContainerBlockEntity, *>, ObservationSourceState> by lazy {
-            observationSources.mapNotNull {
-                if (!it.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
-                    return@mapNotNull null
+        val observationSources: Set<IObservationSource<in ObservationSourceContainerBlockEntity, *>> =
+            observationSources.mapNotNullTo(mutableSetOf()) {
+                if (!it.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java)) {
+                    return@mapNotNullTo null
+                }
                 @Suppress("UNCHECKED_CAST") // cast indirectly checked by contextType
-                it as IObservationSource<in ObservationSourceContainerBlockEntity, *>
-            }.associateWith { ObservationSourceState(it) }
+                (it as IObservationSource<in ObservationSourceContainerBlockEntity, *>)
+            }
+
+        protected var _cascadesUpdates: Boolean = false
+        open var cascadesUpdates: Boolean
+            get() = _cascadesUpdates
+            set(value) {
+                _cascadesUpdates = value
+                _observationStates.values.forEach {
+                    it.cascadeUpdates = value
+                }
+            }
+
+        private val idCounter = AtomicInteger(-1)
+        val initialized: Boolean get() = idCounter.get() >= 0
+
+        protected val _observationStates: Byte2ObjectMap<ObservationSourceState<in ObservationSourceContainerBlockEntity>> =
+            Byte2ObjectOpenHashMap()
+
+        override val observationStates: Byte2ObjectMap<ObservationSourceState<in ObservationSourceContainerBlockEntity>> =
+            Byte2ObjectMaps.unmodifiable(_observationStates)
+
+        public override fun setupCallbacks() {
+            super.setupCallbacks()
         }
 
-        @Suppress("RedundantVisibilityModifier") // not actually redundant because of visibility widening
-        public override fun setup() {
-            super.setup()
+        override fun setupCallback(state: ObservationSourceState<in ObservationSourceContainerBlockEntity>) {
+            super.setupCallback(state)
+            state.subscribeToDirty(this@ObservationSourceContainerBlockEntity::onDirty)
         }
 
-        fun setCascadeUpdates(value: Boolean = true) {
-            observationStates.values.forEach { it.cascadeUpdates = value }
+        protected open fun <SC, I : IObservationSourceInstance<SC, *>>
+                instantiateObservationSource(source: IObservationSource<SC, I>, data: Tag?): I {
+            return source.fromNbt(data)
+        }
+
+        protected fun getNextId(): Byte {
+            if (idCounter.get() < 0) throw IllegalStateException("Not initialized yet")
+            // Race condition does not matter because idCounter never transitions back to -1.
+            return idCounter.getAndUpdate { (it + 1) % 256 }.toByte()
+        }
+
+        protected open fun <SC> makeNewSourceState(
+            instance: IObservationSourceInstance<SC, *>,
+            id: ObservationSourceStateID
+        ): ObservationSourceState<SC> {
+            return ObservationSourceState(instance, id)
+        }
+
+        protected open fun <SC> mergeInstanceIntoSourceState(
+            instance: IObservationSourceInstance<SC, *>,
+            oldState: ObservationSourceState<SC>,
+            closeOld: Boolean = true,
+        ): ObservationSourceState<SC> {
+            val newState = makeNewSourceState(instance, oldState.id)
+            runWithExceptionCleanup(newState::close) {
+                newState.cascadeUpdates = false
+                newState.configuration = oldState.configuration?.let { it.copy(mapping = it.mapping.copy()) }
+                newState.instrument = oldState.instrument
+                newState.cascadeUpdates = oldState.cascadeUpdates
+                oldState.pushListenersTo(newState)
+                if (closeOld) {
+                    oldState.close()
+                }
+            }
+            return newState
+        }
+
+        fun addObservationSourceState(
+            source: IObservationSource<in ObservationSourceContainerBlockEntity, *>,
+            data: Tag? = null
+        ): ObservationSourceState<in ObservationSourceContainerBlockEntity> {
+            val instance = instantiateObservationSource(source, data)
+            if (_observationStates.size >= UByte.MAX_VALUE.toInt()) {
+                throw IllegalArgumentException("Cannot add more than 256 observations to one ObservationSourceContainer")
+            }
+            var result: ObservationSourceState<in ObservationSourceContainerBlockEntity>? = null
+            var nextId: Byte = getNextId()
+            val startId: Byte = nextId
+            result =
+                run { // same value will already be stored in result when this assignment happens, this just helps the type checker
+                    do {
+                        if (!_observationStates.containsKey(nextId)) {
+                            synchronized(_observationStates) {
+                                _observationStates.computeIfAbsent(nextId) { id: Byte ->
+                                    ObservationSourceState(
+                                        instance,
+                                        id.toUByte()
+                                    ).also { state ->
+                                        state.cascadeUpdates = _cascadesUpdates
+                                        result = state
+                                    }
+                                }
+                            }
+                            if (result != null) {
+                                return@run result
+                            }
+                        }
+                        nextId = getNextId()
+                    } while (nextId != startId)
+                    throw IllegalArgumentException("Cannot add more than 256 observations to one ObservationSourceContainer")
+                }
+            setupCallback(result)
+            return result
+        }
+
+        fun removeObservationSourceState(id: ObservationSourceStateID): Boolean {
+            return synchronized(_observationStates) {
+                _observationStates.remove(id.toByte()) != null
+            }
         }
 
         override val context: ObservationSourceContainerBlockEntity
@@ -301,41 +408,121 @@ abstract class ObservationSourceContainerBlockEntity(
                     ?: throw NullPointerException("Instrument manager not available for server: $server")
             }
 
-        private inline fun <T> loadAndApplyToStateTags(
+        private inline fun <T> loadTagsAndApplyToState(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
-            block: (ObservationSourceState, CompoundTag) -> T,
-        ): Map<ObservationSourceState, T> {
+            removeMissing: Boolean = true,
+            allowAutoAssign: Boolean = true,
+            block: (ObservationSourceState<in ObservationSourceContainerBlockEntity>, CompoundTag) -> T,
+        ): Map<ObservationSourceState<in ObservationSourceContainerBlockEntity>, T> {
             contract {
                 callsInPlace(block, InvocationKind.UNKNOWN)
             }
             return buildMap {
-                val observationsTag = compoundTag.getList("observations", Tag.TAG_COMPOUND.toInt())
-                for (tag in observationsTag) {
-                    tag as CompoundTag
-                    val idString = tag.getString("id")
-                    if (idString.isBlank()) {
-                        OTelCoreMod.logger.warn("Empty observation-source-id during loading of nbt for {}", this)
-                        continue
-                    }
-                    val resourceKey =
-                        ResourceKey.create(OTelCoreModAPI.ObservationSources, ResourceLocation.parse(idString))
-                    val source = holderLookupProvider.lookupOrThrow(OTelCoreModAPI.ObservationSources)
-                        .getOrThrow(resourceKey)
-                        .value()
+                synchronized(_observationStates) {
 
-                    val state = observationStates.getOrElse(
-                        @Suppress("UNCHECKED_CAST") // actual generic type does not matter because it is only used as lookup key
-                        (source as IObservationSource<in ObservationSourceContainerBlockEntity, *>)
-                    ) {
-                        OTelCoreMod.logger.warn(
-                            "Could not find state for observation-source-id {} in {}",
-                            resourceKey,
-                            this
-                        )
-                        continue
+                    val observationsTag = compoundTag.getList("observations", Tag.TAG_COMPOUND.toInt())
+                    for ((observationIndex, tag) in observationsTag.withIndex()) {
+                        tag as CompoundTag
+                        val sourceIdString = tag.getString("id")
+                        if (sourceIdString.isBlank()) {
+                            OTelCoreMod.logger.warn(
+                                "Empty observation-source-id during loading of nbt for {}@{}#{}",
+                                this@ObservationSourceContainerBlockEntity,
+                                this@ObservationSourceContainerBlockEntity.globalPos,
+                                observationIndex,
+                            )
+                            continue
+                        }
+                        val resourceKey =
+                            ResourceKey.create(
+                                OTelCoreModAPI.ObservationSources,
+                                ResourceLocation.parse(sourceIdString)
+                            )
+                        val source = holderLookupProvider.lookupOrThrow(OTelCoreModAPI.ObservationSources)
+                            .getOrThrow(resourceKey)
+                            .value()
+
+                        if (source !in observationSources) {
+                            OTelCoreMod.logger.warn(
+                                "Observation-source-type {} is not enabled for {}@{}#{}",
+                                resourceKey,
+                                this@ObservationSourceContainerBlockEntity,
+                                this@ObservationSourceContainerBlockEntity.globalPos,
+                                observationIndex,
+                            )
+                            continue
+                        }
+                        assert(source.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
+                        @Suppress("UNCHECKED_CAST")
+                        // cast indirectly checked by being element of observationSources
+                        source as IObservationSource<in ObservationSourceContainerBlockEntity, *>
+
+                        val instanceId: Byte = if (tag.contains("index", Tag.TAG_BYTE.toInt()))
+                            tag.getByte("index")
+                        else if (allowAutoAssign) {
+                            if (!initialized)
+                                idCounter.compareAndSet(-1, 0)
+                            getNextId()
+                        } else
+                            throw IllegalArgumentException("Received no instanceId/index for ${this@ObservationSourceContainerBlockEntity}@${this@ObservationSourceContainerBlockEntity.globalPos}#$observationIndex")
+                        var shouldRegisterCallbacks = false
+                        val state = _observationStates.compute(instanceId) { instanceId, old ->
+                            if (old != null) {
+                                if (source.javaClass == old.javaClass && source is IObservationSourceSingleton<*, *, *>) {
+                                    old
+                                } else {
+                                    val sourceInstance = instantiateObservationSource(source, tag.get("params"))
+
+                                    @Suppress("UNCHECKED_CAST")
+                                    val result = mergeInstanceIntoSourceState(
+                                        sourceInstance as IObservationSourceInstance<ObservationSourceContainerBlockEntity, *>,
+                                        old as ObservationSourceState<ObservationSourceContainerBlockEntity>,
+                                        closeOld = true
+                                    ) as ObservationSourceState<in ObservationSourceContainerBlockEntity>
+                                    result.cascadeUpdates = _cascadesUpdates
+                                    result
+                                }
+                            } else {
+                                shouldRegisterCallbacks = true
+                                val sourceInstance = instantiateObservationSource(source, tag.get("params"))
+                                makeNewSourceState(sourceInstance, instanceId.toUByte()).also {
+                                    it.cascadeUpdates = _cascadesUpdates
+                                }
+                            }
+                        }
+                        runWithExceptionCleanup({ _observationStates.remove(instanceId)?.close() }) {
+                            if (shouldRegisterCallbacks) {
+                                setupCallback(state)
+                            }
+                            put(state, block(state, tag.getCompound("data")))
+                        }
                     }
-                    put(state, block(state, tag))
+                    if (removeMissing) {
+                        val missingIdsSet: ByteSet = ByteOpenHashSet(_observationStates.keys)
+                        for (state in this@buildMap.keys) {
+                            missingIdsSet.remove(state.id.toByte())
+                        }
+                        if (missingIdsSet.isNotEmpty()) {
+                            val iter = missingIdsSet.iterator()
+                            while (iter.hasNext()) {
+                                val id = iter.nextByte()
+                                val oldValue = _observationStates.remove(id)
+                                oldValue?.close()
+                            }
+                        }
+                    }
+                    if (!initialized) {
+                        var testId = 0
+                        while (testId < UByte.MAX_VALUE.toInt() && _observationStates.containsKey(testId.toByte())) {
+                            val witnessId = idCounter.compareAndExchange(testId, testId + 1)
+                            if (witnessId == testId) {
+                                testId++
+                            } else {
+                                testId = witnessId
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -344,10 +531,16 @@ abstract class ObservationSourceContainerBlockEntity(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
             instrumentManager: IMutableInstrumentManager?,
+            removeMissing: Boolean = true,
+            allowAutoAssign: Boolean = true,
         ) {
-            loadAndApplyToStateTags(compoundTag, holderLookupProvider) { state, tag ->
-                val data = tag.getCompound("data")
-                state.loadFromTag(data, holderLookupProvider, instrumentManager)
+            loadTagsAndApplyToState(
+                compoundTag,
+                holderLookupProvider,
+                removeMissing = removeMissing,
+                allowAutoAssign = allowAutoAssign
+            ) { state, dataTag ->
+                state.loadFromTag(dataTag, holderLookupProvider, instrumentManager)
             }
         }
 
@@ -355,10 +548,16 @@ abstract class ObservationSourceContainerBlockEntity(
         fun loadStatesDelayedFromTag(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
+            removeMissing: Boolean = true,
+            allowAutoAssign: Boolean = true,
         ): (Level) -> Unit {
-            val delayedMap = loadAndApplyToStateTags(compoundTag, holderLookupProvider) { state, tag ->
-                val data = tag.getCompound("data")
-                state.loadDelayedFromTag(data, holderLookupProvider)
+            val delayedMap = loadTagsAndApplyToState(
+                compoundTag,
+                holderLookupProvider,
+                removeMissing = removeMissing,
+                allowAutoAssign = allowAutoAssign
+            ) { state, dataTag ->
+                state.loadDelayedFromTag(dataTag, holderLookupProvider)
             }
 
             return { level ->
@@ -380,7 +579,15 @@ abstract class ObservationSourceContainerBlockEntity(
             val observationsListTag = ListTag()
             for (state in observationStates.values) {
                 observationsListTag.add(CompoundTag().also { stateTag ->
-                    stateTag.putString("id", state.source.id.location().toString())
+                    stateTag.putByte("index", state.id.toByte())
+
+                    val instance = state.instance
+                    stateTag.putString("id", instance.source.id.location().toString())
+                    val paramsTag = instance.toNbt()
+                    if (paramsTag != null) {
+                        stateTag.put("params", paramsTag)
+                    }
+
                     val dataTag = CompoundTag()
                     state.saveToTag(dataTag)
                     if (!dataTag.isEmpty) {

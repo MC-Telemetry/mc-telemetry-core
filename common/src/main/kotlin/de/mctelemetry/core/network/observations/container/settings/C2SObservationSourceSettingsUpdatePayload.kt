@@ -7,10 +7,9 @@ import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.ObservationContainerInteractionLimits
 import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceState
+import de.mctelemetry.core.observations.model.ObservationSourceStateID
 import de.mctelemetry.core.utils.toShortString
 import dev.architectury.networking.NetworkManager
-import net.fabricmc.api.EnvType
-import net.fabricmc.api.Environment
 import net.minecraft.core.GlobalPos
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
@@ -24,6 +23,7 @@ import kotlin.jvm.optionals.getOrNull
 class C2SObservationSourceSettingsUpdatePayload(
     val pos: GlobalPos,
     val source: IObservationSource<*, *>,
+    val instanceID: ObservationSourceStateID,
     val configuration: ObservationSourceConfiguration?,
 ) : CustomPacketPayload {
 
@@ -43,25 +43,25 @@ class C2SObservationSourceSettingsUpdatePayload(
                 C2SObservationSourceSettingsUpdatePayload::pos,
                 ByteBufCodecs.registry(OTelCoreModAPI.ObservationSources),
                 C2SObservationSourceSettingsUpdatePayload::source,
+                ByteBufCodecs.BYTE,
+                { it.instanceID.toByte() },
                 ByteBufCodecs.optional(ObservationSourceConfiguration.STREAM_CODEC).map(
                     Optional<ObservationSourceConfiguration>::getOrNull,
                     Optional<ObservationSourceConfiguration>::ofNullable
                 ),
                 C2SObservationSourceSettingsUpdatePayload::configuration,
-                ::C2SObservationSourceSettingsUpdatePayload,
+                { pos, source, id, config ->
+                    C2SObservationSourceSettingsUpdatePayload(
+                        pos,
+                        source,
+                        id.toUByte(),
+                        config
+                    )
+                },
             )
 
         fun register() {
             NetworkManager.registerReceiver(NetworkManager.c2s(), TYPE, STREAM_CODEC, Receiver)
-        }
-
-        @Environment(EnvType.CLIENT)
-        fun ObservationSourceState.sendConfigurationUpdate(pos: GlobalPos, value: ObservationSourceConfiguration?) {
-            NetworkManager.sendToServer(C2SObservationSourceSettingsUpdatePayload(
-                pos,
-                source,
-                value,
-            ))
         }
     }
 
@@ -97,7 +97,7 @@ class C2SObservationSourceSettingsUpdatePayload(
             @Suppress("UNCHECKED_CAST")
             // cast is only over generics. If cast would fail, the entry is simply
             // not found in observationStates.
-            val state = (blockEntity.observationStates as Map<IObservationSource<*, *>, ObservationSourceState>)
+            val state = (blockEntity.observationStates as Map<IObservationSource<*, *>, ObservationSourceState<*>>)
                 .getOrElse(value.source) {
                     throw NoSuchElementException("Could not find observation source ${value.source} in ${value.pos.toShortString()}")
                 }

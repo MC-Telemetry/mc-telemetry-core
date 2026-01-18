@@ -2,12 +2,16 @@ package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.ObservationContainerInteractionLimits
 import de.mctelemetry.core.observations.model.MemoryObservationRecorder
+import de.mctelemetry.core.observations.model.ObservationSourceStateID
 import dev.architectury.event.events.common.LifecycleEvent
 import dev.architectury.event.events.common.TickEvent
 import dev.architectury.networking.NetworkManager
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectMap
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectOpenHashMap
 import net.minecraft.core.BlockPos
 import net.minecraft.core.GlobalPos
 import net.minecraft.resources.ResourceKey
@@ -22,6 +26,7 @@ import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.collections.mutableListOf
 import kotlin.concurrent.withLock
 import kotlin.math.min
 
@@ -277,18 +282,23 @@ class ObservationRequestManagerServer(
         pos: BlockPos,
         players: Collection<ServerPlayer>,
     ) {
-        val observations: Map<IObservationSource<*, *>, RecordedObservations>
+        val observations: Map<Pair<IObservationSource<*, *>, ObservationSourceStateID>, RecordedObservations>
         if (!level.isLoaded(pos)) return
         val entity = level.getBlockEntity(pos)
         if (entity !is ObservationSourceContainerBlockEntity) return
         val container = entity.containerIfInitialized ?: return
-        val memoryRecorders: MutableList<MemoryObservationRecorder> = mutableListOf()
+        val memoryRecorders: Byte2ObjectMap<MemoryObservationRecorder> = Byte2ObjectOpenHashMap()
         container.observe(
-            { mapping -> MemoryObservationRecorder(mapping).also { memoryRecorders.add(it) } },
+            { mapping, state ->
+                MemoryObservationRecorder(mapping).also {
+                    val oldRecorder = memoryRecorders.put(state.id.toByte(), it)
+                    assert(oldRecorder == null || oldRecorder.mapping.mapping === mapping.mapping)
+                }
+            },
             forceObservation = true
         )
-        observations = memoryRecorders.fold(emptyMap()) { acc, recorder ->
-            val newMap = recorder.recordedAsMap()
+        observations = memoryRecorders.byte2ObjectEntrySet().fold(emptyMap()) { acc, entry ->
+            val newMap = entry.value.recordedAsMap().mapKeys { it.key.source to entry.byteKey.toUByte() }
             if (newMap.keys.none { it in acc })
                 acc + newMap
             else {

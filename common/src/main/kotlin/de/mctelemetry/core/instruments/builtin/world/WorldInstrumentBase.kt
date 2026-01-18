@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.world
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
@@ -32,7 +32,7 @@ abstract class WorldInstrumentBase<T : IInstrumentRegistration?>(name: String) :
     context(server: MinecraftServer)
     protected abstract fun IWorldGaugeInstrumentBuilder<*>.register()
 
-    context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, registration: T)
+    context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, registration: T)
     abstract fun observeWorld(recorder: IObservationRecorder.Unresolved.Sourceless)
 
     abstract class Simple(name: String, override val supportsFloating: Boolean) : WorldInstrumentBase<Nothing?>(name) {
@@ -40,12 +40,12 @@ abstract class WorldInstrumentBase<T : IInstrumentRegistration?>(name: String) :
         context(server: MinecraftServer)
         override fun IWorldGaugeInstrumentBuilder<*>.register() = defaultRegisterSimple()
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, registration: Nothing?)
+        context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, registration: Nothing?)
         final override fun observeWorld(recorder: IObservationRecorder.Unresolved.Sourceless) {
             observeWorldSimple(recorder)
         }
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer)
+        context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer)
         abstract fun observeWorldSimple(recorder: IObservationRecorder.Unresolved.Sourceless)
     }
 

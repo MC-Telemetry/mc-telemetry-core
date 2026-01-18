@@ -1,7 +1,6 @@
 package de.mctelemetry.core.api.attributes
 
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.AttributeDataSource.Reference.ObservationSourceAttributeReference
 import de.mctelemetry.core.api.observations.IObservationSource
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
@@ -20,23 +19,23 @@ sealed interface AttributeDataSource<T : Any> {
     val additionalTypeData: CompoundTag?
         get() = null
 
-    context(_: IMappedAttributeValueLookup)
+    context(_: IAttributeValueStore)
     val value: T?
 
     sealed interface Reference<T : Any> : AttributeDataSource<T> {
 
         val info: MappedAttributeKeyInfo<T, *>
 
-        context(attributeStore: IMappedAttributeValueLookup)
+        context(attributeStore: IAttributeValueStore)
         override val value: T?
             get() = attributeStore[this]
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable)
+        context(attributeStore: IAttributeValueStore.Mutable)
         fun set(value: T) {
             attributeStore[this] = value
         }
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable)
+        context(attributeStore: IAttributeValueStore.Mutable)
         fun unset() {
             attributeStore[this] = null
         }
@@ -110,7 +109,7 @@ sealed interface AttributeDataSource<T : Any> {
             type.templateType.valueStreamCodec.encode(bb, _value)
         }
 
-        context(_: IMappedAttributeValueLookup)
+        context(_: IAttributeValueStore)
         override val value: T
             get() = _value
 
@@ -155,18 +154,18 @@ sealed interface AttributeDataSource<T : Any> {
         private val OBSERVATION_ATTRIBUTE_REFERENCE_STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, Reference.ObservationSourceAttributeReference<*>> =
             StreamCodec.composite(
                 ByteBufCodecs.registry(OTelCoreModAPI.ObservationSources),
-                ObservationSourceAttributeReference<*>::source,
+                Reference.ObservationSourceAttributeReference<*>::source,
                 ByteBufCodecs.STRING_UTF8,
-                ObservationSourceAttributeReference<*>::attributeName,
+                Reference.ObservationSourceAttributeReference<*>::attributeName,
             ) { source, name ->
-                ObservationSourceAttributeReference.find(source,name)
+                Reference.ObservationSourceAttributeReference.find(source, name)
             }
 
 
-        fun <T : Any> MappedAttributeKeyInfo<T, *>.asAttributeDataSlot(): Reference.TypedSlot<T> =
+        fun <T : Any> MappedAttributeKeyInfo<T, *>.asAttributeDataSlot() =
             Reference.TypedSlot(this)
 
-        fun <T : Any> MappedAttributeKeyInfo<T, *>.asObservationDataReference(source: IObservationSource<*, *>): Reference.ObservationSourceAttributeReference<T> =
+        fun <T : Any> MappedAttributeKeyInfo<T, *>.asObservationDataReference(source: IObservationSource<*, *>) =
             Reference.ObservationSourceAttributeReference(
                 source,
                 this,
@@ -256,7 +255,7 @@ sealed interface AttributeDataSource<T : Any> {
                 Reference.TypedSlot::class.java,
                 TYPED_SLOT_STREAM_CODEC,
             ).add(
-                ObservationSourceAttributeReference::class.java,
+                Reference.ObservationSourceAttributeReference::class.java,
                 OBSERVATION_ATTRIBUTE_REFERENCE_STREAM_CODEC,
             ).add(
                 ConstantAttributeData::class.java,

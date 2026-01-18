@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.world.player
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.utils.observe
 import net.minecraft.server.MinecraftServer
@@ -15,7 +15,7 @@ object PlayerExperienceInstruments {
 
         override val description: String = "The experience level of the player."
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, player: ServerPlayer)
+        context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, player: ServerPlayer)
         override fun observePlayerSimple(recorder: IObservationRecorder.Unresolved.Sourceless) {
             recorder.observe(player.experienceLevel + player.experienceProgress.toDouble())
         }
@@ -28,7 +28,7 @@ object PlayerExperienceInstruments {
 
         override val description: String = "The current total experience of the player."
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, player: ServerPlayer)
+        context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, player: ServerPlayer)
         override fun observePlayerSimple(recorder: IObservationRecorder.Unresolved.Sourceless) {
             recorder.observe(player.totalExperience)
         }
@@ -41,7 +41,7 @@ object PlayerExperienceInstruments {
 
         override val description: String = "The score of the player."
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, player: ServerPlayer)
+        context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, player: ServerPlayer)
         override fun observePlayerSimple(recorder: IObservationRecorder.Unresolved.Sourceless) {
             recorder.observe(player.score)
         }

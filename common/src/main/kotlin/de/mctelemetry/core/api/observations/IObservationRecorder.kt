@@ -1,6 +1,6 @@
 package de.mctelemetry.core.api.observations
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import io.opentelemetry.api.common.Attributes
 
 sealed interface IObservationRecorder {
@@ -9,44 +9,44 @@ sealed interface IObservationRecorder {
 
     interface Unresolved : IObservationRecorder {
 
-        context(attributes: IMappedAttributeValueLookup)
-        fun observe(value: Long, source: IObservationSource<*, *>)
-        context(attributes: IMappedAttributeValueLookup)
-        fun observe(value: Double, source: IObservationSource<*, *>)
-        context(attributes: IMappedAttributeValueLookup)
+        context(attributes: IAttributeValueStore)
+        fun observe(value: Long, sourceInstance: IObservationSourceInstance<*, *>)
+        context(attributes: IAttributeValueStore)
+        fun observe(value: Double, sourceInstance: IObservationSourceInstance<*, *>)
+        context(attributes: IAttributeValueStore)
         fun observePreferred(
             double: Double,
             long: Long,
-            source: IObservationSource<*, *>,
-        ) = if (supportsFloating) observe(double, source)
-        else observe(long, source)
+            sourceInstance: IObservationSourceInstance<*, *>,
+        ) = if (supportsFloating) observe(double, sourceInstance)
+        else observe(long, sourceInstance)
 
-        fun onNewSource(source: IObservationSource<*, *>) {}
+        fun onNewSource(source: IObservationSourceInstance<*, *>) {}
 
         interface Sourceless: Unresolved {
-            context(attributes: IMappedAttributeValueLookup)
+            context(attributes: IAttributeValueStore)
             fun observe(value: Long)
-            context(attributes: IMappedAttributeValueLookup)
+            context(attributes: IAttributeValueStore)
             fun observe(value: Double)
-            context(attributes: IMappedAttributeValueLookup)
+            context(attributes: IAttributeValueStore)
             fun observePreferred(
                 double: Double,
                 long: Long,
             ) = if (supportsFloating) observe(double)
             else observe(long)
 
-            context(attributes: IMappedAttributeValueLookup)
-            override fun observe(value: Long, source: IObservationSource<*, *>) {
+            context(attributes: IAttributeValueStore)
+            override fun observe(value: Long, sourceInstance: IObservationSourceInstance<*, *>) {
                 observe(value)
             }
 
-            context(attributes: IMappedAttributeValueLookup)
-            override fun observe(value: Double, source: IObservationSource<*, *>) {
+            context(attributes: IAttributeValueStore)
+            override fun observe(value: Double, sourceInstance: IObservationSourceInstance<*, *>) {
                 observe(value)
             }
 
-            context(attributes: IMappedAttributeValueLookup)
-            override fun observePreferred(double: Double, long: Long, source: IObservationSource<*, *>) {
+            context(attributes: IAttributeValueStore)
+            override fun observePreferred(double: Double, long: Long, sourceInstance: IObservationSourceInstance<*, *>) {
                 observePreferred(double, long)
             }
         }
@@ -54,16 +54,16 @@ sealed interface IObservationRecorder {
 
     interface Resolved : IObservationRecorder {
 
-        fun observe(value: Long, attributes: Attributes, source: IObservationSource<*, *>? = null)
-        fun observe(value: Double, attributes: Attributes, source: IObservationSource<*, *>? = null)
+        fun observe(value: Long, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *>? = null)
+        fun observe(value: Double, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *>? = null)
         fun observePreferred(
             double: Double,
             long: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>? = null,
-        ) = if (supportsFloating) observe(double, attributes, source)
-        else observe(long, attributes, source)
+            sourceInstance: IObservationSourceInstance<*, *>? = null,
+        ) = if (supportsFloating) observe(double, attributes, sourceInstance)
+        else observe(long, attributes, sourceInstance)
 
-        fun onNewSource(source: IObservationSource<*, *>) {}
+        fun onNewSource(sourceInstance: IObservationSourceInstance<*, *>) {}
     }
 }

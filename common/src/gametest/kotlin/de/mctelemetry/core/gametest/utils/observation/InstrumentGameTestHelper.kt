@@ -6,7 +6,6 @@ import de.mctelemetry.core.api.instruments.DuplicateInstrumentException
 import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
@@ -26,6 +25,8 @@ import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState.Companion.asException
 import de.mctelemetry.core.observations.model.ObservationSourceState
+import de.mctelemetry.core.observations.model.ObservationSourceStateID
+import de.mctelemetry.core.observations.model.source
 import de.mctelemetry.core.utils.ArgLazy
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.closeAllRethrow
@@ -40,7 +41,6 @@ import net.minecraft.gametest.framework.GameTestAssertPosException
 import net.minecraft.gametest.framework.GameTestHelper
 import net.minecraft.gametest.framework.GameTestSequence
 import net.minecraft.world.level.block.entity.BlockEntity
-import kotlin.collections.get
 import kotlin.collections.iterator
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
@@ -173,7 +173,7 @@ class InstrumentGameTestHelper(
         registerFinalizer: IGameTestHelperFinalizer.FinalizerRegistration = IGameTestHelperFinalizer.FinalizerRegistration.TEST_END,
         customizer: IGaugeInstrumentBuilder<*>.(originalName: String, isDouble: Boolean) -> Unit = { _, _ -> },
     ): Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>> {
-        val observationSourceMap: Map<String, List<Pair<ObservationSourceContainerBlockEntity, ObservationSourceState>>> =
+        val observationSourceMap: Map<String, List<Pair<ObservationSourceContainerBlockEntity, ObservationSourceState<*>>>> =
             BlockPos.betweenClosedStream(gameTestHelper.bounds.contract(1.0, 1.0, 1.0))
                 .asSequence()
                 .mapNotNull { blockPos ->
@@ -193,23 +193,23 @@ class InstrumentGameTestHelper(
                 val testSourceAttributes = testState.configuration!!.mapping.instrumentAttributes
                 require(testSourceAttributes == baseSourceAttributes) {
                     """Incompatible instrumentAttributes for $baseName between
-                            | ${firstState.source.id.location()}@$baseEntity@${gameTestHelper.relativePos(baseEntity.blockPos)}
+                            | ${firstState.source.id.location()}/${firstState.id}@$baseEntity@${gameTestHelper.relativePos(baseEntity.blockPos)}
                             | and
-                            | ${testState.source.id.location()}@$testEntity@${gameTestHelper.relativePos(testEntity.blockPos)}:
+                            | ${testState.source.id.location()}/${testState.id}@$testEntity@${gameTestHelper.relativePos(testEntity.blockPos)}:
                             | $baseSourceAttributes != $testSourceAttributes""".trimMargin()
                 }
             }
         }
         // two passes through observationSourceMap to first check all, then instantiate all
         val completedInstruments = ArrayDeque<AutoCloseable>(observationSourceMap.size)
-        val originalConfigurations = ArrayDeque<Pair<ObservationSourceState, ObservationSourceConfiguration?>>()
+        val originalConfigurations = ArrayDeque<Pair<ObservationSourceState<*>, ObservationSourceConfiguration?>>()
         gameTestHelper.finalizer(registerFinalizer) {
             originalConfigurations.consumeAllRethrow { (state, config) ->
                 state.configuration = config
             }
         }
         return runWithExceptionCleanup(cleanup = {
-            var exceptionAccumulator = originalConfigurations.consumeAllCollect { (state, config) ->
+            val exceptionAccumulator = originalConfigurations.consumeAllCollect { (state, config) ->
                 state.configuration = config
             }
             completedInstruments.closeAllRethrow(exceptionAccumulator)
@@ -269,8 +269,8 @@ class InstrumentGameTestHelper(
             longValue = value,
             attributes = attributes,
             allowPreferred = allowPreferred,
-            source = null,
-            requireSourceMatch = false
+            sourceInstance = null,
+            requireSourceInstanceMatch = false
         ).also(this::observe).assertSawAll()
     }
 
@@ -287,8 +287,8 @@ class InstrumentGameTestHelper(
             doubleValue = value,
             attributes = attributes,
             allowPreferred = allowPreferred,
-            source = null,
-            requireSourceMatch = false,
+            sourceInstance = null,
+            requireSourceInstanceMatch = false,
             doubleMargin = doubleMargin,
         ).also(this::observe).assertSawAll()
     }
@@ -411,15 +411,15 @@ class InstrumentGameTestHelper(
 
         internal inline fun <T> GameTestHelper.configureObservationSource(
             pos: BlockPos,
-            observationSource: IObservationSource<*, *>,
-            block: (ObservationSourceState) -> T,
+            stateID: ObservationSourceStateID,
+            block: (ObservationSourceState<*>) -> T,
         ): T {
             val containerEntity: ObservationSourceContainerBlockEntity = this.getBlockEntityC(pos)
             val states = containerEntity.observationStatesIfInitialized
             try {
                 assertNotNullC(states, "Expected container to be configured on $containerEntity")
-                val state = states[observationSource]
-                assertNotNullC(state, "Expected state to be available for $observationSource on $containerEntity")
+                val state = states.get(stateID.toByte())
+                assertNotNullC(state, "Expected state $stateID to be available on $containerEntity")
                 return block(state)
             } catch (ex: GameTestAssertException) {
                 if (ex is GameTestAssertPosException) throw ex

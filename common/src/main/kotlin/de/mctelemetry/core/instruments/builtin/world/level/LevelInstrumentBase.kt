@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.world.level
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
@@ -16,7 +16,7 @@ abstract class LevelInstrumentBase<T : IInstrumentRegistration?>(name: String) :
 
     protected val levelSlot = NativeAttributeKeyTypes.StringType.createAttributeSlot("dimension")
 
-    context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, registration: T)
+    context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, registration: T)
     override fun observeWorld(recorder: IObservationRecorder.Unresolved.Sourceless) {
         for (level in server.allLevels) {
             if (!server.isLevelEnabled(level)) continue
@@ -27,7 +27,7 @@ abstract class LevelInstrumentBase<T : IInstrumentRegistration?>(name: String) :
         }
     }
 
-    context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, level: ServerLevel, registration: T)
+    context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, level: ServerLevel, registration: T)
     abstract fun observeLevel(recorder: IObservationRecorder.Unresolved.Sourceless)
 
     abstract class Simple(name: String, override val supportsFloating: Boolean) : LevelInstrumentBase<Nothing?>(name) {
@@ -35,12 +35,12 @@ abstract class LevelInstrumentBase<T : IInstrumentRegistration?>(name: String) :
         context(server: MinecraftServer)
         override fun IWorldGaugeInstrumentBuilder<*>.register() = defaultRegisterSimple()
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, level: ServerLevel, registration: Nothing?)
+        context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, level: ServerLevel, registration: Nothing?)
         final override fun observeLevel(recorder: IObservationRecorder.Unresolved.Sourceless) {
             observeLevelSimple(recorder)
         }
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, level: ServerLevel)
+        context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, level: ServerLevel)
         abstract fun observeLevelSimple(recorder: IObservationRecorder.Unresolved.Sourceless)
     }
 

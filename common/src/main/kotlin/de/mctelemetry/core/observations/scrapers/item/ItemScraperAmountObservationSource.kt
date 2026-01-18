@@ -3,10 +3,10 @@ package de.mctelemetry.core.observations.scrapers.item
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.observations.base.PositionObservationSourceBase
+import de.mctelemetry.core.api.observations.position.PositionObservationSourceBase
 import de.mctelemetry.core.platform.ModPlatformProvider
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -16,7 +16,9 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.item.Item
 import net.minecraft.world.level.block.entity.BlockEntity
 
-object ItemScraperAmountObservationSource : PositionObservationSourceBase() {
+object ItemScraperAmountObservationSource :
+    PositionObservationSourceBase.PositionSingletonBase<ItemScraperAmountObservationSource>() {
+
     val observedItem = BuiltinAttributeKeyTypes.ItemType.createObservationAttributeReference("item")
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
@@ -24,7 +26,7 @@ object ItemScraperAmountObservationSource : PositionObservationSourceBase() {
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "item_scraper.amount")
     )
 
-    context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
+    context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
     override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

@@ -3,38 +3,38 @@ package de.mctelemetry.core.api.attributes
 import kotlin.collections.associateWithTo
 import kotlin.collections.mutableMapOf
 
-interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
+interface IAttributeValueStore : IAttributeDateSourceReferenceSet {
 
     operator fun <T : Any> get(reference: AttributeDataSource.Reference<T>): T?
 
     fun <T : Any, R : AttributeDataSource.Reference<T>> prepareLookup(reference: R): ((R) -> T)?
 
-    interface Mutable : IMappedAttributeValueLookup {
+    interface Mutable : IAttributeValueStore {
 
         operator fun <T : Any> set(reference: AttributeDataSource.Reference<T>, value: T?)
     }
 
     companion object {
 
-        private val Empty = object : IMappedAttributeValueLookup {
+        private val Empty = object : IAttributeValueStore {
             override fun <T : Any> get(reference: AttributeDataSource.Reference<T>): T? = null
             override val references: Set<AttributeDataSource.Reference<*>> = emptySet()
 
             override fun <T : Any, R : AttributeDataSource.Reference<T>> prepareLookup(reference: R): ((R) -> T)? = null
         }
 
-        fun empty(): IMappedAttributeValueLookup = Empty
+        fun empty(): IAttributeValueStore = Empty
     }
 
-    class PairLookup<T : Any>(
+    class PairAttributeStore<T : Any>(
         val key: AttributeDataSource.Reference<T>,
         var value: T?,
-        val parent: IMappedAttributeValueLookup = empty(),
+        val parent: IAttributeValueStore = empty(),
     ) : Mutable {
 
         constructor(
             pair: Pair<AttributeDataSource.Reference<T>, T?>,
-            parent: IMappedAttributeValueLookup = empty(),
+            parent: IAttributeValueStore = empty(),
         ) : this(pair.first, pair.second, parent)
 
         override val references: Set<AttributeDataSource.Reference<*>> by lazy {
@@ -75,14 +75,14 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
         }
     }
 
-    class MapLookup private constructor(
+    class MapAttributeStore private constructor(
         private val data: MutableMap<AttributeDataSource.Reference<*>, Any?>,
-        private val parent: IMappedAttributeValueLookup,
+        private val parent: IAttributeValueStore,
     ) : Mutable {
 
         constructor(
-            data: MapLookup,
-            parent: IMappedAttributeValueLookup = empty(),
+            data: MapAttributeStore,
+            parent: IAttributeValueStore = empty(),
         ) : this(data.data.toMutableMap(), parent)
 
         companion object {
@@ -90,16 +90,16 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
             @JvmName("newFromReferences")
             operator fun invoke(
                 data: Collection<AttributeDataSource.Reference<*>>,
-                parent: IMappedAttributeValueLookup = empty(),
-            ) = MapLookup(data.associateWithTo(mutableMapOf()) {
+                parent: IAttributeValueStore = empty(),
+            ) = MapAttributeStore(data.associateWithTo(mutableMapOf()) {
                 null
             }, parent)
 
             @JvmName("newFromReferences")
             operator fun invoke(
                 data: Map<AttributeDataSource.Reference<*>, Any?>,
-                parent: IMappedAttributeValueLookup = empty(),
-            ) = MapLookup(data.also {
+                parent: IAttributeValueStore = empty(),
+            ) = MapAttributeStore(data.also {
                 data.forEach { (key, value) ->
                     if (value == null) return@forEach
                     require(key.type.templateType.valueType.isInstance(value)) {
@@ -111,16 +111,16 @@ interface IMappedAttributeValueLookup : IAttributeDateSourceReferenceSet {
             @JvmName("newFromAttributeKeyInfos")
             operator fun invoke(
                 data: Collection<MappedAttributeKeyInfo<*, *>>,
-                parent: IMappedAttributeValueLookup = empty(),
-            ) = MapLookup(data.associateTo(mutableMapOf()) {
+                parent: IAttributeValueStore = empty(),
+            ) = MapAttributeStore(data.associateTo(mutableMapOf()) {
                 AttributeDataSource.Reference.TypedSlot(it) to null
             }, parent)
 
             @JvmName("newFromAttributeKeyInfos")
             operator fun invoke(
                 data: Map<MappedAttributeKeyInfo<*, *>, Any?>,
-                parent: IMappedAttributeValueLookup = empty(),
-            ) = MapLookup(data.mapKeysTo(mutableMapOf()) { (key, value) ->
+                parent: IAttributeValueStore = empty(),
+            ) = MapAttributeStore(data.mapKeysTo(mutableMapOf()) { (key, value) ->
                 if (value != null) {
                     require(key.templateType.valueType.isInstance(value)) {
                         "Incompatible key and value: $key to $value"

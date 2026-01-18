@@ -58,6 +58,10 @@ class ObservationAttributeMapping(
 
     private val validationFlags: AtomicInteger = AtomicInteger(0)
 
+    fun copy(): ObservationAttributeMapping {
+        return ObservationAttributeMapping(mapping)
+    }
+
     private inline fun cacheableValidation(
         @MagicConstant(
             intValues = [
@@ -133,7 +137,7 @@ class ObservationAttributeMapping(
         output.removeAll(this.attributeDataSources)
     }
 
-    context(attributeStore: IMappedAttributeValueLookup)
+    context(attributeStore: IAttributeValueStore)
     fun resolveAttributes(): Attributes {
         if (mapping.isEmpty()) {
             return Attributes.empty()
@@ -143,7 +147,7 @@ class ObservationAttributeMapping(
         }.build()
     }
 
-    context(attributeStore: IMappedAttributeValueLookup)
+    context(attributeStore: IAttributeValueStore)
     fun resolveAttributesToKeyValues(): List<MappedAttributeKeyValue<*,*>> {
         if(mapping.isEmpty()) {
             return emptyList()
@@ -212,21 +216,21 @@ class ObservationAttributeMapping(
         //private val comparator: Comparator<MappedAttributeKeyInfo<*, *>> = Comparator.comparing { it.baseKey.key }
 
 
-        context(attributeStore: IMappedAttributeValueLookup)
+        context(attributeStore: IAttributeValueStore)
         fun resolveAttributesUnmapped(): Attributes {
             return attributeStore.references.fold(Attributes.builder()) { builder, reference ->
                 addConverted(reference.info,reference, builder)
             }.build()
         }
 
-        context(attributeStore: IMappedAttributeValueLookup)
+        context(attributeStore: IAttributeValueStore)
         fun resolveAttributesUnmappedToKeyValues(): List<MappedAttributeKeyValue<*,*>> {
             return attributeStore.references.map { reference ->
                 makeConverted(reference.info, reference)
             }
         }
 
-        context(attributeStore: IMappedAttributeValueLookup)
+        context(attributeStore: IAttributeValueStore)
         private fun <T : Any, B : Any> addConverted(
             metricAttribute: MappedAttributeKeyInfo<T, B>,
             attributeDataSource: AttributeDataSource<*>,
@@ -239,7 +243,7 @@ class ObservationAttributeMapping(
         }
 
 
-        context(attributeStore: IMappedAttributeValueLookup)
+        context(attributeStore: IAttributeValueStore)
         private fun <T : Any, I : MappedAttributeKeyInfo<T, *>> makeConverted(
             metricAttribute: I,
             attributeDataSource: AttributeDataSource<*>,
@@ -248,7 +252,7 @@ class ObservationAttributeMapping(
             return MappedAttributeKeyValue(metricAttribute, value)
         }
 
-        context(attributeStore: IMappedAttributeValueLookup)
+        context(attributeStore: IAttributeValueStore)
         private fun <T : Any, R : Any, B : Any> lookupConverted(
             metricAttributeType: IAttributeKeyTypeTemplate<T, B>,
             attributeDataSource: AttributeDataSource<R>,

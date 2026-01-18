@@ -1,10 +1,10 @@
 package de.mctelemetry.core.observations.model
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
 import de.mctelemetry.core.api.observations.IObservationRecorder
-import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.network.observations.container.observationrequest.RecordedObservationPoint
 import de.mctelemetry.core.network.observations.container.observationrequest.RecordedObservations
 import java.util.concurrent.ConcurrentHashMap
@@ -12,20 +12,20 @@ import java.util.concurrent.ConcurrentMap
 
 class MemoryObservationRecorder(val mapping: ObservationAttributeMapping) : IObservationRecorder.Unresolved {
 
-    private val backingMap: ConcurrentMap<IObservationSource<*, *>, ConcurrentMap<List<MappedAttributeKeyValue<*, *>>, RecordedObservationPoint>> =
+    private val backingMap: ConcurrentMap<IObservationSourceInstance<*, *>, ConcurrentMap<List<MappedAttributeKeyValue<*, *>>, RecordedObservationPoint>> =
         ConcurrentHashMap()
 
-    private fun mapForSource(source: IObservationSource<*, *>): ConcurrentMap<List<MappedAttributeKeyValue<*, *>>, RecordedObservationPoint> {
+    private fun mapForSource(source: IObservationSourceInstance<*, *>): ConcurrentMap<List<MappedAttributeKeyValue<*, *>>, RecordedObservationPoint> {
         return backingMap.computeIfAbsent(source) { ConcurrentHashMap() }
     }
 
-    fun recordedAsMap(): Map<IObservationSource<*, *>, RecordedObservations> {
+    fun recordedAsMap(): Map<IObservationSourceInstance<*, *>, RecordedObservations> {
         return backingMap.mapValues { (_, subMaps) ->
             RecordedObservations(null, subMaps)
         }
     }
 
-    override fun onNewSource(source: IObservationSource<*, *>) {
+    override fun onNewSource(source: IObservationSourceInstance<*, *>) {
         mapForSource(source)
     }
 
@@ -33,25 +33,25 @@ class MemoryObservationRecorder(val mapping: ObservationAttributeMapping) : IObs
         backingMap.clear()
     }
 
-    context(attributeStore: IMappedAttributeValueLookup)
-    override fun observe(value: Double, source: IObservationSource<*, *>) {
+    context(attributeStore: IAttributeValueStore)
+    override fun observe(value: Double, sourceInstance: IObservationSourceInstance<*, *>) {
         val attributeValues = mapping.resolveAttributesToKeyValues()
         val point = RecordedObservationPoint(MappedAttributeKeyMap(attributeValues), value)
-        mapForSource(source)[attributeValues] = point
+        mapForSource(sourceInstance)[attributeValues] = point
     }
 
-    context(attributeStore: IMappedAttributeValueLookup)
-    override fun observe(value: Long, source: IObservationSource<*, *>) {
+    context(attributeStore: IAttributeValueStore)
+    override fun observe(value: Long, sourceInstance: IObservationSourceInstance<*, *>) {
         val attributeValues = mapping.resolveAttributesToKeyValues()
         val point = RecordedObservationPoint(MappedAttributeKeyMap(attributeValues), value)
-        mapForSource(source)[attributeValues] = point
+        mapForSource(sourceInstance)[attributeValues] = point
     }
 
-    context(attributeStore: IMappedAttributeValueLookup)
+    context(attributeStore: IAttributeValueStore)
     override fun observePreferred(
         double: Double,
         long: Long,
-        source: IObservationSource<*, *>,
+        sourceInstance: IObservationSourceInstance<*, *>,
     ) {
         val attributeValues = mapping.resolveAttributesToKeyValues()
         val point = RecordedObservationPoint(
@@ -59,7 +59,7 @@ class MemoryObservationRecorder(val mapping: ObservationAttributeMapping) : IObs
             doubleValue = double,
             longValue = long,
         )
-        mapForSource(source)[attributeValues] = point
+        mapForSource(sourceInstance)[attributeValues] = point
     }
 
     override val supportsFloating: Boolean

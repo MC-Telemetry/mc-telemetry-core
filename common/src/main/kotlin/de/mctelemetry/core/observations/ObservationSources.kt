@@ -13,7 +13,7 @@ import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperDirectP
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperPowerObservationSource
 
 object ObservationSources {
-    val ALL: List<IObservationSource<*,*>> = listOf(
+    val ALL: List<IObservationSource<*, *>> = listOf(
         RedstoneScraperComparatorObservationSource,
         RedstoneScraperDirectPowerObservationSource,
         RedstoneScraperPowerObservationSource,

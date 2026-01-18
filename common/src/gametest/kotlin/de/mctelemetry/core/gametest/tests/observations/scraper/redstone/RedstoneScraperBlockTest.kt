@@ -6,10 +6,8 @@ import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.gametest.utils.assertBlockEntityDataC
 import de.mctelemetry.core.gametest.utils.assertBlockStateC
-import de.mctelemetry.core.gametest.utils.assertFalseC
 import de.mctelemetry.core.gametest.utils.assertNotNullC
-import de.mctelemetry.core.gametest.utils.assertNullC
-import de.mctelemetry.core.gametest.utils.assertValueEqualC
+import de.mctelemetry.core.gametest.utils.assertTrueC
 import de.mctelemetry.core.gametest.utils.thenExecuteForC
 import de.mctelemetry.core.gametest.utils.thenWaitUntilC
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
@@ -148,7 +146,7 @@ object RedstoneScraperBlockTest {
     @Suppress("unused")
     @JvmStatic
     @GameTest
-    fun newTransitionsToDefaultWarningTest(helper: GameTestHelper) {
+    fun newTransitionsToDefaultNotConfiguredTest(helper: GameTestHelper) {
         helper.setBlock(BasePos, OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get())
         helper.assertBlockPresent(OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(), BasePos)
         helper.onEachTick {
@@ -162,15 +160,7 @@ object RedstoneScraperBlockTest {
                 BasePos,
                 { "Expected to be in NotConfigured state" }) {
                 val states = helper.assertNotNullC(it.observationStatesIfInitialized, "observationStates")
-                helper.assertFalseC(states.isEmpty(), "Expected observationStates to not be empty")
-                states.forEach { (source, state) ->
-                    helper.assertValueEqualC(
-                        state.errorState,
-                        ObservationSourceErrorState.NotConfigured,
-                        "errorState of $source"
-                    )
-                    helper.assertNullC(state.configuration, "configuration of $source")
-                }
+                helper.assertTrueC(states.isEmpty(), "Expected observationStates to be empty but was $states")
                 ObservationSourceErrorState.Type.NotConfigured == it.blockState.getValue(ObservationSourceContainerBlock.ERROR)
             }
         }

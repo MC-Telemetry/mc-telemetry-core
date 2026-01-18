@@ -1,7 +1,7 @@
 package de.mctelemetry.core.instruments.builtin.world.player
 
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
@@ -16,7 +16,7 @@ abstract class PlayerInstrumentBase<T : IInstrumentRegistration?>(name: String) 
 
     protected val playerSlot = BuiltinAttributeKeyTypes.UUIDType.createAttributeSlot("player.id")
 
-    context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, registration: T)
+    context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, registration: T)
     override fun observeWorld(recorder: IObservationRecorder.Unresolved.Sourceless) {
         for (player in server.playerList.players) {
             if (!player.allowsListing()) continue
@@ -27,7 +27,7 @@ abstract class PlayerInstrumentBase<T : IInstrumentRegistration?>(name: String) 
         }
     }
 
-    context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, player: ServerPlayer, registration: T)
+    context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, player: ServerPlayer, registration: T)
     abstract fun observePlayer(recorder: IObservationRecorder.Unresolved.Sourceless)
 
     abstract class Simple(name: String, override val supportsFloating: Boolean) : PlayerInstrumentBase<Nothing?>(name) {
@@ -35,12 +35,12 @@ abstract class PlayerInstrumentBase<T : IInstrumentRegistration?>(name: String) 
         context(server: MinecraftServer)
         override fun IWorldGaugeInstrumentBuilder<*>.register() = defaultRegisterSimple()
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, player: ServerPlayer, registration: Nothing?)
+        context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, player: ServerPlayer, registration: Nothing?)
         final override fun observePlayer(recorder: IObservationRecorder.Unresolved.Sourceless) {
             observePlayerSimple(recorder)
         }
 
-        context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, player: ServerPlayer)
+        context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, player: ServerPlayer)
         abstract fun observePlayerSimple(recorder: IObservationRecorder.Unresolved.Sourceless)
     }
 

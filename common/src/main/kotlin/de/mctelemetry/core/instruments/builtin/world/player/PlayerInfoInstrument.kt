@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.world.player
 
-import de.mctelemetry.core.api.attributes.IMappedAttributeValueLookup
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import net.minecraft.server.MinecraftServer
@@ -15,7 +15,7 @@ object PlayerInfoInstrument : PlayerInstrumentBase.Simple(
 
     private val nameSlot = NativeAttributeKeyTypes.StringType.createAttributeSlot("player.name")
 
-    context(attributeStore: IMappedAttributeValueLookup.Mutable, server: MinecraftServer, player: ServerPlayer)
+    context(attributeStore: IAttributeValueStore.Mutable, server: MinecraftServer, player: ServerPlayer)
     override fun observePlayerSimple(recorder: IObservationRecorder.Unresolved.Sourceless) {
         nameSlot.set(player.name.string)
         recorder.observe(1)

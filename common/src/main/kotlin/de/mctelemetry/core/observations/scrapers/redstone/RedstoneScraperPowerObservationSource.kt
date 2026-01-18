@@ -4,7 +4,8 @@ import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.*
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.observations.base.PositionObservationSourceBase
+import de.mctelemetry.core.api.observations.position.side.PositionSideObservationSourceBase
+import de.mctelemetry.core.utils.observe
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.resources.ResourceKey
@@ -12,14 +13,15 @@ import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.entity.BlockEntity
 
-object RedstoneScraperPowerObservationSource : PositionObservationSourceBase.PositionSideObservationSourceBase() {
+object RedstoneScraperPowerObservationSource :
+    PositionSideObservationSourceBase.PositionSideSingletonBase<RedstoneScraperPowerObservationSource>() {
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.power")
     )
 
-    context(sourceContext: BlockEntity, attributeStore: IMappedAttributeValueLookup.MapLookup)
+    context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
     override fun observeSide(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,
@@ -27,9 +29,6 @@ object RedstoneScraperPowerObservationSource : PositionObservationSourceBase.Pos
         side: Direction,
         unusedAttributes: Set<AttributeDataSource<*>>
     ) {
-        recorder.observe(
-            level.getSignal(position, side.opposite).toLong(),
-            this
-        )
+        recorder.observe(level.getSignal(position, side.opposite))
     }
 }

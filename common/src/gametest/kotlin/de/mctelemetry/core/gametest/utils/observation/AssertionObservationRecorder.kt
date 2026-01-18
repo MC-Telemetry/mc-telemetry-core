@@ -1,7 +1,7 @@
 package de.mctelemetry.core.gametest.utils.observation
 
 import de.mctelemetry.core.api.observations.IObservationRecorder
-import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.gametest.utils.assertFalseC
 import de.mctelemetry.core.gametest.utils.assertTrueC
 import de.mctelemetry.core.gametest.utils.assertValueEqualC
@@ -20,12 +20,12 @@ abstract class AssertionObservationRecorder(
         double: Double,
         long: Long,
         attributes: Attributes,
-        source: IObservationSource<*, *>?,
+        sourceInstance: IObservationSourceInstance<*, *>?,
     )
 
-    abstract override fun observe(value: Long, attributes: Attributes, source: IObservationSource<*, *>?)
+    abstract override fun observe(value: Long, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *>?)
 
-    abstract override fun observe(value: Double, attributes: Attributes, source: IObservationSource<*, *>?)
+    abstract override fun observe(value: Double, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *>?)
 
     abstract fun assertSawAll()
 
@@ -73,8 +73,8 @@ abstract class AssertionObservationRecorder(
                 attributes: Attributes,
                 doubleValue: Double,
                 allowPreferred: Boolean,
-                source: IObservationSource<*, *>?,
-                requireSourceMatch: Boolean,
+                sourceInstance: IObservationSourceInstance<*, *>?,
+                requireSourceInstanceMatch: Boolean,
             ): IAssertionObservationRecorderBuilder {
                 require(cannotSupportDoubleReason == null || allowPreferred) {
                     "Cannot add assertRecordsDouble without allowPreferred because doubles cannot be supported by all assertions: $cannotSupportDoubleReason"
@@ -86,8 +86,8 @@ abstract class AssertionObservationRecorder(
                         doubleValue,
                         attributes,
                         allowPreferred = allowPreferred,
-                        source = source,
-                        requireSourceMatch = requireSourceMatch,
+                        sourceInstance = sourceInstance,
+                        requireSourceInstanceMatch = requireSourceInstanceMatch,
                         doubleMargin = doubleMargin,
                     ).also {
                         if (!allowPreferred) {
@@ -103,8 +103,8 @@ abstract class AssertionObservationRecorder(
                 attributes: Attributes,
                 longValue: Long,
                 allowPreferred: Boolean,
-                source: IObservationSource<*, *>?,
-                requireSourceMatch: Boolean,
+                sourceInstance: IObservationSourceInstance<*, *>?,
+                requireSourceInstanceMatch: Boolean,
             ): IAssertionObservationRecorderBuilder {
                 require(cannotSupportLongReason == null || allowPreferred) {
                     "Cannot add assertRecordsDouble without allowPreferred because longs cannot be supported by all assertions: $cannotSupportLongReason"
@@ -116,8 +116,8 @@ abstract class AssertionObservationRecorder(
                         longValue,
                         attributes,
                         allowPreferred = allowPreferred,
-                        source = source,
-                        requireSourceMatch = requireSourceMatch,
+                        sourceInstance = sourceInstance,
+                        requireSourceInstanceMatch = requireSourceInstanceMatch,
                     ).also {
                         if (!allowPreferred) {
                             cannotSupportDoubleReason = cannotSupportDoubleReason ?: it
@@ -132,8 +132,8 @@ abstract class AssertionObservationRecorder(
                 attributes: Attributes,
                 longValue: Long,
                 doubleValue: Double,
-                source: IObservationSource<*, *>?,
-                requireSourceMatch: Boolean,
+                sourceInstance: IObservationSourceInstance<*, *>?,
+                requireSourceInstanceMatch: Boolean,
             ): IAssertionObservationRecorderBuilder {
                 require(cannotSupportPreferredReason == null) {
                     "Cannot add assertRecordsPreferred because preferred is not supported by all assertions: $cannotSupportPreferredReason"
@@ -145,8 +145,8 @@ abstract class AssertionObservationRecorder(
                         longValue,
                         doubleValue,
                         attributes,
-                        source = source,
-                        requireSourceMatch = requireSourceMatch,
+                        sourceInstance = sourceInstance,
+                        requireSourceInstanceMatch = requireSourceInstanceMatch,
                         doubleMargin = doubleMargin,
                     ).also {
                         if (cannotSupportLongReason != null)
@@ -202,36 +202,36 @@ abstract class AssertionObservationRecorder(
             double: Double,
             long: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            if (source == null) {
+            if (sourceInstance == null) {
                 gameTestHelper.failC("Expected no observations for $name, but received preferred of $double and $long at $attributes")
             } else {
-                gameTestHelper.failC("Expected no observations for $name, but received preferred of $double and $long at $attributes from $source")
+                gameTestHelper.failC("Expected no observations for $name, but received preferred of $double and $long at $attributes from $sourceInstance")
             }
         }
 
         override fun observe(
             value: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            if (source == null) {
+            if (sourceInstance == null) {
                 gameTestHelper.failC("Expected no observations for $name, but received long $value at $attributes")
             } else {
-                gameTestHelper.failC("Expected no observations for $name, but received long of $value at $attributes from $source")
+                gameTestHelper.failC("Expected no observations for $name, but received long of $value at $attributes from $sourceInstance")
             }
         }
 
         override fun observe(
             value: Double,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            if (source == null) {
+            if (sourceInstance == null) {
                 gameTestHelper.failC("Expected no observations for $name, but received double $value at $attributes")
             } else {
-                gameTestHelper.failC("Expected no observations for $name, but received double of $value at $attributes from $source")
+                gameTestHelper.failC("Expected no observations for $name, but received double of $value at $attributes from $sourceInstance")
             }
         }
     }
@@ -245,8 +245,8 @@ abstract class AssertionObservationRecorder(
         val allowRecordLong: Boolean = true,
         val allowRecordDouble: Boolean = true,
         val allowRecordPreferred: Boolean = true,
-        val source: IObservationSource<*, *>? = null,
-        val requireSourceMatch: Boolean = source != null,
+        val sourceInstance: IObservationSourceInstance<*, *>? = null,
+        val requireSourceInstanceMatch: Boolean = sourceInstance != null,
         override val supportsFloating: Boolean = doubleValue != null,
         val doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
     ) : AssertionObservationRecorder(gameTestHelper) {
@@ -284,23 +284,23 @@ abstract class AssertionObservationRecorder(
             }
         }
 
-        private fun nameWithSource(source: IObservationSource<*, *>?): String {
-            if (requireSourceMatch) {
-                gameTestHelper.assertValueEqualC(source, this.source, "source of $name")
+        private fun nameWithSource(sourceInstance: IObservationSourceInstance<*, *>?): String {
+            if (requireSourceInstanceMatch) {
+                gameTestHelper.assertValueEqualC(sourceInstance, this.sourceInstance, "source-instance of $name")
             }
-            return if (source == null)
+            return if (sourceInstance == null)
                 name
             else
-                "$name (from $source)"
+                "$name (from $sourceInstance)"
         }
 
         override fun observePreferred(
             double: Double,
             long: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            val sourceName = nameWithSource(source)
+            val sourceName = nameWithSource(sourceInstance)
             gameTestHelper.assertFalseC(sawValue, "Unexpected observation from $sourceName after only one was expected")
             gameTestHelper.assertTrueC(allowRecordPreferred, "Unexpected preferred observation for $sourceName")
             gameTestHelper.assertValueEqualC(attributes, this.attributes, "attributes for $sourceName")
@@ -322,9 +322,9 @@ abstract class AssertionObservationRecorder(
         override fun observe(
             value: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            val sourceName = nameWithSource(source)
+            val sourceName = nameWithSource(sourceInstance)
             gameTestHelper.assertFalseC(sawValue, "Unexpected observation from $sourceName after only one was expected")
             gameTestHelper.assertTrueC(allowRecordLong, "Unexpected long observation for $sourceName")
             gameTestHelper.assertValueEqualC(attributes, this.attributes, "attributes for $sourceName")
@@ -340,9 +340,9 @@ abstract class AssertionObservationRecorder(
         override fun observe(
             value: Double,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
-            val sourceName = nameWithSource(source)
+            val sourceName = nameWithSource(sourceInstance)
             gameTestHelper.assertFalseC(sawValue, "Unexpected observation from $sourceName after only one was expected")
             gameTestHelper.assertTrueC(allowRecordDouble, "Unexpected double observation for $sourceName")
             gameTestHelper.assertValueEqualC(attributes, this.attributes, "attributes for $sourceName")
@@ -367,8 +367,8 @@ abstract class AssertionObservationRecorder(
                 doubleValue: Double,
                 attributes: Attributes = Attributes.empty(),
                 allowPreferred: Boolean = true,
-                source: IObservationSource<*, *>? = null,
-                requireSourceMatch: Boolean = source != null,
+                sourceInstance: IObservationSourceInstance<*, *>? = null,
+                requireSourceInstanceMatch: Boolean = sourceInstance != null,
                 doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
             ) = Single(
                 gameTestHelper = gameTestHelper,
@@ -379,8 +379,8 @@ abstract class AssertionObservationRecorder(
                 allowRecordLong = false,
                 allowRecordDouble = true,
                 allowRecordPreferred = allowPreferred,
-                source = source,
-                requireSourceMatch = requireSourceMatch,
+                sourceInstance = sourceInstance,
+                requireSourceInstanceMatch = requireSourceInstanceMatch,
                 doubleMargin = doubleMargin,
             )
 
@@ -390,8 +390,8 @@ abstract class AssertionObservationRecorder(
                 longValue: Long,
                 attributes: Attributes = Attributes.empty(),
                 allowPreferred: Boolean = true,
-                source: IObservationSource<*, *>? = null,
-                requireSourceMatch: Boolean = source != null,
+                sourceInstance: IObservationSourceInstance<*, *>? = null,
+                requireSourceInstanceMatch: Boolean = sourceInstance != null,
             ) = Single(
                 gameTestHelper = gameTestHelper,
                 name = name,
@@ -401,8 +401,8 @@ abstract class AssertionObservationRecorder(
                 allowRecordLong = true,
                 allowRecordDouble = false,
                 allowRecordPreferred = allowPreferred,
-                source = source,
-                requireSourceMatch = requireSourceMatch
+                sourceInstance = sourceInstance,
+                requireSourceInstanceMatch = requireSourceInstanceMatch
             )
 
             fun assertRecordsPreferred(
@@ -411,8 +411,8 @@ abstract class AssertionObservationRecorder(
                 longValue: Long,
                 doubleValue: Double = longValue.toDouble(),
                 attributes: Attributes = Attributes.empty(),
-                source: IObservationSource<*, *>? = null,
-                requireSourceMatch: Boolean = source != null,
+                sourceInstance: IObservationSourceInstance<*, *>? = null,
+                requireSourceInstanceMatch: Boolean = sourceInstance != null,
                 doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
             ) = Single(
                 gameTestHelper = gameTestHelper,
@@ -423,8 +423,8 @@ abstract class AssertionObservationRecorder(
                 allowRecordLong = false,
                 allowRecordDouble = false,
                 allowRecordPreferred = true,
-                source = source,
-                requireSourceMatch = requireSourceMatch,
+                sourceInstance = sourceInstance,
+                requireSourceInstanceMatch = requireSourceInstanceMatch,
                 doubleMargin = doubleMargin,
             )
         }
@@ -471,49 +471,49 @@ abstract class AssertionObservationRecorder(
             double: Double,
             long: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
             val observer = subObservers.getOrElse(attributes) {
                 if (allowAdditional) return
-                if (source == null) {
+                if (sourceInstance == null) {
                     gameTestHelper.failC("Expected no observations at $attributes for $name, but received preferred of $double and $long")
                 } else {
-                    gameTestHelper.failC("Expected no observations at $attributes for $name, but received preferred of $double and $long from $source")
+                    gameTestHelper.failC("Expected no observations at $attributes for $name, but received preferred of $double and $long from $sourceInstance")
                 }
             }
-            observer.observePreferred(double, long, attributes, source)
+            observer.observePreferred(double, long, attributes, sourceInstance)
         }
 
         override fun observe(
             value: Long,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
             val observer = subObservers.getOrElse(attributes) {
                 if (allowAdditional) return
-                if (source == null) {
+                if (sourceInstance == null) {
                     gameTestHelper.failC("Expected no observations at $attributes for $name, but received long of $value")
                 } else {
-                    gameTestHelper.failC("Expected no observations at $attributes for $name, but received long of $value from $source")
+                    gameTestHelper.failC("Expected no observations at $attributes for $name, but received long of $value from $sourceInstance")
                 }
             }
-            observer.observe(value, attributes, source)
+            observer.observe(value, attributes, sourceInstance)
         }
 
         override fun observe(
             value: Double,
             attributes: Attributes,
-            source: IObservationSource<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *>?,
         ) {
             val observer = subObservers.getOrElse(attributes) {
                 if (allowAdditional) return
-                if (source == null) {
+                if (sourceInstance == null) {
                     gameTestHelper.failC("Expected no observations at $attributes for $name, but received double of $value")
                 } else {
-                    gameTestHelper.failC("Expected no observations at $attributes for $name, but received double of $value from $source")
+                    gameTestHelper.failC("Expected no observations at $attributes for $name, but received double of $value from $sourceInstance")
                 }
             }
-            observer.observe(value, attributes, source)
+            observer.observe(value, attributes, sourceInstance)
         }
     }
 }
