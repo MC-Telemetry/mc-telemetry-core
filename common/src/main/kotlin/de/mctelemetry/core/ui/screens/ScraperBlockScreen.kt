@@ -1,25 +1,26 @@
 package de.mctelemetry.core.ui.screens
 
-import com.google.common.graph.Network
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceSingleton
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
 import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateAddPayload
+import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateRemovePayload
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.ui.components.ActionButtonComponent
-import de.mctelemetry.core.ui.components.SelectBoxComponent
 import de.mctelemetry.core.ui.components.SelectBoxComponentEntry
 import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponent
 import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
 import de.mctelemetry.core.utils.childByIdOrThrow
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
+import de.mctelemetry.core.utils.closeAllCollect
 import de.mctelemetry.core.utils.closeConsumeAllRethrow
 import de.mctelemetry.core.utils.coroutineDispatcher
+import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
+import de.mctelemetry.core.utils.dsl.components.style
 import de.mctelemetry.core.utils.globalPosOrThrow
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import de.mctelemetry.core.utils.toShortString
@@ -44,6 +45,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.core.GlobalPos
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
+import net.minecraft.util.CommonColors
 import java.util.concurrent.atomic.AtomicReference
 
 @Environment(EnvType.CLIENT)
@@ -68,16 +70,21 @@ class ScraperBlockScreen(
     private val observationFlowRef: AtomicReference<Deferred<StateFlow<ObservationSourceObservationMap>>?> =
         AtomicReference(null)
 
+    private val globalClosable = mutableListOf<AutoCloseable>()
+
     init {
         OTelCoreMod.logger.trace("Opened new coroutine scope for {}", this)
+        globalClosable.add(observationSourceContainer.subscribeOnStateAdded { _, _ -> rebuild() })
+        globalClosable.add(observationSourceContainer.subscribeOnStateRemoved { _, _ -> rebuild() })
     }
 
     private val observationValuePreviews: Byte2ObjectMap<ObservationValuePreviewDataComponent> =
         Byte2ObjectOpenHashMap()
 
-    private val closable = mutableListOf<AutoCloseable>()
+    private val listClosable = mutableListOf<AutoCloseable>()
 
     private var observationList: FlowLayout? = null
+    private var isDeleteMode = false
 
     override fun isPauseScreen(): Boolean {
         return false
@@ -138,7 +145,8 @@ class ScraperBlockScreen(
         try {
             scope.cancel()
         } finally {
-            closable.closeConsumeAllRethrow()
+            val ex1 = listClosable.closeAllCollect()
+            globalClosable.closeConsumeAllRethrow(ex1)
         }
         OTelCoreMod.logger.trace("Cancelled coroutine scope for {}", this)
     }
@@ -153,6 +161,8 @@ class ScraperBlockScreen(
     }
 
     override fun build(rootComponent: FlowLayout) {
+        isDeleteMode = hasShiftDown()
+
         rootComponent.childByIdOrThrow<LabelComponent>("title").text(titleComponent)
 
         val instrumentManagerButton: ButtonComponent = rootComponent.childWidgetByIdOrThrow("instrument-manager")
@@ -172,16 +182,27 @@ class ScraperBlockScreen(
         }
     }
 
+    override fun tick() {
+        super.tick()
+
+        if (isDeleteMode != hasShiftDown()) {
+            isDeleteMode = hasShiftDown()
+            rebuild()
+        }
+    }
+
     private fun rebuild() {
         val list = observationList ?: return
         list.clearChildren()
 
-        closable.closeConsumeAllRethrow()
-        closable.clear()
+        listClosable.closeConsumeAllRethrow()
+        listClosable.clear()
 
         observationValuePreviews.clear()
 
+        var i = -1
         for (entry in observationSourceContainer.observationStates.byte2ObjectEntrySet()) {
+            i += 1
             val state = entry.value
             val instanceID = entry.byteKey.toUByte()
             val template = model.expandTemplate(
@@ -194,7 +215,7 @@ class ScraperBlockScreen(
             )
             list.child(template)
 
-            closable.add(
+            listClosable.add(
                 ObservationValueStateDataComponent(
                     template.childByIdOrThrow<LabelComponent>("observation-source-state"),
                     state
@@ -206,8 +227,20 @@ class ScraperBlockScreen(
             )
 
             val editButton: ButtonComponent = template.childWidgetByIdOrThrow("observation-source-edit")
-            editButton.onPress {
-                Minecraft.getInstance().setScreen(ScraperBlockScreenDetails(this, globalPos, state))
+            if (isDeleteMode) {
+                editButton.message = buildComponent {
+                    +"❌"
+                    style {
+                        color(CommonColors.RED)
+                    }
+                }
+                editButton.onPress {
+                    NetworkManager.sendToServer(C2SObservationSourceStateRemovePayload(globalPos, entry.byteKey.toUByte()))
+                }
+            } else {
+                editButton.onPress {
+                    Minecraft.getInstance().setScreen(ScraperBlockScreenDetails(this, globalPos, state))
+                }
             }
         }
 
@@ -226,8 +259,6 @@ class ScraperBlockScreen(
             } else {
                 println("TODO: Cannot add non-singletons yet")
             }
-
-            rebuild()
         }
         list.child(createButton)
     }
