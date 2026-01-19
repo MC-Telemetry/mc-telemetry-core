@@ -49,7 +49,7 @@ class ScraperBlockScreenDetails(
 ) : BaseUIModelScreen<FlowLayout>(
     FlowLayout::class.java, DataSource.asset(
         ResourceLocation.fromNamespaceAndPath(
-            OTelCoreMod.MOD_ID, "source-listing-details"
+            OTelCoreMod.MOD_ID, "scraper-block-details"
         )
     )
 ) {

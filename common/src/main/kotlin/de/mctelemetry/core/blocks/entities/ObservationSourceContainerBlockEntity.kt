@@ -375,6 +375,7 @@ abstract class ObservationSourceContainerBlockEntity(
                 }
             setupCallback(result)
             triggerStateAdded(result)
+            setChanged()
             return result
         }
 
@@ -383,6 +384,7 @@ abstract class ObservationSourceContainerBlockEntity(
                 _observationStates.remove(id.toByte())
             } ?: return false
             triggerStateRemoved(removed)
+            setChanged()
             return true
         }
 
@@ -531,14 +533,24 @@ abstract class ObservationSourceContainerBlockEntity(
                         }
                     }
                     if (!initialized) {
+                        idCounter.compareAndSet(-1, 0)
                         var testId = 0
                         while (testId < UByte.MAX_VALUE.toInt() && _observationStates.containsKey(testId.toByte())) {
-                            val witnessId = idCounter.compareAndExchange(testId, testId + 1)
+                            val witnessId = idCounter.compareAndExchange(testId, (testId + 1 % 256))
                             if (witnessId == testId) {
                                 testId++
                             } else {
                                 testId = witnessId
                             }
+                        }
+                    }
+                    if (_observationStates.isEmpty() && (level?.isClientSide != true)) {
+                        for (source in observationSources) {
+                            if (source is IObservationSourceSingleton<*, *, *>)
+                                addObservationSourceState(
+                                    source as IObservationSourceSingleton<in ObservationSourceContainerBlockEntity, *, *>,
+                                    null
+                                )
                         }
                     }
                 }

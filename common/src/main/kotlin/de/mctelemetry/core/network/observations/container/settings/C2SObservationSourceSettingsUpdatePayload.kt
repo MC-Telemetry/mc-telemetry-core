@@ -10,6 +10,7 @@ import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.observations.model.ObservationSourceStateID
 import de.mctelemetry.core.utils.toShortString
 import dev.architectury.networking.NetworkManager
+import it.unimi.dsi.fastutil.bytes.Byte2ObjectMap
 import net.minecraft.core.GlobalPos
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
@@ -97,8 +98,8 @@ class C2SObservationSourceSettingsUpdatePayload(
             @Suppress("UNCHECKED_CAST")
             // cast is only over generics. If cast would fail, the entry is simply
             // not found in observationStates.
-            val state = (blockEntity.observationStates as Map<IObservationSource<*, *>, ObservationSourceState<*, *>>)
-                .getOrElse(value.source) {
+            val state = (blockEntity.observationStates as Byte2ObjectMap<ObservationSourceState<*, *>>)
+                .getOrElse(value.instanceID.toByte()) {
                     throw NoSuchElementException("Could not find observation source ${value.source} in ${value.pos.toShortString()}")
                 }
             state.configuration = value.configuration

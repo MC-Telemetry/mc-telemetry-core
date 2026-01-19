@@ -1,12 +1,19 @@
 package de.mctelemetry.core.ui.screens
 
+import com.google.common.graph.Network
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
+import de.mctelemetry.core.api.observations.IObservationSource
+import de.mctelemetry.core.api.observations.IObservationSourceSingleton
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
+import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateAddPayload
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
+import de.mctelemetry.core.ui.components.ActionButtonComponent
+import de.mctelemetry.core.ui.components.SelectBoxComponent
+import de.mctelemetry.core.ui.components.SelectBoxComponentEntry
 import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponent
 import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
 import de.mctelemetry.core.utils.childByIdOrThrow
@@ -16,6 +23,7 @@ import de.mctelemetry.core.utils.coroutineDispatcher
 import de.mctelemetry.core.utils.globalPosOrThrow
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import de.mctelemetry.core.utils.toShortString
+import dev.architectury.networking.NetworkManager
 import io.wispforest.owo.ui.base.BaseUIModelScreen
 import io.wispforest.owo.ui.component.ButtonComponent
 import io.wispforest.owo.ui.component.LabelComponent
@@ -46,7 +54,7 @@ class ScraperBlockScreen(
 ) : BaseUIModelScreen<FlowLayout>(
     FlowLayout::class.java, DataSource.asset(
         ResourceLocation.fromNamespaceAndPath(
-            OTelCoreMod.MOD_ID, "source-listing"
+            OTelCoreMod.MOD_ID, "scraper-block"
         )
     )
 ), AutoCloseable {
@@ -68,6 +76,8 @@ class ScraperBlockScreen(
         Byte2ObjectOpenHashMap()
 
     private val closable = mutableListOf<AutoCloseable>()
+
+    private var observationList: FlowLayout? = null
 
     override fun isPauseScreen(): Boolean {
         return false
@@ -151,14 +161,32 @@ class ScraperBlockScreen(
             Minecraft.getInstance().setScreen(InstrumentManagerScreen(instrumentManager))
         }
 
-        val list: FlowLayout = rootComponent.childByIdOrThrow("list")
+        observationList = rootComponent.childByIdOrThrow("list")
+        rebuild()
+
+        observationFlowRef.get()?.let { observationFlow ->
+            if (!observationFlow.isCompleted) return@let
+            scope.launch {
+                acceptObservations(observationFlow.await().value)
+            }
+        }
+    }
+
+    private fun rebuild() {
+        val list = observationList ?: return
+        list.clearChildren()
+
+        closable.closeConsumeAllRethrow()
+        closable.clear()
+
+        observationValuePreviews.clear()
 
         for (entry in observationSourceContainer.observationStates.byte2ObjectEntrySet()) {
             val state = entry.value
             val instanceID = entry.byteKey.toUByte()
             val template = model.expandTemplate(
                 FlowLayout::class.java,
-                "list-row@${OTelCoreMod.MOD_ID}:source-listing",
+                "list-row@${OTelCoreMod.MOD_ID}:scraper-block",
                 mapOf()
             )
             template.childByIdOrThrow<LabelComponent>("observation-source-name").text(
@@ -183,11 +211,24 @@ class ScraperBlockScreen(
             }
         }
 
-        observationFlowRef.get()?.let { observationFlow ->
-            if (!observationFlow.isCompleted) return@let
-            scope.launch {
-                acceptObservations(observationFlow.await().value)
-            }
+        val options = observationSourceContainer.observationSources.map {
+            SelectBoxComponentEntry(it, TranslationKeys.ObservationSources[it])
         }
+
+        val createButton = ActionButtonComponent(
+            TranslationKeys.Ui.addObservations(),
+            TranslationKeys.Ui.addObservations(),
+            options
+        ) { opt ->
+            val newValue = opt.value
+            if (newValue is IObservationSourceSingleton<*, *, *>) {
+                NetworkManager.sendToServer(C2SObservationSourceStateAddPayload(globalPos, newValue))
+            } else {
+                println("TODO: Cannot add non-singletons yet")
+            }
+
+            rebuild()
+        }
+        list.child(createButton)
     }
 }

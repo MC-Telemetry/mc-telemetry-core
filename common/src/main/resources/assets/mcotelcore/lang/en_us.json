@@ -18,6 +18,7 @@
   "ui.mcotelcore.delete": "Delete",
   "ui.mcotelcore.types": "Types",
   "ui.mcotelcore.add_attributes": "Add attributes",
+  "ui.mcotelcore.add_observations": "Add observations",
   "ui.mcotelcore.use_decimals": "Use decimals",
   "ui.mcotelcore.none": "None",
   "ui.mcotelcore.custom": "Custom",

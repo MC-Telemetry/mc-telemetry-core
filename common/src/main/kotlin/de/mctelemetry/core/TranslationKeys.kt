@@ -211,6 +211,7 @@ object TranslationKeys {
 
         const val DELETE = "ui.${OTelCoreMod.MOD_ID}.delete"
         const val ADD_ATTRIBUTES = "ui.${OTelCoreMod.MOD_ID}.add_attributes"
+        const val ADD_OBSERVATIONS = "ui.${OTelCoreMod.MOD_ID}.add_observations"
         const val TYPES = "ui.${OTelCoreMod.MOD_ID}.types"
         const val NONE = "ui.${OTelCoreMod.MOD_ID}.none"
         const val CUSTOM = "ui.${OTelCoreMod.MOD_ID}.custom"
@@ -233,6 +234,9 @@ object TranslationKeys {
 
         fun addAttributes(): MutableComponent =
             Component.translatable(ADD_ATTRIBUTES)
+
+        fun addObservations(): MutableComponent =
+            Component.translatable(ADD_OBSERVATIONS)
 
         fun types(): MutableComponent =
             Component.translatable(TYPES)
