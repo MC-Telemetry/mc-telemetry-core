@@ -9,7 +9,7 @@ import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 
-abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAttributeValueStore.MapAttributeStore>> :
+abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAttributeValueStore.MapAttributeStore, I>> :
     IObservationSource<SC, I> {
 
     final override val attributes: IAttributeDateSourceReferenceSet by lazy {
@@ -41,7 +41,7 @@ abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAtt
 
     abstract class InstanceBase<SC, out I : InstanceBase<SC, I>>(
         override val source: ObservationSourceBase<SC, out I>
-    ) : IObservationSourceInstance<SC, IAttributeValueStore.MapAttributeStore> {
+    ) : IObservationSourceInstance<SC, IAttributeValueStore.MapAttributeStore, I> {
 
         context(sourceContext: SC)
         override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {

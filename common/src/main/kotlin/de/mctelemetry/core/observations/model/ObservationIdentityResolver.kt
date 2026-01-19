@@ -33,7 +33,7 @@ class ObservationIdentityResolver(
         )
     }
 
-    override fun onNewSource(source: IObservationSourceInstance<*, *>) {
+    override fun onNewSource(source: IObservationSourceInstance<*, *, *>) {
         resolvedRecorder.onNewSource(source)
     }
 

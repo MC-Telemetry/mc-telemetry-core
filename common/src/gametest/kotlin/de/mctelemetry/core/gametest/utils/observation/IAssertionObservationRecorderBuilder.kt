@@ -16,7 +16,7 @@ interface IAssertionObservationRecorderBuilder {
         attributes: Attributes,
         longValue: Long,
         doubleValue: Double = longValue.toDouble(),
-        sourceInstance: IObservationSourceInstance<*, *>? = null,
+        sourceInstance: IObservationSourceInstance<*, *, *>? = null,
         requireSourceInstanceMatch: Boolean = sourceInstance != null,
     ): IAssertionObservationRecorderBuilder
 
@@ -27,7 +27,7 @@ interface IAssertionObservationRecorderBuilder {
             attributes: Attributes,
             doubleValue: Double,
             allowPreferred: Boolean = true,
-            sourceInstance: IObservationSourceInstance<*, *>? = null,
+            sourceInstance: IObservationSourceInstance<*, *, *>? = null,
             requireSourceInstanceMatch: Boolean = sourceInstance != null,
         ): IAssertionObservationRecorderBuilder
     }
@@ -39,7 +39,7 @@ interface IAssertionObservationRecorderBuilder {
             attributes: Attributes,
             longValue: Long,
             allowPreferred: Boolean = true,
-            sourceInstance: IObservationSourceInstance<*, *>? = null,
+            sourceInstance: IObservationSourceInstance<*, *, *>? = null,
             requireSourceInstanceMatch: Boolean = sourceInstance != null,
         ): IAssertionObservationRecorderBuilder
     }

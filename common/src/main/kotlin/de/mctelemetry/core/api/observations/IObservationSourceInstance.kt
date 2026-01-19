@@ -7,9 +7,10 @@ import net.minecraft.nbt.Tag
 
 interface IObservationSourceInstance<
         SC,
-        AS : IAttributeValueStore.Mutable
+        AS : IAttributeValueStore.Mutable,
+        out I : IObservationSourceInstance<SC, AS, I>
         > {
-    val source: IObservationSource<SC, out IObservationSourceInstance<SC,AS>>
+    val source: IObservationSource<SC, out I>
 
     val attributes: IAttributeDateSourceReferenceSet
         get() = source.attributes
@@ -24,8 +25,8 @@ interface IObservationSourceInstance<
     )
 }
 
-val <SC> IObservationSourceInstance<SC, *>.sourceContextType: Class<SC>
+val <SC> IObservationSourceInstance<SC, *, *>.sourceContextType: Class<SC>
     get() = source.sourceContextType
 
 @Suppress("UNCHECKED_CAST")
-fun <I : IObservationSourceInstance<*,*>> I.toNbt(): Tag? = (source as IObservationSource<*,I>).toNbt(this)
+fun <I : IObservationSourceInstance<*, *, I>> I.toNbt(): Tag? = (source as IObservationSource<*, I>).toNbt(this)

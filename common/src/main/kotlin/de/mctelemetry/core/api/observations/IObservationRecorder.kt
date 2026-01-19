@@ -10,18 +10,18 @@ sealed interface IObservationRecorder {
     interface Unresolved : IObservationRecorder {
 
         context(attributes: IAttributeValueStore)
-        fun observe(value: Long, sourceInstance: IObservationSourceInstance<*, *>)
+        fun observe(value: Long, sourceInstance: IObservationSourceInstance<*, *, *>)
         context(attributes: IAttributeValueStore)
-        fun observe(value: Double, sourceInstance: IObservationSourceInstance<*, *>)
+        fun observe(value: Double, sourceInstance: IObservationSourceInstance<*, *, *>)
         context(attributes: IAttributeValueStore)
         fun observePreferred(
             double: Double,
             long: Long,
-            sourceInstance: IObservationSourceInstance<*, *>,
+            sourceInstance: IObservationSourceInstance<*, *, *>,
         ) = if (supportsFloating) observe(double, sourceInstance)
         else observe(long, sourceInstance)
 
-        fun onNewSource(source: IObservationSourceInstance<*, *>) {}
+        fun onNewSource(source: IObservationSourceInstance<*, *, *>) {}
 
         interface Sourceless: Unresolved {
             context(attributes: IAttributeValueStore)
@@ -36,17 +36,17 @@ sealed interface IObservationRecorder {
             else observe(long)
 
             context(attributes: IAttributeValueStore)
-            override fun observe(value: Long, sourceInstance: IObservationSourceInstance<*, *>) {
+            override fun observe(value: Long, sourceInstance: IObservationSourceInstance<*, *, *>) {
                 observe(value)
             }
 
             context(attributes: IAttributeValueStore)
-            override fun observe(value: Double, sourceInstance: IObservationSourceInstance<*, *>) {
+            override fun observe(value: Double, sourceInstance: IObservationSourceInstance<*, *, *>) {
                 observe(value)
             }
 
             context(attributes: IAttributeValueStore)
-            override fun observePreferred(double: Double, long: Long, sourceInstance: IObservationSourceInstance<*, *>) {
+            override fun observePreferred(double: Double, long: Long, sourceInstance: IObservationSourceInstance<*, *, *>) {
                 observePreferred(double, long)
             }
         }
@@ -54,16 +54,16 @@ sealed interface IObservationRecorder {
 
     interface Resolved : IObservationRecorder {
 
-        fun observe(value: Long, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *>? = null)
-        fun observe(value: Double, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *>? = null)
+        fun observe(value: Long, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *, *>? = null)
+        fun observe(value: Double, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *, *>? = null)
         fun observePreferred(
             double: Double,
             long: Long,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>? = null,
+            sourceInstance: IObservationSourceInstance<*, *, *>? = null,
         ) = if (supportsFloating) observe(double, attributes, sourceInstance)
         else observe(long, attributes, sourceInstance)
 
-        fun onNewSource(sourceInstance: IObservationSourceInstance<*, *>) {}
+        fun onNewSource(sourceInstance: IObservationSourceInstance<*, *, *>) {}
     }
 }

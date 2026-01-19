@@ -3,20 +3,18 @@ package de.mctelemetry.core.api.observations.position.side
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
-import de.mctelemetry.core.api.observations.IObservationSourceInstance
-import de.mctelemetry.core.api.observations.position.IPositionObservationSource
 import de.mctelemetry.core.api.observations.position.IPositionObservationSourceInstance
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
-import net.minecraft.core.GlobalPos
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.entity.BlockEntity
 
 interface IPositionSideObservationSourceInstance<
-        AS : IAttributeValueStore.Mutable
-        > : IPositionObservationSourceInstance<AS> {
+        AS : IAttributeValueStore.Mutable,
+        out I : IPositionSideObservationSourceInstance<AS, I>,
+        > : IPositionObservationSourceInstance<AS, I> {
 
-    override val source: IPositionSideObservationSource<out IPositionSideObservationSourceInstance<AS>>
+    override val source: IPositionSideObservationSource<out I>
 
     val directions: Iterable<Direction>
         get() = Direction.entries

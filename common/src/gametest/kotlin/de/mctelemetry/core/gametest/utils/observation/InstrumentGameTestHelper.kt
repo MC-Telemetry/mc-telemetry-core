@@ -26,7 +26,6 @@ import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState.Companion.asException
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.observations.model.ObservationSourceStateID
-import de.mctelemetry.core.observations.model.source
 import de.mctelemetry.core.utils.ArgLazy
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.closeAllRethrow
@@ -173,7 +172,7 @@ class InstrumentGameTestHelper(
         registerFinalizer: IGameTestHelperFinalizer.FinalizerRegistration = IGameTestHelperFinalizer.FinalizerRegistration.TEST_END,
         customizer: IGaugeInstrumentBuilder<*>.(originalName: String, isDouble: Boolean) -> Unit = { _, _ -> },
     ): Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>> {
-        val observationSourceMap: Map<String, List<Pair<ObservationSourceContainerBlockEntity, ObservationSourceState<*>>>> =
+        val observationSourceMap: Map<String, List<Pair<ObservationSourceContainerBlockEntity, ObservationSourceState<*, *>>>> =
             BlockPos.betweenClosedStream(gameTestHelper.bounds.contract(1.0, 1.0, 1.0))
                 .asSequence()
                 .mapNotNull { blockPos ->
@@ -193,16 +192,24 @@ class InstrumentGameTestHelper(
                 val testSourceAttributes = testState.configuration!!.mapping.instrumentAttributes
                 require(testSourceAttributes == baseSourceAttributes) {
                     """Incompatible instrumentAttributes for $baseName between
-                            | ${firstState.source.id.location()}/${firstState.id}@$baseEntity@${gameTestHelper.relativePos(baseEntity.blockPos)}
+                            | ${firstState.source.id.location()}/${firstState.id}@$baseEntity@${
+                        gameTestHelper.relativePos(
+                            baseEntity.blockPos
+                        )
+                    }
                             | and
-                            | ${testState.source.id.location()}/${testState.id}@$testEntity@${gameTestHelper.relativePos(testEntity.blockPos)}:
+                            | ${testState.source.id.location()}/${testState.id}@$testEntity@${
+                        gameTestHelper.relativePos(
+                            testEntity.blockPos
+                        )
+                    }:
                             | $baseSourceAttributes != $testSourceAttributes""".trimMargin()
                 }
             }
         }
         // two passes through observationSourceMap to first check all, then instantiate all
         val completedInstruments = ArrayDeque<AutoCloseable>(observationSourceMap.size)
-        val originalConfigurations = ArrayDeque<Pair<ObservationSourceState<*>, ObservationSourceConfiguration?>>()
+        val originalConfigurations = ArrayDeque<Pair<ObservationSourceState<*, *>, ObservationSourceConfiguration?>>()
         gameTestHelper.finalizer(registerFinalizer) {
             originalConfigurations.consumeAllRethrow { (state, config) ->
                 state.configuration = config
@@ -412,7 +419,7 @@ class InstrumentGameTestHelper(
         internal inline fun <T> GameTestHelper.configureObservationSource(
             pos: BlockPos,
             stateID: ObservationSourceStateID,
-            block: (ObservationSourceState<*>) -> T,
+            block: (ObservationSourceState<*, *>) -> T,
         ): T {
             val containerEntity: ObservationSourceContainerBlockEntity = this.getBlockEntityC(pos)
             val states = containerEntity.observationStatesIfInitialized
@@ -509,6 +516,7 @@ internal fun <T : Any> GameTestHelper.withConfiguredStartupSequence(
                                 ObservationSourceErrorState.NotConfigured,
                                 ObservationSourceErrorState.Configured.Ok,
                                     -> return@mapNotNull null
+
                                 else -> errorState as ObservationSourceErrorState.Configured
                             }
                         }.toMap()

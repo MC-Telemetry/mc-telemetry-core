@@ -9,7 +9,7 @@ import net.minecraft.resources.ResourceKey
 
 interface IObservationSource<
         SC,
-        I : IObservationSourceInstance<SC, *>
+        I : IObservationSourceInstance<SC, *, I>
         > {
 
     val id: ResourceKey<IObservationSource<*, *>>

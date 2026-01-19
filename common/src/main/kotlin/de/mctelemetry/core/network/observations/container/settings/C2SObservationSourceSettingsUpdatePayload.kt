@@ -27,7 +27,7 @@ class C2SObservationSourceSettingsUpdatePayload(
     val configuration: ObservationSourceConfiguration?,
 ) : CustomPacketPayload {
 
-    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload?>? {
+    override fun type(): CustomPacketPayload.Type<out CustomPacketPayload?> {
         return TYPE
     }
 
@@ -97,7 +97,7 @@ class C2SObservationSourceSettingsUpdatePayload(
             @Suppress("UNCHECKED_CAST")
             // cast is only over generics. If cast would fail, the entry is simply
             // not found in observationStates.
-            val state = (blockEntity.observationStates as Map<IObservationSource<*, *>, ObservationSourceState<*>>)
+            val state = (blockEntity.observationStates as Map<IObservationSource<*, *>, ObservationSourceState<*, *>>)
                 .getOrElse(value.source) {
                     throw NoSuchElementException("Could not find observation source ${value.source} in ${value.pos.toShortString()}")
                 }

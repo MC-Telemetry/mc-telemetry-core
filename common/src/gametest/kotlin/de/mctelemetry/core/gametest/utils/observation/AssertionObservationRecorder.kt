@@ -20,12 +20,12 @@ abstract class AssertionObservationRecorder(
         double: Double,
         long: Long,
         attributes: Attributes,
-        sourceInstance: IObservationSourceInstance<*, *>?,
+        sourceInstance: IObservationSourceInstance<*, *, *>?,
     )
 
-    abstract override fun observe(value: Long, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *>?)
+    abstract override fun observe(value: Long, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *, *>?)
 
-    abstract override fun observe(value: Double, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *>?)
+    abstract override fun observe(value: Double, attributes: Attributes, sourceInstance: IObservationSourceInstance<*, *, *>?)
 
     abstract fun assertSawAll()
 
@@ -73,7 +73,7 @@ abstract class AssertionObservationRecorder(
                 attributes: Attributes,
                 doubleValue: Double,
                 allowPreferred: Boolean,
-                sourceInstance: IObservationSourceInstance<*, *>?,
+                sourceInstance: IObservationSourceInstance<*, *, *>?,
                 requireSourceInstanceMatch: Boolean,
             ): IAssertionObservationRecorderBuilder {
                 require(cannotSupportDoubleReason == null || allowPreferred) {
@@ -103,7 +103,7 @@ abstract class AssertionObservationRecorder(
                 attributes: Attributes,
                 longValue: Long,
                 allowPreferred: Boolean,
-                sourceInstance: IObservationSourceInstance<*, *>?,
+                sourceInstance: IObservationSourceInstance<*, *, *>?,
                 requireSourceInstanceMatch: Boolean,
             ): IAssertionObservationRecorderBuilder {
                 require(cannotSupportLongReason == null || allowPreferred) {
@@ -132,7 +132,7 @@ abstract class AssertionObservationRecorder(
                 attributes: Attributes,
                 longValue: Long,
                 doubleValue: Double,
-                sourceInstance: IObservationSourceInstance<*, *>?,
+                sourceInstance: IObservationSourceInstance<*, *, *>?,
                 requireSourceInstanceMatch: Boolean,
             ): IAssertionObservationRecorderBuilder {
                 require(cannotSupportPreferredReason == null) {
@@ -202,7 +202,7 @@ abstract class AssertionObservationRecorder(
             double: Double,
             long: Long,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *, *>?,
         ) {
             if (sourceInstance == null) {
                 gameTestHelper.failC("Expected no observations for $name, but received preferred of $double and $long at $attributes")
@@ -214,7 +214,7 @@ abstract class AssertionObservationRecorder(
         override fun observe(
             value: Long,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *, *>?,
         ) {
             if (sourceInstance == null) {
                 gameTestHelper.failC("Expected no observations for $name, but received long $value at $attributes")
@@ -226,7 +226,7 @@ abstract class AssertionObservationRecorder(
         override fun observe(
             value: Double,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *, *>?,
         ) {
             if (sourceInstance == null) {
                 gameTestHelper.failC("Expected no observations for $name, but received double $value at $attributes")
@@ -245,7 +245,7 @@ abstract class AssertionObservationRecorder(
         val allowRecordLong: Boolean = true,
         val allowRecordDouble: Boolean = true,
         val allowRecordPreferred: Boolean = true,
-        val sourceInstance: IObservationSourceInstance<*, *>? = null,
+        val sourceInstance: IObservationSourceInstance<*, *, *>? = null,
         val requireSourceInstanceMatch: Boolean = sourceInstance != null,
         override val supportsFloating: Boolean = doubleValue != null,
         val doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
@@ -284,7 +284,7 @@ abstract class AssertionObservationRecorder(
             }
         }
 
-        private fun nameWithSource(sourceInstance: IObservationSourceInstance<*, *>?): String {
+        private fun nameWithSource(sourceInstance: IObservationSourceInstance<*, *, *>?): String {
             if (requireSourceInstanceMatch) {
                 gameTestHelper.assertValueEqualC(sourceInstance, this.sourceInstance, "source-instance of $name")
             }
@@ -298,7 +298,7 @@ abstract class AssertionObservationRecorder(
             double: Double,
             long: Long,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *, *>?,
         ) {
             val sourceName = nameWithSource(sourceInstance)
             gameTestHelper.assertFalseC(sawValue, "Unexpected observation from $sourceName after only one was expected")
@@ -322,7 +322,7 @@ abstract class AssertionObservationRecorder(
         override fun observe(
             value: Long,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *, *>?,
         ) {
             val sourceName = nameWithSource(sourceInstance)
             gameTestHelper.assertFalseC(sawValue, "Unexpected observation from $sourceName after only one was expected")
@@ -340,7 +340,7 @@ abstract class AssertionObservationRecorder(
         override fun observe(
             value: Double,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *, *>?,
         ) {
             val sourceName = nameWithSource(sourceInstance)
             gameTestHelper.assertFalseC(sawValue, "Unexpected observation from $sourceName after only one was expected")
@@ -367,7 +367,7 @@ abstract class AssertionObservationRecorder(
                 doubleValue: Double,
                 attributes: Attributes = Attributes.empty(),
                 allowPreferred: Boolean = true,
-                sourceInstance: IObservationSourceInstance<*, *>? = null,
+                sourceInstance: IObservationSourceInstance<*, *, *>? = null,
                 requireSourceInstanceMatch: Boolean = sourceInstance != null,
                 doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
             ) = Single(
@@ -390,7 +390,7 @@ abstract class AssertionObservationRecorder(
                 longValue: Long,
                 attributes: Attributes = Attributes.empty(),
                 allowPreferred: Boolean = true,
-                sourceInstance: IObservationSourceInstance<*, *>? = null,
+                sourceInstance: IObservationSourceInstance<*, *, *>? = null,
                 requireSourceInstanceMatch: Boolean = sourceInstance != null,
             ) = Single(
                 gameTestHelper = gameTestHelper,
@@ -411,7 +411,7 @@ abstract class AssertionObservationRecorder(
                 longValue: Long,
                 doubleValue: Double = longValue.toDouble(),
                 attributes: Attributes = Attributes.empty(),
-                sourceInstance: IObservationSourceInstance<*, *>? = null,
+                sourceInstance: IObservationSourceInstance<*, *, *>? = null,
                 requireSourceInstanceMatch: Boolean = sourceInstance != null,
                 doubleMargin: Double = DEFAULT_DOUBLE_MARGIN,
             ) = Single(
@@ -471,7 +471,7 @@ abstract class AssertionObservationRecorder(
             double: Double,
             long: Long,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *, *>?,
         ) {
             val observer = subObservers.getOrElse(attributes) {
                 if (allowAdditional) return
@@ -487,7 +487,7 @@ abstract class AssertionObservationRecorder(
         override fun observe(
             value: Long,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *, *>?,
         ) {
             val observer = subObservers.getOrElse(attributes) {
                 if (allowAdditional) return
@@ -503,7 +503,7 @@ abstract class AssertionObservationRecorder(
         override fun observe(
             value: Double,
             attributes: Attributes,
-            sourceInstance: IObservationSourceInstance<*, *>?,
+            sourceInstance: IObservationSourceInstance<*, *, *>?,
         ) {
             val observer = subObservers.getOrElse(attributes) {
                 if (allowAdditional) return

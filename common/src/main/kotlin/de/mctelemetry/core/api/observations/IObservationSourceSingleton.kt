@@ -10,7 +10,7 @@ interface IObservationSourceSingleton<
         I : IObservationSourceSingleton<SC, AS, I>
         > :
     IObservationSource<SC, I>,
-    IObservationSourceInstance<SC, AS> {
+    IObservationSourceInstance<SC, AS, I> {
 
     override val attributes: IAttributeDateSourceReferenceSet
 

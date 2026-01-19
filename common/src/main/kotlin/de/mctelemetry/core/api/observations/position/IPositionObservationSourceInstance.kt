@@ -3,7 +3,6 @@ package de.mctelemetry.core.api.observations.position
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -13,11 +12,12 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 
 interface IPositionObservationSourceInstance<
-        AS : IAttributeValueStore.Mutable
-        > : IObservationSourceInstance<BlockEntity, AS> {
+        AS : IAttributeValueStore.Mutable,
+        out I : IPositionObservationSourceInstance<AS, I>,
+        > : IObservationSourceInstance<BlockEntity, AS, I> {
 
 
-    override val source: IPositionObservationSource<out IPositionObservationSourceInstance<AS>>
+    override val source: IPositionObservationSource<out I>
 
     context(sourceContext: BlockEntity, attributeStore: AS)
     fun observePosition(
@@ -44,7 +44,7 @@ interface IPositionObservationSourceInstance<
         }
 
         context(sourceContext: BlockEntity, attributeStore: AS)
-        protected inline fun <AS : IAttributeValueStore.Mutable> IPositionObservationSourceInstance<AS>.observeDefaultImpl(
+        protected inline fun <AS : IAttributeValueStore.Mutable> IPositionObservationSourceInstance<AS, *>.observeDefaultImpl(
             recorder: IObservationRecorder.Unresolved,
             unusedAttributes: Set<AttributeDataSource<*>>,
             facingAccessor: (BlockEntity) -> Direction? = ::defaultFacingAccessor,

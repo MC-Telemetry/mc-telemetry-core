@@ -7,7 +7,6 @@ import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManage
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
-import de.mctelemetry.core.observations.model.source
 import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponent
 import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
 import de.mctelemetry.core.utils.childByIdOrThrow

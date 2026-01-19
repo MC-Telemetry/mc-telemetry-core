@@ -12,18 +12,33 @@ import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.RegistryFriendlyByteBuf
-import java.util.concurrent.atomic.AtomicReference
 
 typealias ObservationSourceStateID = UByte
 
-open class ObservationSourceState<SC>(
-    val instance: IObservationSourceInstance<SC, *>,
+open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
+    instance: I,
     val id: ObservationSourceStateID,
 ) : AutoCloseable, IInstrumentAvailabilityCallback<IInstrumentRegistration.Mutable<*>> {
 
+    val source: IObservationSource<SC, out I> = instance.source
+    open var instance: I
+        get() = instanceField
+        set(value) {
+            setInstance(value)
+        }
+    protected var instanceField: I = instance
 
-    protected val onDirtyListeners: MutableSet<(ObservationSourceState<SC>) -> Unit> = linkedSetOf()
-    protected val listenerDelegatedState: AtomicReference<ObservationSourceState<SC>?> = AtomicReference(null)
+    open fun setInstance(value: I, silent: Boolean = false): Boolean {
+        val oldValue = instanceField
+        if (oldValue === value) {
+            return false
+        }
+        instanceField = value
+        if (!silent) triggerOnDirty()
+        return true
+    }
+
+    protected val onDirtyListeners: MutableSet<(ObservationSourceState<SC, I>) -> Unit> = linkedSetOf()
 
     var cascadeUpdates: Boolean = false
         set(value) {
@@ -313,41 +328,15 @@ open class ObservationSourceState<SC>(
         }
     }
 
-    fun subscribeToDirty(block: (ObservationSourceState<SC>) -> Unit): AutoCloseable {
-        val delegate = listenerDelegatedState.get()
-        return if (delegate != null) {
-            delegate.subscribeToDirty(block)
-        } else {
-            onDirtyListeners.add(block)
-            AutoCloseable {
-                unsubscribeFromDirty(block) // internally checks delegate
-            }
+    fun subscribeToDirty(block: (ObservationSourceState<SC, I>) -> Unit): AutoCloseable {
+        onDirtyListeners.add(block)
+        return AutoCloseable {
+            unsubscribeFromDirty(block)
         }
     }
 
-    fun unsubscribeFromDirty(block: (ObservationSourceState<SC>) -> Unit) {
-        val delegate = listenerDelegatedState.get()
-        if (delegate != null) {
-            delegate.unsubscribeFromDirty(block)
-        } else {
-            onDirtyListeners.remove(block)
-        }
-    }
-
-    fun pushListenersTo(other: ObservationSourceState<SC>, clearOwn: Boolean = true) {
-        val existing = listenerDelegatedState.compareAndExchange(null, other)
-        if (existing != null) {
-            if (existing !== other) {
-                throw IllegalStateException("Attempted to push listeners to $other while already delegating to $existing")
-            }
-            if (clearOwn) {
-                this.onDirtyListeners.clear()
-            }
-            return
-        }
-        other.onDirtyListeners.addAll(this.onDirtyListeners)
-        if (clearOwn)
-            this.onDirtyListeners.clear()
+    fun unsubscribeFromDirty(block: (ObservationSourceState<SC, I>) -> Unit) {
+        onDirtyListeners.remove(block)
     }
 
     open fun loadFromByteBuf(
@@ -438,12 +427,9 @@ open class ObservationSourceState<SC>(
     interface InstrumentSubRegistrationFactory<out SC> {
 
         fun <T : IInstrumentRegistration.Mutable<T>> createInstrumentCallback(
-            state: ObservationSourceState<in SC>,
+            state: ObservationSourceState<in SC, *>,
             configuration: ObservationSourceConfiguration,
             instrument: IInstrumentRegistration.Mutable<*>,
         ): IInstrumentRegistration.Callback<T>
     }
 }
-
-val <SC> ObservationSourceState<SC>.source: IObservationSource<SC, out IObservationSourceInstance<SC, *>>
-    get() = instance.source

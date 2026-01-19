@@ -15,7 +15,7 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.world.level.block.entity.BlockEntity
 
 abstract class PositionObservationSourceBase<
-        I : IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore>
+        I : IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>
         > : ObservationSourceBase<BlockEntity, I>(),
     IPositionObservationSource<I> {
 
@@ -30,8 +30,9 @@ abstract class PositionObservationSourceBase<
 
     abstract class PositionInstanceBase<out I : PositionInstanceBase<I>>(
         override val source: PositionObservationSourceBase<out I>
-    ) : InstanceBase<BlockEntity, PositionInstanceBase<I>>(source),
-        IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore> {
+    ) : InstanceBase<BlockEntity, I>(source),
+        IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>
+    {
 
         context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
         final override fun observe(
@@ -48,19 +49,23 @@ abstract class PositionObservationSourceBase<
     }
 
     abstract class PositionSingletonBase<I : PositionSingletonBase<I>> :
-        PositionObservationSourceBase<PositionSingletonBase<I>>(),
-        IPositionObservationSource<PositionSingletonBase<I>>,
-        IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore>,
-        IObservationSourceSingleton<BlockEntity, IAttributeValueStore.MapAttributeStore, PositionSingletonBase<I>> {
+        PositionObservationSourceBase<I>(),
+        IPositionObservationSource<I>,
+        IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>,
+        IObservationSourceSingleton<BlockEntity, IAttributeValueStore.MapAttributeStore, I> {
 
         override val source: PositionSingletonBase<I>
             get() = this
 
-        override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, PositionSingletonBase<I>> =
-            StreamCodec.unit(this)
+        @Suppress("UNCHECKED_CAST")
+        private val typedThis: I
+            get() = this as I
 
-        override fun fromNbt(tag: Tag?): PositionSingletonBase<I> = this
-        override fun toNbt(instance: PositionSingletonBase<I>): Tag? = null
+        override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, I> =
+            StreamCodec.unit(typedThis)
+
+        override fun fromNbt(tag: Tag?): I = typedThis
+        override fun toNbt(instance: I): Tag? = null
 
         context(sourceContext: BlockEntity)
         override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {

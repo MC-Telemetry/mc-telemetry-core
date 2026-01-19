@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component
 
 class ObservationValueStateDataComponent(
     private val label: LabelComponent,
-    state: ObservationSourceState<*>,
+    state: ObservationSourceState<*, *>,
 ) : AutoCloseable {
 
     private val stateRegistration: AutoCloseable = state.subscribeToDirty(::update)
@@ -23,7 +23,7 @@ class ObservationValueStateDataComponent(
         stateRegistration.close()
     }
 
-    private fun update(state: ObservationSourceState<*>) {
+    private fun update(state: ObservationSourceState<*, *>) {
         val errorState = state.errorState
         val (textComponent, tooltipComponent) = if (errorState is ObservationSourceErrorState.Configured) {
             val textComponent = when (errorState) {

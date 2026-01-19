@@ -8,20 +8,17 @@ import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.network.observations.container.settings.C2SObservationSourceSettingsUpdatePayload
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.observations.model.ObservationSourceConfiguration
 import de.mctelemetry.core.observations.model.ObservationSourceState
-import de.mctelemetry.core.observations.model.source
 import de.mctelemetry.core.ui.components.AttributeMappingComponent
 import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
 import de.mctelemetry.core.utils.Validators
 import de.mctelemetry.core.utils.childWidgetByIdOrThrow
 import de.mctelemetry.core.utils.childByIdOrThrow
 import de.mctelemetry.core.utils.dsl.components.IStyleBuilder
-import de.mctelemetry.core.utils.dsl.components.StyleBuilder
 import de.mctelemetry.core.utils.dsl.components.onHoverShowText
 import dev.architectury.networking.NetworkManager
 import io.github.pixix4.kobserve.base.ObservableProperty
@@ -45,7 +42,7 @@ import java.util.regex.PatternSyntaxException
 class ScraperBlockScreenDetails(
     val parent: Screen,
     val globalPos: GlobalPos,
-    val sourceState: ObservationSourceState<*>,
+    val sourceState: ObservationSourceState<*,*>,
     instrumentName: String,
     mapping: ObservationAttributeMapping = sourceState.configuration?.mapping ?: ObservationAttributeMapping.empty(),
     val sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.instance.attributes,
@@ -60,7 +57,7 @@ class ScraperBlockScreenDetails(
     constructor(
         parent: Screen,
         position: GlobalPos,
-        sourceState: ObservationSourceState<*>,
+        sourceState: ObservationSourceState<*,*>,
         configuration: ObservationSourceConfiguration? = sourceState.configuration,
         sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.instance.attributes,
     ) : this(
@@ -72,7 +69,7 @@ class ScraperBlockScreenDetails(
         sourceAttributes,
     )
 
-    val sourceInstance: IObservationSourceInstance<*, *>
+    val sourceInstance: IObservationSourceInstance<*, *, *>
         get() = sourceState.instance
 
     private val instrumentNameObservable: ObservableProperty<String> = property(instrumentName)

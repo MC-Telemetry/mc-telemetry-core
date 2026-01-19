@@ -6,7 +6,7 @@ import net.minecraft.core.GlobalPos
 import net.minecraft.world.level.block.entity.BlockEntity
 
 interface IPositionObservationSource<
-        I : IPositionObservationSourceInstance<*>
+        I : IPositionObservationSourceInstance<*,I>
         > : IObservationSource<BlockEntity, I> {
     val observedPosition: AttributeDataSource.Reference.ObservationSourceAttributeReference<GlobalPos>
 

@@ -12,12 +12,12 @@ class ObservationMappingResolver(
     override val supportsFloating: Boolean = resolvedRecorder.supportsFloating
 
     context(attributeStore: IAttributeValueStore)
-    override fun observe(value: Double, sourceInstance: IObservationSourceInstance<*, *>) {
+    override fun observe(value: Double, sourceInstance: IObservationSourceInstance<*, *, *>) {
         resolvedRecorder.observe(value, mapping.resolveAttributes(), sourceInstance)
     }
 
     context(attributeStore: IAttributeValueStore)
-    override fun observe(value: Long, sourceInstance: IObservationSourceInstance<*, *>) {
+    override fun observe(value: Long, sourceInstance: IObservationSourceInstance<*, *, *>) {
         resolvedRecorder.observe(value, mapping.resolveAttributes(), sourceInstance)
     }
 
@@ -25,7 +25,7 @@ class ObservationMappingResolver(
     override fun observePreferred(
         double: Double,
         long: Long,
-        sourceInstance: IObservationSourceInstance<*, *>,
+        sourceInstance: IObservationSourceInstance<*, *, *>,
     ) {
         resolvedRecorder.observePreferred(double, long, mapping.resolveAttributes(), sourceInstance)
     }
