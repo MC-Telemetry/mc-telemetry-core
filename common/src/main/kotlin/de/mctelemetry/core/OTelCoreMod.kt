@@ -19,6 +19,8 @@ import de.mctelemetry.core.network.observations.container.observationrequest.C2S
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerServer
 import de.mctelemetry.core.network.observations.container.observationrequest.S2CObservationsPayload
 import de.mctelemetry.core.network.observations.container.settings.C2SObservationSourceSettingsUpdatePayload
+import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateAddPayload
+import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateRemovePayload
 import de.mctelemetry.core.observations.ObservationSources
 import de.mctelemetry.core.platform.ModPlatform
 import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
@@ -81,6 +83,8 @@ object OTelCoreMod {
         C2SObservationsRequestPayload.register()
         C2SObservationSourceSettingsUpdatePayload.register()
         SyncSubscriptions.register()
+        C2SObservationSourceStateAddPayload.register()
+        C2SObservationSourceStateRemovePayload.register()
 
         if (Platform.getEnvironment() == Env.CLIENT) {
             KeyBindingManager.register()

@@ -19,6 +19,7 @@ import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.observations.model.ObservationSourceStateID
 import de.mctelemetry.core.utils.globalPos
+import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import it.unimi.dsi.fastutil.bytes.Byte2ObjectMap
 import it.unimi.dsi.fastutil.bytes.Byte2ObjectMaps
@@ -70,9 +71,9 @@ abstract class ObservationSourceContainerBlockEntity(
             }
             field = value
         }
-    val container: ObservationSourceContainer<*>
+    val container: ObservationSourceContainer<ObservationSourceContainerBlockEntity>
         get() = _container ?: throw IllegalStateException("Container has not been initialized yet")
-    val containerIfInitialized: ObservationSourceContainer<*>?
+    val containerIfInitialized: ObservationSourceContainer<ObservationSourceContainerBlockEntity>?
         get() = _container
 
     private var setupRun = false
@@ -274,7 +275,7 @@ abstract class ObservationSourceContainerBlockEntity(
         observationSources: Iterable<IObservationSource<*, *>>,
     ) : ObservationSourceContainer<ObservationSourceContainerBlockEntity>() {
 
-        val observationSources: Set<IObservationSource<in ObservationSourceContainerBlockEntity, *>> =
+        override val observationSources: Set<IObservationSource<in ObservationSourceContainerBlockEntity, *>> =
             observationSources.mapNotNullTo(mutableSetOf()) {
                 if (!it.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java)) {
                     return@mapNotNullTo null
@@ -329,19 +330,25 @@ abstract class ObservationSourceContainerBlockEntity(
             return ObservationSourceState(instance, id)
         }
 
-        fun <I : IObservationSourceInstance<in ObservationSourceContainerBlockEntity, *, I>> addObservationSourceState(
-            source: IObservationSource<in ObservationSourceContainerBlockEntity, I>,
-            data: Tag? = null
-        ): ObservationSourceState<in ObservationSourceContainerBlockEntity, I> {
+        final override fun addObservationSourceState(
+            source: IObservationSource<in ObservationSourceContainerBlockEntity, *>,
+            data: Tag?
+        ): ObservationSourceState<in ObservationSourceContainerBlockEntity, *> {
             @Suppress("UNCHECKED_CAST")
-            val instance: I = instantiateObservationSource(
+            val instance = instantiateObservationSource(
                 source as IObservationSource<ObservationSourceContainerBlockEntity, *>,
                 data
-            ) as I
+            )
+            return addObservationSourceState(instance)
+        }
+
+        override fun addObservationSourceState(
+            instance: IObservationSourceInstance<in ObservationSourceContainerBlockEntity, *, *>
+        ): ObservationSourceState<in ObservationSourceContainerBlockEntity, *> {
             if (_observationStates.size >= UByte.MAX_VALUE.toInt()) {
                 throw IllegalArgumentException("Cannot add more than 256 observations to one ObservationSourceContainer")
             }
-            var result: ObservationSourceState<in ObservationSourceContainerBlockEntity, I>? = null
+            var result: ObservationSourceState<in ObservationSourceContainerBlockEntity, *>? = null
             var nextId: Byte = getNextId()
             val startId: Byte = nextId
             result =
@@ -350,13 +357,12 @@ abstract class ObservationSourceContainerBlockEntity(
                         if (!_observationStates.containsKey(nextId)) {
                             synchronized(_observationStates) {
                                 _observationStates.computeIfAbsent(nextId) { id: Byte ->
-                                    @Suppress("UNCHECKED_CAST")
-                                    val state = makeNewSourceState(
-                                        instance as IObservationSourceInstance<ObservationSourceContainerBlockEntity, *, *>,
+                                    makeNewSourceState(
+                                        instance,
                                         id.toUByte()
-                                    ) as ObservationSourceState<in ObservationSourceContainerBlockEntity, I>
-                                    result = state
-                                    state
+                                    ).also {
+                                        result = it
+                                    }
                                 }
                             }
                             if (result != null) {
@@ -368,13 +374,16 @@ abstract class ObservationSourceContainerBlockEntity(
                     throw IllegalArgumentException("Cannot add more than 256 observations to one ObservationSourceContainer")
                 }
             setupCallback(result)
+            triggerStateAdded(result)
             return result
         }
 
-        fun removeObservationSourceState(id: ObservationSourceStateID): Boolean {
-            return synchronized(_observationStates) {
-                _observationStates.remove(id.toByte()) != null
-            }
+        override fun removeObservationSourceState(id: ObservationSourceStateID): Boolean {
+            val removed = synchronized(_observationStates) {
+                _observationStates.remove(id.toByte())
+            } ?: return false
+            triggerStateRemoved(removed)
+            return true
         }
 
         override val context: ObservationSourceContainerBlockEntity
@@ -473,7 +482,7 @@ abstract class ObservationSourceContainerBlockEntity(
                             getNextId()
                         } else
                             throw IllegalArgumentException("Received no instanceId/index for ${this@ObservationSourceContainerBlockEntity}@${this@ObservationSourceContainerBlockEntity.globalPos}#$observationIndex")
-                        var shouldRegisterCallbacks = false
+                        var isNew = false
                         val state = _observationStates.compute(instanceId) { instanceId, old ->
                             if (old != null) {
                                 if (source.javaClass !== old.source.javaClass || source !is IObservationSourceSingleton<*, *, *>) {
@@ -481,7 +490,7 @@ abstract class ObservationSourceContainerBlockEntity(
                                 }
                                 old
                             } else {
-                                shouldRegisterCallbacks = true
+                                isNew = true
                                 val sourceInstance = instantiateObservationSource(source, tag.get("params"))
                                 makeNewSourceState(sourceInstance, instanceId.toUByte()).also {
                                     it.cascadeUpdates = _cascadesUpdates
@@ -489,10 +498,13 @@ abstract class ObservationSourceContainerBlockEntity(
                             }
                         }
                         runWithExceptionCleanup({ _observationStates.remove(instanceId)?.close() }) {
-                            if (shouldRegisterCallbacks) {
+                            if (isNew) {
                                 setupCallback(state)
                             }
                             put(state, block(state, tag.getCompound("data")))
+                        }
+                        if (isNew) {
+                            triggerStateAdded(state)
                         }
                     }
                     if (removeMissing) {
@@ -502,10 +514,19 @@ abstract class ObservationSourceContainerBlockEntity(
                         }
                         if (missingIdsSet.isNotEmpty()) {
                             val iter = missingIdsSet.iterator()
+                            var exceptionAccumulator: Exception? = null
                             while (iter.hasNext()) {
                                 val id = iter.nextByte()
                                 val oldValue = _observationStates.remove(id)
-                                oldValue?.close()
+                                try {
+                                    oldValue?.close()
+                                    triggerStateRemoved(oldValue)
+                                } catch (ex: Exception) {
+                                    exceptionAccumulator += ex
+                                }
+                            }
+                            if (exceptionAccumulator != null) {
+                                throw exceptionAccumulator
                             }
                         }
                     }
