@@ -142,6 +142,7 @@ abstract class ObservationSourceContainerBlockEntity(
     private fun updateState() {
         if (level?.isClientSide == true) return
         val container = _container ?: return
+        container.markInitialized()
         val targetState: ObservationSourceErrorState.Type =
             container.observationStates.values.map { it.errorState.type }
                 .fold(ObservationSourceErrorState.Type.NotConfigured) { acc, type ->
@@ -235,6 +236,10 @@ abstract class ObservationSourceContainerBlockEntity(
     }
 
     private fun onDirty(state: ObservationSourceState<in ObservationSourceContainerBlockEntity, *>) {
+        generalBlockSync()
+    }
+
+    private fun generalBlockSync() {
         setChanged()
         val level = level!!
         if (!level.isClientSide) {
@@ -296,6 +301,25 @@ abstract class ObservationSourceContainerBlockEntity(
 
         private val idCounter = AtomicInteger(-1)
         val initialized: Boolean get() = idCounter.get() >= 0
+
+        fun markInitialized() {
+            if (initialized) return
+            idCounter.compareAndSet(-1, 0)
+            var testId = 0
+            while (testId < UByte.MAX_VALUE.toInt() && _observationStates.containsKey(testId.toByte())) {
+                val nextId = testId + 1
+                if (nextId > UByte.MAX_VALUE.toInt()) {
+                    idCounter.set(UByte.MAX_VALUE.toInt())
+                    return
+                }
+                val witnessId = idCounter.compareAndExchange(testId, nextId)
+                testId = if (witnessId == testId) {
+                    nextId
+                } else {
+                    witnessId
+                }
+            }
+        }
 
         protected val _observationStates: Byte2ObjectMap<ObservationSourceState<in ObservationSourceContainerBlockEntity, *>> =
             Byte2ObjectOpenHashMap()
@@ -375,7 +399,7 @@ abstract class ObservationSourceContainerBlockEntity(
                 }
             setupCallback(result)
             triggerStateAdded(result)
-            setChanged()
+            result.cascadeUpdates = _cascadesUpdates
             return result
         }
 
@@ -383,8 +407,12 @@ abstract class ObservationSourceContainerBlockEntity(
             val removed = synchronized(_observationStates) {
                 _observationStates.remove(id.toByte())
             } ?: return false
-            triggerStateRemoved(removed)
-            setChanged()
+            try {
+                removed.close()
+                triggerStateRemoved(removed)
+            } finally {
+                generalBlockSync()
+            }
             return true
         }
 
@@ -431,7 +459,7 @@ abstract class ObservationSourceContainerBlockEntity(
             holderLookupProvider: HolderLookup.Provider,
             removeMissing: Boolean = true,
             allowAutoAssign: Boolean = true,
-            block: (ObservationSourceState<in ObservationSourceContainerBlockEntity, *>, CompoundTag) -> T,
+            block: (source: ObservationSourceState<in ObservationSourceContainerBlockEntity, *>, data: CompoundTag, isNew: Boolean) -> T,
         ): Map<ObservationSourceState<in ObservationSourceContainerBlockEntity, *>, T> {
             contract {
                 callsInPlace(block, InvocationKind.UNKNOWN)
@@ -478,11 +506,7 @@ abstract class ObservationSourceContainerBlockEntity(
 
                         val instanceId: Byte = if (tag.contains("index", Tag.TAG_BYTE.toInt()))
                             tag.getByte("index")
-                        else if (allowAutoAssign) {
-                            if (!initialized)
-                                idCounter.compareAndSet(-1, 0)
-                            getNextId()
-                        } else
+                        else
                             throw IllegalArgumentException("Received no instanceId/index for ${this@ObservationSourceContainerBlockEntity}@${this@ObservationSourceContainerBlockEntity.globalPos}#$observationIndex")
                         var isNew = false
                         val state = _observationStates.compute(instanceId) { instanceId, old ->
@@ -500,10 +524,7 @@ abstract class ObservationSourceContainerBlockEntity(
                             }
                         }
                         runWithExceptionCleanup({ _observationStates.remove(instanceId)?.close() }) {
-                            if (isNew) {
-                                setupCallback(state)
-                            }
-                            put(state, block(state, tag.getCompound("data")))
+                            put(state, block(state, tag.getCompound("data"), isNew))
                         }
                         if (isNew) {
                             triggerStateAdded(state)
@@ -532,27 +553,7 @@ abstract class ObservationSourceContainerBlockEntity(
                             }
                         }
                     }
-                    if (!initialized) {
-                        idCounter.compareAndSet(-1, 0)
-                        var testId = 0
-                        while (testId < UByte.MAX_VALUE.toInt() && _observationStates.containsKey(testId.toByte())) {
-                            val witnessId = idCounter.compareAndExchange(testId, (testId + 1 % 256))
-                            if (witnessId == testId) {
-                                testId++
-                            } else {
-                                testId = witnessId
-                            }
-                        }
-                    }
-                    if (_observationStates.isEmpty() && (level?.isClientSide != true)) {
-                        for (source in observationSources) {
-                            if (source is IObservationSourceSingleton<*, *, *>)
-                                addObservationSourceState(
-                                    source as IObservationSourceSingleton<in ObservationSourceContainerBlockEntity, *, *>,
-                                    null
-                                )
-                        }
-                    }
+                    markInitialized()
                 }
             }
         }
@@ -569,7 +570,11 @@ abstract class ObservationSourceContainerBlockEntity(
                 holderLookupProvider,
                 removeMissing = removeMissing,
                 allowAutoAssign = allowAutoAssign
-            ) { state, dataTag ->
+            ) { state, dataTag, isNew ->
+                if (isNew) {
+                    setupCallback(state)
+                    state.cascadeUpdates = _cascadesUpdates
+                }
                 state.loadFromTag(dataTag, holderLookupProvider, instrumentManager)
             }
         }
@@ -581,16 +586,30 @@ abstract class ObservationSourceContainerBlockEntity(
             removeMissing: Boolean = true,
             allowAutoAssign: Boolean = true,
         ): (Level) -> Unit {
+            var pendingNewStates: MutableList<ObservationSourceState<in ObservationSourceContainerBlockEntity, *>>? =
+                null
             val delayedMap = loadTagsAndApplyToState(
                 compoundTag,
                 holderLookupProvider,
                 removeMissing = removeMissing,
                 allowAutoAssign = allowAutoAssign
-            ) { state, dataTag ->
+            ) { state, dataTag, isNew ->
+                if (isNew) {
+                    if (pendingNewStates == null)
+                        pendingNewStates = mutableListOf(state)
+                    else
+                        pendingNewStates.add(state)
+                }
                 state.loadDelayedFromTag(dataTag, holderLookupProvider)
             }
 
             return { level ->
+                if (pendingNewStates != null) {
+                    for (state in pendingNewStates) {
+                        setupCallback(state)
+                        state.cascadeUpdates = _cascadesUpdates
+                    }
+                }
                 if (level.isClientSide) {
                     for (delayedCallback in delayedMap.values) {
                         delayedCallback.invoke(null)
