@@ -14,6 +14,7 @@ import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.api.observations.IObservationSourceSingleton
 import de.mctelemetry.core.api.observations.toNbt
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
+import de.mctelemetry.core.component.OTelCoreModComponents
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.observations.model.ObservationSourceState
@@ -219,6 +220,7 @@ abstract class ObservationSourceContainerBlockEntity(
             if (!level.isClientSide) {
                 level as ServerLevel
                 if (level.isLoaded(blockPos)) {
+                    container.markInitialized()
                     val chunkX = SectionPos.blockToSectionCoord(blockPos.x)
                     val chunkZ = SectionPos.blockToSectionCoord(blockPos.z)
                     val chunk = level.chunkSource.getChunkNow(chunkX, chunkZ)
@@ -273,6 +275,21 @@ abstract class ObservationSourceContainerBlockEntity(
         val level = level
         if (level != null) {
             setup(level)
+        }
+    }
+
+    override fun applyImplicitComponents(dataComponentInput: DataComponentInput) {
+        super.applyImplicitComponents(dataComponentInput)
+        val generateSingletonStates: Boolean =
+            dataComponentInput.getOrDefault(OTelCoreModComponents.GENERATE_SINGLETON_STATES.get(), false)
+        val container = _container!!
+        if (level?.isClientSide == false) {
+            if (generateSingletonStates && container.observationStates.isEmpty()) {
+                for (source in container.observationSources) {
+                    if (source !is IObservationSourceSingleton<*, *, *>) continue
+                    container.addObservationSourceState(source)
+                }
+            }
         }
     }
 

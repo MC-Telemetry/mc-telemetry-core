@@ -11,6 +11,7 @@ import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.commands.metrics.CommandMetrics
 import de.mctelemetry.core.commands.scrape.CommandScrape
+import de.mctelemetry.core.component.OTelCoreModComponents
 import de.mctelemetry.core.instruments.builtin.BuiltinInstruments
 import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
 import de.mctelemetry.core.items.OTelCoreModItems
@@ -98,6 +99,7 @@ object OTelCoreMod {
             SuggestingTextBoxComponent.register()
         }
 
+        OTelCoreModComponents.init()
         OTelCoreModBlocks.init()
         OTelCoreModBlockEntityTypes.init()
         OTelCoreModItems.init()
