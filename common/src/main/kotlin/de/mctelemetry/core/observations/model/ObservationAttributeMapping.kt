@@ -62,6 +62,10 @@ class ObservationAttributeMapping(
         return ObservationAttributeMapping(mapping)
     }
 
+    fun resetValidationFlags() {
+        validationFlags.set(0)
+    }
+
     private inline fun cacheableValidation(
         @MagicConstant(
             intValues = [
@@ -148,8 +152,8 @@ class ObservationAttributeMapping(
     }
 
     context(attributeStore: IAttributeValueStore)
-    fun resolveAttributesToKeyValues(): List<MappedAttributeKeyValue<*,*>> {
-        if(mapping.isEmpty()) {
+    fun resolveAttributesToKeyValues(): List<MappedAttributeKeyValue<*, *>> {
+        if (mapping.isEmpty()) {
             return emptyList()
         }
         return mapping.entries.map { (metricAttribute, attributeDataSource) ->
@@ -203,6 +207,18 @@ class ObservationAttributeMapping(
             assert(OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT <= UByte.MAX_VALUE.toInt())
         }
 
+        val VALIDATION_ERRORS_STATIC = setOf(
+            TranslationKeys.Errors.ATTRIBUTES_TYPE_INCOMPATIBLE,
+            TranslationKeys.Errors.ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED,
+            TranslationKeys.Errors.ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED,
+        )
+
+        val VALIDATION_ERRORS_DYNAMIC = setOf(
+            TranslationKeys.Errors.ATTRIBUTES_MAPPING_MISSING,
+        )
+
+        val VALIDATION_ERRORS = VALIDATION_ERRORS_STATIC + VALIDATION_ERRORS_DYNAMIC
+
         private val empty = ObservationAttributeMapping(emptyMap())
 
         fun empty(): ObservationAttributeMapping = empty
@@ -219,12 +235,12 @@ class ObservationAttributeMapping(
         context(attributeStore: IAttributeValueStore)
         fun resolveAttributesUnmapped(): Attributes {
             return attributeStore.references.fold(Attributes.builder()) { builder, reference ->
-                addConverted(reference.info,reference, builder)
+                addConverted(reference.info, reference, builder)
             }.build()
         }
 
         context(attributeStore: IAttributeValueStore)
-        fun resolveAttributesUnmappedToKeyValues(): List<MappedAttributeKeyValue<*,*>> {
+        fun resolveAttributesUnmappedToKeyValues(): List<MappedAttributeKeyValue<*, *>> {
             return attributeStore.references.map { reference ->
                 makeConverted(reference.info, reference)
             }
@@ -247,7 +263,7 @@ class ObservationAttributeMapping(
         private fun <T : Any, I : MappedAttributeKeyInfo<T, *>> makeConverted(
             metricAttribute: I,
             attributeDataSource: AttributeDataSource<*>,
-        ): MappedAttributeKeyValue<T,I> {
+        ): MappedAttributeKeyValue<T, I> {
             val value: T = lookupConverted(metricAttribute.templateType, attributeDataSource)
             return MappedAttributeKeyValue(metricAttribute, value)
         }

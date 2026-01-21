@@ -34,6 +34,7 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
             return false
         }
         instanceField = value
+        configuration?.mapping?.resetValidationFlags()
         if (!silent) triggerOnDirty()
         return true
     }
@@ -91,6 +92,7 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
         configurationField = value
         try {
             if (cascadeUpdates) {
+                value?.mapping?.resetValidationFlags()
                 if (instrument != value?.instrument) {
                     setInstrument(null, silent = true)
                 }
@@ -153,6 +155,7 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
         instrumentField = value
         try {
             if (cascadeUpdates) {
+                configuration?.mapping?.resetValidationFlags()
                 setInstrumentSubRegistration(null, silent = true)
             }
         } finally {
@@ -197,6 +200,7 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
                 oldValue?.close()
             } finally {
                 if (cascadeUpdates) {
+                    configuration?.mapping?.resetValidationFlags()
                     updateDerivedErrorState(silent = true)
                 }
             }
@@ -297,9 +301,14 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
         } else {
             val configuredErrorState = errorState as? ObservationSourceErrorState.Configured
                 ?: ObservationSourceErrorState.Configured.Ok
-            if (instrumentSubRegistration == null) {
+            errorState = ObservationAttributeMapping.VALIDATION_ERRORS.fold(
+                configuredErrorState,
+                ObservationSourceErrorState.Configured::withoutTranslatableError
+            )
+            val subRegistration = instrumentSubRegistration
+            if (subRegistration == null) {
                 errorState = if (instrument == null) {
-                    configuredErrorState
+                    errorState
                         .withoutError(ObservationSourceErrorState.uninitializedError)
                         .withoutTranslatableError(TranslationKeys.Errors.OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND)
                         .withError(
@@ -308,16 +317,25 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
                             )
                         )
                 } else {
-                    configuredErrorState
+                    errorState
                         .withoutTranslatableError(TranslationKeys.Errors.OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND)
                         .withError(ObservationSourceErrorState.uninitializedError)
                 }
             } else {
-                errorState = configuredErrorState
+                errorState = errorState
                     .withoutError(ObservationSourceErrorState.uninitializedError)
                     .withoutTranslatableError(
                         TranslationKeys.Errors.OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND
                     )
+            }
+            val instrument = instrument ?: subRegistration?.baseInstrument
+            val configError = if (instrument != null) {
+                configuration.mapping.validate(instrument.attributes.values)
+            } else {
+                configuration.mapping.validateStatic()
+            }
+            if (configError != null) {
+                errorState = errorState.withError(configError)
             }
         }
         return setErrorState(errorState, silent = silent)

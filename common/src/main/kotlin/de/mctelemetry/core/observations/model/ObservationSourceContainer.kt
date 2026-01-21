@@ -294,7 +294,7 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
         try {
             if ((!forceObservation) && !state.shouldBeObserved()) return
             val configuration = state.configuration ?: return
-            val instrument = configuration.instrument
+            val instrument = state.instrument ?: return
             val mapping = configuration.mapping
             val validationError = mapping.validate(instrument.attributes.values)
             if (validationError != null) {
