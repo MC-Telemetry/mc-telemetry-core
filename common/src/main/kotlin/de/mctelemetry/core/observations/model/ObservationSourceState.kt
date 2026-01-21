@@ -96,7 +96,11 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
                 }
             }
         } finally {
-            if (!silent) triggerOnDirty()
+            try {
+                updateDerivedErrorState(silent = true)
+            } finally {
+                if (!silent) triggerOnDirty()
+            }
         }
         return true
     }
@@ -297,6 +301,7 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
                 errorState = if (instrument == null) {
                     configuredErrorState
                         .withoutError(ObservationSourceErrorState.uninitializedError)
+                        .withoutTranslatableError(TranslationKeys.Errors.OBSERVATIONS_CONFIGURATION_INSTRUMENT_NOT_FOUND)
                         .withError(
                             TranslationKeys.Errors.observationsConfigurationInstrumentNotFound(
                                 configuration.instrument.name
