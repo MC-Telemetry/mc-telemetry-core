@@ -475,7 +475,6 @@ abstract class ObservationSourceContainerBlockEntity(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
             removeMissing: Boolean = true,
-            allowAutoAssign: Boolean = true,
             block: (source: ObservationSourceState<in ObservationSourceContainerBlockEntity, *>, data: CompoundTag, isNew: Boolean) -> T,
         ): Map<ObservationSourceState<in ObservationSourceContainerBlockEntity, *>, T> {
             contract {
@@ -580,13 +579,11 @@ abstract class ObservationSourceContainerBlockEntity(
             holderLookupProvider: HolderLookup.Provider,
             instrumentManager: IMutableInstrumentManager?,
             removeMissing: Boolean = true,
-            allowAutoAssign: Boolean = true,
         ) {
             loadTagsAndApplyToState(
                 compoundTag,
                 holderLookupProvider,
                 removeMissing = removeMissing,
-                allowAutoAssign = allowAutoAssign
             ) { state, dataTag, isNew ->
                 if (isNew) {
                     setupCallback(state)
@@ -601,7 +598,6 @@ abstract class ObservationSourceContainerBlockEntity(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
             removeMissing: Boolean = true,
-            allowAutoAssign: Boolean = true,
         ): (Level) -> Unit {
             var pendingNewStates: MutableList<ObservationSourceState<in ObservationSourceContainerBlockEntity, *>>? =
                 null
@@ -609,7 +605,6 @@ abstract class ObservationSourceContainerBlockEntity(
                 compoundTag,
                 holderLookupProvider,
                 removeMissing = removeMissing,
-                allowAutoAssign = allowAutoAssign
             ) { state, dataTag, isNew ->
                 if (isNew) {
                     if (pendingNewStates == null)
