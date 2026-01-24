@@ -20,6 +20,8 @@ import de.mctelemetry.core.utils.closeAllCollect
 import de.mctelemetry.core.utils.closeConsumeAllRethrow
 import de.mctelemetry.core.utils.coroutineDispatcher
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
+import de.mctelemetry.core.utils.dsl.components.IStyleBuilder
+import de.mctelemetry.core.utils.dsl.components.onHoverShowText
 import de.mctelemetry.core.utils.dsl.components.style
 import de.mctelemetry.core.utils.globalPosOrThrow
 import de.mctelemetry.core.utils.runWithExceptionCleanup
@@ -211,7 +213,16 @@ class ScraperBlockScreen(
                 mapOf()
             )
             template.childByIdOrThrow<LabelComponent>("observation-source-name").text(
-                TranslationKeys.ObservationSources[state.source]
+                TranslationKeys.ObservationSources[state.source].also {
+                    if (minecraft!!.options.advancedItemTooltips)
+                        it.withStyle(IStyleBuilder.buildStyle {
+                            onHoverShowText {
+                                append(state.source.id.location().toString())
+                                append("/")
+                                append(state.id.toString())
+                            }
+                        })
+                }
             )
             list.child(template)
 
@@ -235,7 +246,12 @@ class ScraperBlockScreen(
                     }
                 }
                 editButton.onPress {
-                    NetworkManager.sendToServer(C2SObservationSourceStateRemovePayload(globalPos, entry.byteKey.toUByte()))
+                    NetworkManager.sendToServer(
+                        C2SObservationSourceStateRemovePayload(
+                            globalPos,
+                            entry.byteKey.toUByte()
+                        )
+                    )
                 }
             } else {
                 editButton.onPress {
