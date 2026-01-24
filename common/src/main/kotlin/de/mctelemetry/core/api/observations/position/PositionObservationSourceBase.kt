@@ -1,5 +1,6 @@
 package de.mctelemetry.core.api.observations.position
 
+import com.mojang.serialization.Codec
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
@@ -8,8 +9,8 @@ import de.mctelemetry.core.api.observations.IObservationSourceSingleton
 import de.mctelemetry.core.api.observations.ObservationSourceBase
 import de.mctelemetry.core.api.observations.position.IPositionObservationSourceInstance.Companion.defaultFacingAccessor
 import de.mctelemetry.core.api.observations.position.IPositionObservationSourceInstance.Companion.observeDefaultImpl
+import de.mctelemetry.core.persistence.DirectUnitCodec
 import net.minecraft.core.Direction
-import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.world.level.block.entity.BlockEntity
@@ -61,11 +62,8 @@ abstract class PositionObservationSourceBase<
         private val typedThis: I
             get() = this as I
 
-        override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, I> =
-            StreamCodec.unit(typedThis)
-
-        override fun fromNbt(tag: Tag?): I = typedThis
-        override fun toNbt(instance: I): Tag? = null
+        override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, I> = StreamCodec.unit(typedThis)
+        override val codec: Codec<I> = DirectUnitCodec(typedThis)
 
         context(sourceContext: BlockEntity)
         override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {

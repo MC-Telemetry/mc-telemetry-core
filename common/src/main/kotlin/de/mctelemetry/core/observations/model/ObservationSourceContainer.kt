@@ -1,5 +1,6 @@
 package de.mctelemetry.core.observations.model
 
+import com.mojang.serialization.DynamicOps
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
@@ -17,7 +18,6 @@ import it.unimi.dsi.fastutil.bytes.ByteSet
 import it.unimi.dsi.fastutil.bytes.ByteSets
 import net.minecraft.gametest.framework.GameTestAssertException
 import net.minecraft.gametest.framework.GameTestTimeoutException
-import net.minecraft.nbt.Tag
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
@@ -329,9 +329,10 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
         }
     }
 
-    abstract fun addObservationSourceState(
+    context(ops: DynamicOps<T>)
+    abstract fun <T> addObservationSourceState(
         source: IObservationSource<in SC, *>,
-        data: Tag? = null
+        data: T? = null
     ): ObservationSourceState<in SC, *>
 
     abstract fun addObservationSourceState(

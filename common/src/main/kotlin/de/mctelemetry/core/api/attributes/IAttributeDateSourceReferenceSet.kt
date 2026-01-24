@@ -25,14 +25,14 @@ interface IAttributeDateSourceReferenceSet {
             else Default(attributeKeys.toSet())
 
         @JvmName("newFromInfoCollection")
-        operator fun invoke(attributeKeys: Collection<MappedAttributeKeyInfo<*, *>>): IAttributeDateSourceReferenceSet =
+        operator fun invoke(attributeKeys: Collection<MappedAttributeKeyInfo<*, *, *>>): IAttributeDateSourceReferenceSet =
             if (attributeKeys.isEmpty()) empty
             else Default(attributeKeys.mapTo(mutableSetOf()) {
                 AttributeDataSource.Reference.TypedSlot(it)
             })
 
         @JvmName("newFromVararg")
-        operator fun invoke(vararg attributeKeys: MappedAttributeKeyInfo<*, *>): IAttributeDateSourceReferenceSet =
+        operator fun invoke(vararg attributeKeys: MappedAttributeKeyInfo<*, *, *>): IAttributeDateSourceReferenceSet =
             if (attributeKeys.isEmpty()) empty
             else Default(attributeKeys.mapTo(mutableSetOf()) {
                 AttributeDataSource.Reference.TypedSlot(it)

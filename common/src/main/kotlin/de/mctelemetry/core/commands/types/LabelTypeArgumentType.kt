@@ -12,12 +12,12 @@ import net.minecraft.resources.ResourceLocation
 
 class LabelTypeArgumentType(
     context: CommandBuildContext,
-) : ResourceArgument<IAttributeKeyTypeTemplate<*, *>>(
+) : ResourceArgument<IAttributeKeyTypeTemplate<*, *, *>>(
     context,
     OTelCoreModAPI.AttributeTypeMappings,
 ) {
 
-    companion object : IArgumentResolver<CommandSourceStack, IAttributeKeyTypeTemplate<*, *>> {
+    companion object : IArgumentResolver<CommandSourceStack, IAttributeKeyTypeTemplate<*, *, *>> {
 
         val registration = ArgumentTypes.PreparedArgumentTypeRegistration(
             ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "label_type"),
@@ -32,7 +32,7 @@ class LabelTypeArgumentType(
         override fun getValue(
             context: CommandContext<CommandSourceStack>,
             name: String,
-        ): IAttributeKeyTypeTemplate<*, *> {
+        ): IAttributeKeyTypeTemplate<*, *, *> {
             return getResource(
                 context,
                 name,

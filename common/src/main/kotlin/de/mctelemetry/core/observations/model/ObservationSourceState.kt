@@ -1,5 +1,9 @@
 package de.mctelemetry.core.observations.model
 
+import com.mojang.serialization.DataResult
+import com.mojang.serialization.DynamicOps
+import com.mojang.serialization.MapCodec
+import com.mojang.serialization.codecs.RecordCodecBuilder
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentSubRegistration
@@ -8,10 +12,11 @@ import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
+import de.mctelemetry.core.persistence.SerializationAttributes
+import de.mctelemetry.core.utils.injectAttributeIntoContext
 import de.mctelemetry.core.utils.runWithExceptionCleanup
-import net.minecraft.core.HolderLookup
-import net.minecraft.nbt.CompoundTag
-import net.minecraft.network.RegistryFriendlyByteBuf
+import java.util.Optional
+import kotlin.jvm.optionals.getOrNull
 
 typealias ObservationSourceStateID = UByte
 
@@ -362,89 +367,110 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
         onDirtyListeners.remove(block)
     }
 
-    open fun loadFromByteBuf(
-        bb: RegistryFriendlyByteBuf,
+    context(ops: DynamicOps<T>)
+    open fun <T> applyDecode(
+        input: T,
         instrumentManager: IMutableInstrumentManager?,
-        silent: Boolean = false,
-    ) {
-        loadFromTag(bb.readNbt() ?: return, bb.registryAccess(), instrumentManager, silent = silent)
-    }
-
-    open fun saveToByteBuf(bb: RegistryFriendlyByteBuf) {
-        val tag = CompoundTag()
-        saveToTag(tag)
-        bb.writeNbt(tag)
-    }
-
-    open fun loadDelayedFromTag(
-        tag: CompoundTag,
-        holderLookupProvider: HolderLookup.Provider,
-        initialSilent: Boolean = false,
-        callbackSilent: Boolean = false,
-    ): (IMutableInstrumentManager?) -> Unit {
-        val errorState = loadErrorState(tag)
-        val delayedConfiguration = ObservationSourceConfiguration.loadDelayedFromTag(
-            tag.getCompound("configuration"),
-            holderLookupProvider,
-            instance.source,
+        silent: Boolean = false
+    ): DataResult<Unit> {
+        val sourceInjectedOps = ops.injectAttributeIntoContext(
+            SerializationAttributes.ObservationSourceSerializationAttribute,
+            instance.source
         )
-        var modified: Boolean
-        runWithExceptionCleanup(::triggerOnDirty, runCleanup = !initialSilent) {
-            modified = setErrorState(errorState, silent = true)
-        }
-        if (modified && !initialSilent) triggerOnDirty()
-        return {
-            var delayedHasModified: Boolean
-            runWithExceptionCleanup(::triggerOnDirty, runCleanup = !callbackSilent) {
-                delayedHasModified = setConfiguration(delayedConfiguration(it), silent = true)
+        context(sourceInjectedOps) {
+            val defaultDecodeResult = defaultDataCodec.compressedDecode(sourceInjectedOps, input)
+            if (!defaultDecodeResult.hasResultOrPartial())
+                return DataResult.error(defaultDecodeResult.error().get().messageSupplier)
+
+            val (errorState, configurationTemplate) = defaultDecodeResult.partialOrThrow
+            val configuration = configurationTemplate?.resolveOrMock(instrumentManager)
+            var modified: Boolean
+            runWithExceptionCleanup(::triggerOnDirty, runCleanup = !silent) {
+                modified = setErrorState(errorState, silent = true)
+                modified = setConfiguration(configuration, silent = true) || modified
                 if (cascadeUpdates) {
-                    delayedHasModified = runUpdateCascade(silent = true) || delayedHasModified
+                    modified = runUpdateCascade(silent = true) || modified
                 }
             }
-            if (delayedHasModified && !callbackSilent) triggerOnDirty()
+            if (modified && !silent) triggerOnDirty()
+            return if (defaultDecodeResult.isError)
+                DataResult.error(defaultDecodeResult.error().get().messageSupplier, Unit)
+            else
+                DataResult.success(Unit)
         }
     }
 
-    open fun loadFromTag(
-        tag: CompoundTag,
-        holderLookupProvider: HolderLookup.Provider,
-        instrumentManager: IMutableInstrumentManager?,
-        silent: Boolean = false,
-    ) {
-        val errorState = loadErrorState(tag)
-        val configuration = ObservationSourceConfiguration.loadFromTag(
-            tag.getCompound("configuration"),
-            holderLookupProvider,
-            instrumentManager,
-            instance.source,
+    context(ops: DynamicOps<T>)
+    open fun <T> applyDelayedDecode(
+        input: T,
+        initialSilent: Boolean = false,
+        callbackSilent: Boolean = false,
+    ): DataResult<(IMutableInstrumentManager?) -> Unit> {
+        val sourceInjectedOps = ops.injectAttributeIntoContext(
+            SerializationAttributes.ObservationSourceSerializationAttribute,
+            instance.source
         )
-        var modified: Boolean
-        runWithExceptionCleanup(::triggerOnDirty, runCleanup = !silent) {
-            modified = setErrorState(errorState, silent = true)
-            modified = setConfiguration(configuration, silent = true) || modified
-            if (cascadeUpdates) {
-                modified = runUpdateCascade(silent = true) || modified
+        context(sourceInjectedOps) {
+            val defaultDecodeResult = defaultDataCodec.compressedDecode(sourceInjectedOps, input)
+            if (!defaultDecodeResult.hasResultOrPartial())
+                return DataResult.error(defaultDecodeResult.error().get().messageSupplier)
+
+            val (errorState, configurationTemplate) = defaultDecodeResult.partialOrThrow
+            var modified: Boolean
+            runWithExceptionCleanup(::triggerOnDirty, runCleanup = !initialSilent) {
+                modified = setErrorState(errorState, silent = true)
             }
+            if (modified && !initialSilent) triggerOnDirty()
+            val callback: (IMutableInstrumentManager?) -> Unit = { instrumentManager ->
+                var delayedHasModified: Boolean
+                runWithExceptionCleanup(::triggerOnDirty, runCleanup = !callbackSilent) {
+                    delayedHasModified =
+                        setConfiguration(
+                            configurationTemplate?.resolveOrMock(instrumentManager),
+                            silent = true
+                        )
+                    if (cascadeUpdates) {
+                        delayedHasModified = runUpdateCascade(silent = true) || delayedHasModified
+                    }
+                }
+                if (delayedHasModified && !callbackSilent) triggerOnDirty()
+            }
+            return if (defaultDecodeResult.isError)
+                DataResult.error(defaultDecodeResult.error().get().messageSupplier, callback)
+            else
+                DataResult.success(callback)
         }
-        if (modified && !silent) triggerOnDirty()
     }
 
-    protected open fun loadErrorState(tag: CompoundTag): ObservationSourceErrorState {
-        return ObservationSourceErrorState.fromTag(tag.getCompound("errorState"))
-    }
-
-    open fun saveToTag(tag: CompoundTag) {
-        saveErrorState(tag)
-        val configurationTag = configuration?.saveToTag()
-        if (configurationTag != null) {
-            tag.put("configuration", configurationTag)
+    context(ops: DynamicOps<T>)
+    open fun <T> encode(prefix: T = ops.empty()): DataResult<T> {
+        val injectedOps = ops.injectAttributeIntoContext(
+            SerializationAttributes.ObservationSourceSerializationAttribute,
+            instance.source
+        )
+        return context(injectedOps) {
+            defaultDataCodec
+                .encode(
+                    Pair(errorStateField, configurationField?.asTemplate()),
+                    injectedOps,
+                    defaultDataCodec.compressedBuilder(injectedOps)
+                ).build(prefix)
         }
     }
 
-    protected open fun saveErrorState(tag: CompoundTag) {
-        val errorStateTag = CompoundTag().also(errorState::saveToTag)
-        if (!errorStateTag.isEmpty)
-            tag.put("errorState", errorStateTag)
+    companion object {
+
+        private val defaultDataCodec: MapCodec<Pair<ObservationSourceErrorState, ObservationSourceConfiguration.Template?>> =
+            RecordCodecBuilder.mapCodec { builder ->
+                builder.group(
+                    ObservationSourceErrorState.CODEC.optionalFieldOf("errorState", ObservationSourceErrorState.NotConfigured)
+                        .forGetter { pair -> pair.first},
+                    ObservationSourceConfiguration.Template.CODEC.optionalFieldOf("configuration")
+                        .forGetter { pair -> Optional.ofNullable(pair.second) }
+                ).apply(builder) { errorState, configuration ->
+                    Pair(errorState, configuration.getOrNull())
+                }
+            }
     }
 
     interface InstrumentSubRegistrationFactory<out SC> {

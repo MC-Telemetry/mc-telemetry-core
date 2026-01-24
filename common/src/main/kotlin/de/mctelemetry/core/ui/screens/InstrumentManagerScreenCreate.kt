@@ -1,6 +1,7 @@
 package de.mctelemetry.core.ui.screens
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.api.attributes.create
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.sendGaugeInstrument
 import de.mctelemetry.core.ui.components.AttributeCreatorComponent

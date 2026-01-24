@@ -1,11 +1,12 @@
 package de.mctelemetry.core.api.observations
 
+import com.mojang.serialization.Codec
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeInstance
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.persistence.DirectUnitCodec
 import de.mctelemetry.core.utils.runWithExceptionCleanup
-import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 
@@ -24,7 +25,7 @@ abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAtt
     private var pendingAttributeReferences: MutableMap<String, AttributeDataSource.Reference.ObservationSourceAttributeReference<*>>? =
         mutableMapOf()
 
-    protected fun <T : Any> IAttributeKeyTypeInstance<T, *>.createObservationAttributeReference(name: String): AttributeDataSource.Reference.ObservationSourceAttributeReference<T> {
+    protected fun <T : Any> IAttributeKeyTypeInstance<T, *, *>.createObservationAttributeReference(name: String): AttributeDataSource.Reference.ObservationSourceAttributeReference<T> {
         val references = pendingAttributeReferences
             ?: throw IllegalStateException("Cannot create attribute references after attributes have already been accessed")
         val newValue = AttributeDataSource.Reference.ObservationSourceAttributeReference(
@@ -49,12 +50,15 @@ abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAtt
         }
     }
 
-    abstract class SingletonBase<SC, I : SingletonBase<SC, I>> : ObservationSourceBase<SC, SingletonBase<SC, I>>(),
-        IObservationSourceSingleton<SC, IAttributeValueStore.MapAttributeStore, SingletonBase<SC, I>> {
+    abstract class SingletonBase<SC, I : SingletonBase<SC, I>> : ObservationSourceBase<SC, I>(),
+        IObservationSourceSingleton<SC, IAttributeValueStore.MapAttributeStore, I> {
 
-        override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, SingletonBase<SC, I>> = StreamCodec.unit(this)
-        override fun fromNbt(tag: Tag?): SingletonBase<SC, I> = this
-        override fun toNbt(instance: SingletonBase<SC, I>): Tag? = null
+        @Suppress("UNCHECKED_CAST")
+        private val typedThis: I
+            get() = this as I
+
+        override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, I> = StreamCodec.unit(typedThis)
+        override val codec: Codec<I> = DirectUnitCodec(typedThis)
 
         context(sourceContext: SC)
         override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {

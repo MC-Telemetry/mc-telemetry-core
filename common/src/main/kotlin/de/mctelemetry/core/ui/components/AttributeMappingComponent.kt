@@ -21,7 +21,7 @@ import net.minecraft.util.CommonColors
 
 class AttributeMappingComponent(
     val sourceAttributes: IAttributeDateSourceReferenceSet,
-    instrumentAttributesObservable: ObservableValue<Map<String, MappedAttributeKeyInfo<*, *>>?>,
+    instrumentAttributesObservable: ObservableValue<Map<String, MappedAttributeKeyInfo<*, *, *>>?>,
     mappingProperty: ObservableProperty<ObservationAttributeMapping>,
 ) : FlowLayout(Sizing.content(), Sizing.content(), Algorithm.VERTICAL) {
 
@@ -37,23 +37,23 @@ class AttributeMappingComponent(
     }
 
     sealed class AttributeMappingSources {
-        abstract val type: IAttributeKeyTypeTemplate<*,*>?
+        abstract val type: IAttributeKeyTypeTemplate<*,*, *>?
         object None : AttributeMappingSources() {
-            override val type: IAttributeKeyTypeTemplate<*,*>? = null
+            override val type: IAttributeKeyTypeTemplate<*,*, *>? = null
         }
         class Reference(val reference: AttributeDataSource.Reference<*>) :
             AttributeMappingSources() {
-            override val type: IAttributeKeyTypeTemplate<*, *> = reference.type.templateType
+            override val type: IAttributeKeyTypeTemplate<*, *, *> = reference.type.templateType
         }
 
         object Custom : AttributeMappingSources() {
-            override val type: IAttributeKeyTypeTemplate<*, *> = NativeAttributeKeyTypes.StringType
+            override val type: IAttributeKeyTypeTemplate<*, *, *> = NativeAttributeKeyTypes.StringType
         }
     }
 
     private fun makeCustomConstantValue(
         text: String,
-        targetType: IAttributeKeyTypeInstance<*, *>,
+        targetType: IAttributeKeyTypeInstance<*, *, *>,
         input: TextBoxComponent? = null,
     ): AttributeDataSource.ConstantAttributeData<*> {
         val stringConstantData = AttributeDataSource.ConstantAttributeData(
@@ -138,7 +138,7 @@ class AttributeMappingComponent(
                         AttributeMappingSources.Custom -> {
                             makeCustomConstantValue(
                                 customInput.value,
-                                instrumentationSourceAttribute,
+                                instrumentationSourceAttribute.typeInstance,
                                 customInput,
                             )
                         }
@@ -161,7 +161,7 @@ class AttributeMappingComponent(
             // Initial coloring
             makeCustomConstantValue(
                 customInput.value,
-                instrumentationSourceAttribute,
+                instrumentationSourceAttribute.typeInstance,
                 customInput,
             )
 
@@ -169,7 +169,7 @@ class AttributeMappingComponent(
             customInput.onChanged().subscribe {
                 mapping += instrumentationSourceAttribute to makeCustomConstantValue(
                     it,
-                    instrumentationSourceAttribute,
+                    instrumentationSourceAttribute.typeInstance,
                     customInput,
                 )
             }

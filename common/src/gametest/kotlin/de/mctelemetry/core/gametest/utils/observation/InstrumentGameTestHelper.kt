@@ -224,7 +224,7 @@ class InstrumentGameTestHelper(
             observationSourceMap.mapValues { (baseName, statePairs) ->
                 val shouldUseDouble = useDouble(baseName)
                 val (_, baseState) = statePairs.first()
-                val instrumentAttributes: Set<MappedAttributeKeyInfo<*, *>> =
+                val instrumentAttributes: Set<MappedAttributeKeyInfo<*, *, *>> =
                     baseState.configuration!!.mapping.instrumentAttributes
                 val result: Either<
                         ILongInstrumentRegistration.Mutable<*>,

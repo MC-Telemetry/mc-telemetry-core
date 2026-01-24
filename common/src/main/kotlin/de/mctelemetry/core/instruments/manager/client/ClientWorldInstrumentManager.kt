@@ -283,7 +283,7 @@ class ClientWorldInstrumentManager(
             persistent = persistent,
         )
 
-        override var attributes: List<MappedAttributeKeyInfo<*, *>> = emptyList()
+        override var attributes: List<MappedAttributeKeyInfo<*, *, *>> = emptyList()
         override var description: String = ""
         override var unit: String = ""
         override var persistent: Boolean = true

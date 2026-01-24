@@ -1,18 +1,14 @@
 package de.mctelemetry.core.api.attributes
 
+import com.mojang.serialization.Codec
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.persistence.RegistryIdFieldCodec
 import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
-import net.minecraft.core.HolderLookup
 import net.minecraft.core.UUIDUtil
 import net.minecraft.core.registries.Registries
-import net.minecraft.nbt.ByteTag
-import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.IntArrayTag
-import net.minecraft.nbt.StringTag
-import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.StreamCodec
@@ -25,7 +21,7 @@ import java.util.UUID
 
 object BuiltinAttributeKeyTypes {
 
-    val ALL: List<IAttributeKeyTypeInstance.InstanceType<*, *>> = listOf(
+    val ALL: List<IAttributeKeyTypeInstance.InstanceType<*, *, *>> = listOf(
         BlockPosType,
         GlobalPosType,
         ItemType,
@@ -34,14 +30,15 @@ object BuiltinAttributeKeyTypes {
         UUIDType,
     )
 
-    object BlockPosType : IAttributeKeyTypeInstance.InstanceType<BlockPos, List<Long>> {
+    object BlockPosType : IAttributeKeyTypeInstance.InstanceType<BlockPos, List<Long>, BlockPosType> {
 
-        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "block_position")
         )
 
         override val baseType: GenericAttributeType<List<Long>> = GenericAttributeType.LONG_ARRAY
+        override val valueCodec: Codec<BlockPos> = BlockPos.CODEC
         override val valueStreamCodec: StreamCodec<ByteBuf, BlockPos> = BlockPos.STREAM_CODEC
         override val valueType: Class<BlockPos> = BlockPos::class.java
 
@@ -53,14 +50,14 @@ object BuiltinAttributeKeyTypes {
             return listOf(x, y, z)
         }
 
-        override fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *>): Boolean {
+        override fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> true
                 else -> false
             }
         }
 
-        override fun <R : Any> convertDirectlyTo(supertype: IAttributeKeyTypeTemplate<R, *>, value: BlockPos): R? {
+        override fun <R : Any> convertDirectlyTo(supertype: IAttributeKeyTypeTemplate<R, *, *>, value: BlockPos): R? {
             @Suppress("UNCHECKED_CAST") // known values from when-matching
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> "${value.x},${value.y},${value.z}" as R
@@ -69,28 +66,21 @@ object BuiltinAttributeKeyTypes {
                     value.y.toString(),
                     value.z.toString()
                 ) as R
+
                 else -> null
             }
         }
-
-        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): BlockPos {
-            val data = (tag as IntArrayTag).asIntArray
-            return BlockPos(data[0], data[1], data[2])
-        }
-
-        override fun toNbt(value: BlockPos): IntArrayTag {
-            return IntArrayTag(intArrayOf(value.x, value.y, value.z))
-        }
     }
 
-    object GlobalPosType : IAttributeKeyTypeInstance.InstanceType<GlobalPos, List<String>> {
+    object GlobalPosType : IAttributeKeyTypeInstance.InstanceType<GlobalPos, List<String>, GlobalPosType> {
 
-        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "global_position")
         )
 
         override val baseType: GenericAttributeType<List<String>> = GenericAttributeType.STRING_ARRAY
+        override val valueCodec: Codec<GlobalPos> = GlobalPos.CODEC
         override val valueStreamCodec: StreamCodec<ByteBuf, GlobalPos> = GlobalPos.STREAM_CODEC
         override val valueType: Class<GlobalPos> = GlobalPos::class.java
 
@@ -107,7 +97,7 @@ object BuiltinAttributeKeyTypes {
             return listOf(dimension.location().toString(), x.toString(), y.toString(), z.toString())
         }
 
-        override fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *>): Boolean {
+        override fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> true
                 BlockPosType -> true
@@ -115,7 +105,7 @@ object BuiltinAttributeKeyTypes {
             }
         }
 
-        override fun <R : Any> convertDirectlyTo(supertype: IAttributeKeyTypeTemplate<R, *>, value: GlobalPos): R? {
+        override fun <R : Any> convertDirectlyTo(supertype: IAttributeKeyTypeTemplate<R, *, *>, value: GlobalPos): R? {
             @Suppress("UNCHECKED_CAST") // known values from when-matching
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> "${value.dimension.location()}@${value.pos.x},${value.pos.y},${value.pos.z}" as R
@@ -123,58 +113,35 @@ object BuiltinAttributeKeyTypes {
                 else -> null
             }
         }
-
-        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): GlobalPos {
-            tag as CompoundTag
-            val dimension = tag.getString("dimension")
-            val posArray = tag.getIntArray("position")
-            return GlobalPos(
-                ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimension)),
-                BlockPos(posArray[0], posArray[1], posArray[2])
-            )
-        }
-
-        override fun toNbt(value: GlobalPos): Tag {
-            return CompoundTag().apply {
-                putString("dimension", value.dimension.location().toString())
-                val pos = value.pos
-                putIntArray("position", intArrayOf(pos.x, pos.y, pos.z))
-            }
-        }
     }
 
-    object DirectionType : IAttributeKeyTypeInstance.InstanceType<Direction, String> {
+    object DirectionType : IAttributeKeyTypeInstance.InstanceType<Direction, String, DirectionType> {
 
-        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "direction")
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
+        override val valueCodec: Codec<Direction> = Direction.CODEC
         override val valueStreamCodec: StreamCodec<ByteBuf, Direction> = Direction.STREAM_CODEC
         override val valueType: Class<Direction> = Direction::class.java
 
         override fun format(value: Direction): String {
             return value.toString()
         }
-
-        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Direction {
-            return Direction.from3DDataValue((tag as ByteTag).asByte.toInt())
-        }
-
-        override fun toNbt(value: Direction): Tag {
-            return ByteTag.valueOf(value.get3DDataValue().toByte())
-        }
     }
 
-    object ItemType : IAttributeKeyTypeInstance.InstanceType<Item, String> {
+    object ItemType : IAttributeKeyTypeInstance.InstanceType<Item, String, ItemType> {
 
-        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "item")
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
+        override val valueCodec: Codec<Item> =
+            RegistryIdFieldCodec(Registries.ITEM) { it.`arch$holder`().unwrapKey().orElseThrow().location() }
         override val valueStreamCodec: StreamCodec<RegistryFriendlyByteBuf, Item> =
             ByteBufCodecs.registry(Registries.ITEM)
         override val valueType: Class<Item> = Item::class.java
@@ -183,35 +150,18 @@ object BuiltinAttributeKeyTypes {
             val key = value.`arch$holder`().unwrapKey().orElseThrow()
             return key.location().toString()
         }
-
-        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Item {
-            val resourceLocation = (tag as StringTag).asString
-
-            return lookupProvider.lookupOrThrow(Registries.ITEM).getOrThrow(
-                ResourceKey.create(Registries.ITEM, ResourceLocation.parse(resourceLocation))
-            ).value()
-        }
-
-        override fun toNbt(value: Item): Tag {
-            return StringTag.valueOf(
-                value
-                    .`arch$holder`()
-                    .unwrapKey()
-                    .orElseThrow()
-                    .location()
-                    .toString()
-            )
-        }
     }
 
-    object FluidType : IAttributeKeyTypeInstance.InstanceType<Fluid, String> {
+    object FluidType : IAttributeKeyTypeInstance.InstanceType<Fluid, String, FluidType> {
 
-        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "fluid")
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
+        override val valueCodec: Codec<Fluid> =
+            RegistryIdFieldCodec(Registries.FLUID) { it.`arch$holder`().unwrapKey().orElseThrow().location() }
         override val valueStreamCodec: StreamCodec<RegistryFriendlyByteBuf, Fluid> =
             ByteBufCodecs.registry(Registries.FLUID)
         override val valueType: Class<Fluid> = Fluid::class.java
@@ -220,60 +170,23 @@ object BuiltinAttributeKeyTypes {
             val key = value.`arch$holder`().unwrapKey().orElseThrow()
             return key.location().toString()
         }
-
-        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): Fluid {
-            val resourceLocation = (tag as StringTag).asString
-
-            return lookupProvider.lookupOrThrow(Registries.FLUID).getOrThrow(
-                ResourceKey.create(Registries.FLUID, ResourceLocation.parse(resourceLocation))
-            ).value()
-        }
-
-        override fun toNbt(value: Fluid): Tag {
-            return StringTag.valueOf(
-                value
-                    .`arch$holder`()
-                    .unwrapKey()
-                    .orElseThrow()
-                    .location()
-                    .toString()
-            )
-        }
     }
 
-    object UUIDType : IAttributeKeyTypeInstance.InstanceType<UUID, String> {
+    object UUIDType : IAttributeKeyTypeInstance.InstanceType<UUID, String, UUIDType> {
 
-        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>> = ResourceKey.create(
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *, *>> = ResourceKey.create(
             OTelCoreModAPI.AttributeTypeMappings,
             ResourceLocation.fromNamespaceAndPath(ResourceLocation.DEFAULT_NAMESPACE, "uuid")
         )
 
         override val baseType: GenericAttributeType<String> = GenericAttributeType.STRING
+        override val valueCodec: Codec<UUID> = UUIDUtil.CODEC
         override val valueStreamCodec: StreamCodec<ByteBuf, UUID> = UUIDUtil.STREAM_CODEC
         override val valueType: Class<UUID> = UUID::class.java
 
 
         override fun format(value: UUID): String {
             return value.toString()
-        }
-
-        override fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): UUID {
-            val data = (tag as IntArrayTag).asIntArray
-            return UUID(
-                (data[0].toLong() shl 32) or (data[1].toLong()),
-                (data[2].toLong() shl 32) or (data[3].toLong()),
-            )
-        }
-
-        override fun toNbt(value: UUID): Tag {
-            return IntArrayTag(
-                intArrayOf(
-                    (value.mostSignificantBits shr 32).toInt(),
-                    value.mostSignificantBits.toInt(),
-                    (value.leastSignificantBits shr 32).toInt(),
-                    value.leastSignificantBits.toInt(),
-                )
-            )
         }
     }
 }

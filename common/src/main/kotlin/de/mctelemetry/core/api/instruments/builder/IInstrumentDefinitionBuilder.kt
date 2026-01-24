@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Contract
 interface IInstrumentDefinitionBuilder<out B : IInstrumentDefinitionBuilder<B>> {
 
     val name: String
-    var attributes: List<MappedAttributeKeyInfo<*, *>>
+    var attributes: List<MappedAttributeKeyInfo<*, *, *>>
     var description: String
     var unit: String
 
@@ -22,7 +22,7 @@ interface IInstrumentDefinitionBuilder<out B : IInstrumentDefinitionBuilder<B>> 
     }
 
     @Contract("_ -> this", mutates = "this")
-    fun addAttribute(attributeKey: MappedAttributeKeyInfo<*, *>): B {
+    fun addAttribute(attributeKey: MappedAttributeKeyInfo<*, *, *>): B {
         attributes += attributeKey
         @Suppress("UNCHECKED_CAST")
         return this as B
@@ -34,7 +34,7 @@ interface IInstrumentDefinitionBuilder<out B : IInstrumentDefinitionBuilder<B>> 
     }
 
     @Contract("_ -> this", mutates = "this")
-    fun addAttributes(attributeKeys: Collection<MappedAttributeKeyInfo<*, *>>): B {
+    fun addAttributes(attributeKeys: Collection<MappedAttributeKeyInfo<*, *, *>>): B {
         attributes += attributeKeys
         @Suppress("UNCHECKED_CAST")
         return this as B

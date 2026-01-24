@@ -1,18 +1,16 @@
 package de.mctelemetry.core.observations.model
 
+import com.mojang.serialization.Codec
+import com.mojang.serialization.DataResult
+import com.mojang.serialization.codecs.RecordCodecBuilder
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.*
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.common.AttributesBuilder
-import net.minecraft.core.HolderLookup
-import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.ListTag
-import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.codec.StreamCodec
@@ -45,15 +43,15 @@ class ObservationAttributeMapping(
      *  - `X.assignableTo(A)`, which will result in the conversion `it: X -> X.convertTo(A, it) as A`
      *  - `A.assignableFrom(X)`, which will result in the conversion `it: X -> A.convertFrom(X, it) as A`
      **/
-    mapping: Map<MappedAttributeKeyInfo<*, *>, AttributeDataSource<*>>,
+    mapping: Map<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>>,
 ) {
 
     // store mapping sorted by base key name to reduce later sorting overhead during OTel-Attributes construction
-    val mapping: Map<MappedAttributeKeyInfo<*, *>, AttributeDataSource<*>> = mapping.toMap()
+    val mapping: Map<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>> = mapping.toMap()
 
     val attributeDataSources: Collection<AttributeDataSource<*>>
         get() = mapping.values
-    val instrumentAttributes: Set<MappedAttributeKeyInfo<*, *>>
+    val instrumentAttributes: Set<MappedAttributeKeyInfo<*, *, *>>
         get() = mapping.keys
 
     private val validationFlags: AtomicInteger = AtomicInteger(0)
@@ -107,7 +105,7 @@ class ObservationAttributeMapping(
     }
 
     fun validateTargets(
-        targetAttributes: Collection<MappedAttributeKeyInfo<*, *>>,
+        targetAttributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
         force: Boolean = false,
     ): MutableComponent? = cacheableValidation(VALIDATION_FLAG_TARGET_ATTRIBUTES, force) {
         for (target in targetAttributes) {
@@ -119,14 +117,14 @@ class ObservationAttributeMapping(
     }
 
     fun validateDynamic(
-        targetAttributes: Collection<MappedAttributeKeyInfo<*, *>>,
+        targetAttributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
         force: Boolean = false,
     ): MutableComponent? {
         return validateTargets(targetAttributes, force)
     }
 
     fun validate(
-        targetAttributes: Collection<MappedAttributeKeyInfo<*, *>>,
+        targetAttributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
         force: Boolean = false,
     ): MutableComponent? {
         if ((!force) && ((validationFlags.get() and VALIDATION_COMPLETE) == VALIDATION_COMPLETE)) return null
@@ -161,27 +159,16 @@ class ObservationAttributeMapping(
         }
     }
 
-    fun saveToTag(): Tag {
-        return ListTag().also { listTag ->
-            for ((key, value) in mapping) {
-                listTag.add(CompoundTag().also { entryTag ->
-                    entryTag.put("key", key.save())
-                    entryTag.put("value", AttributeDataSource.toNbt(value))
-                })
-            }
-        }
-    }
-
-    operator fun get(instrumentAttribute: MappedAttributeKeyInfo<*, *>): AttributeDataSource<*>? =
+    operator fun get(instrumentAttribute: MappedAttributeKeyInfo<*, *, *>): AttributeDataSource<*>? =
         mapping[instrumentAttribute]
 
-    fun plus(instrumentAttribute: MappedAttributeKeyInfo<*, *>, attributeDataSource: AttributeDataSource<*>) =
+    fun plus(instrumentAttribute: MappedAttributeKeyInfo<*, *, *>, attributeDataSource: AttributeDataSource<*>) =
         this + (instrumentAttribute to attributeDataSource)
 
-    operator fun plus(entry: Pair<MappedAttributeKeyInfo<*, *>, AttributeDataSource<*>>): ObservationAttributeMapping =
+    operator fun plus(entry: Pair<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>>): ObservationAttributeMapping =
         ObservationAttributeMapping(mapping + entry)
 
-    operator fun minus(instrumentAttribute: MappedAttributeKeyInfo<*, *>): ObservationAttributeMapping {
+    operator fun minus(instrumentAttribute: MappedAttributeKeyInfo<*, *, *>): ObservationAttributeMapping {
         val other = mapping - instrumentAttribute
         return if (other.size == mapping.size)
             this
@@ -189,7 +176,7 @@ class ObservationAttributeMapping(
             ObservationAttributeMapping(other)
     }
 
-    fun filterForInstrument(instrumentAttributes: Collection<MappedAttributeKeyInfo<*, *>>): ObservationAttributeMapping {
+    fun filterForInstrument(instrumentAttributes: Collection<MappedAttributeKeyInfo<*, *, *>>): ObservationAttributeMapping {
         val unneededKeys = mapping.keys - instrumentAttributes.toSet()
         return if (unneededKeys.isEmpty())
             this
@@ -229,7 +216,7 @@ class ObservationAttributeMapping(
             VALIDATION_FLAG_TYPES or
                     VALIDATION_FLAG_TARGET_ATTRIBUTES
 
-        //private val comparator: Comparator<MappedAttributeKeyInfo<*, *>> = Comparator.comparing { it.baseKey.key }
+        //private val comparator: Comparator<MappedAttributeKeyInfo<*, *, *>> = Comparator.comparing { it.baseKey.key }
 
 
         context(attributeStore: IAttributeValueStore)
@@ -248,11 +235,11 @@ class ObservationAttributeMapping(
 
         context(attributeStore: IAttributeValueStore)
         private fun <T : Any, B : Any> addConverted(
-            metricAttribute: MappedAttributeKeyInfo<T, B>,
+            metricAttribute: MappedAttributeKeyInfo<T, B, *>,
             attributeDataSource: AttributeDataSource<*>,
             builder: AttributesBuilder,
         ): AttributesBuilder {
-            val metricAttributeType: IAttributeKeyTypeTemplate<T, B> = metricAttribute.templateType
+            val metricAttributeType: IAttributeKeyTypeTemplate<T, B, *> = metricAttribute.templateType
             val metricAttributeKey: AttributeKey<B> = metricAttribute.baseKey
             val value: T = lookupConverted(metricAttributeType, attributeDataSource)
             return builder.put(metricAttributeKey, metricAttributeType.format(value))
@@ -260,7 +247,7 @@ class ObservationAttributeMapping(
 
 
         context(attributeStore: IAttributeValueStore)
-        private fun <T : Any, I : MappedAttributeKeyInfo<T, *>> makeConverted(
+        private fun <T : Any, I : MappedAttributeKeyInfo<T, *, *>> makeConverted(
             metricAttribute: I,
             attributeDataSource: AttributeDataSource<*>,
         ): MappedAttributeKeyValue<T, I> {
@@ -270,7 +257,7 @@ class ObservationAttributeMapping(
 
         context(attributeStore: IAttributeValueStore)
         private fun <T : Any, R : Any, B : Any> lookupConverted(
-            metricAttributeType: IAttributeKeyTypeTemplate<T, B>,
+            metricAttributeType: IAttributeKeyTypeTemplate<T, B, *>,
             attributeDataSource: AttributeDataSource<R>,
         ): T {
             val value = attributeDataSource.value
@@ -279,33 +266,40 @@ class ObservationAttributeMapping(
                 ?: throw IllegalArgumentException("Could not convert value from ${attributeDataSource.type} to $metricAttributeType: $value")
         }
 
-        fun loadFromTag(
-            tag: Tag,
-            holderLookupProvider: HolderLookup.Provider,
-            sourceContext: IObservationSource<*, *>,
-        ): ObservationAttributeMapping {
-            tag as ListTag
-            if (tag.isEmpty()) return empty()
-            require(tag.elementType == Tag.TAG_COMPOUND)
-            return ObservationAttributeMapping(
-                buildMap {
-                    for (entryTag in tag) {
-                        entryTag as CompoundTag
-                        val keyTag = entryTag.getCompound("key")
-                        val valueTag = entryTag.getCompound("value")
-                        val key = MappedAttributeKeyInfo.load(
-                            keyTag, holderLookupProvider.asGetterLookup().lookupOrThrow(
-                                OTelCoreModAPI.AttributeTypeMappings
-                            )
-                        )
-                        val value = AttributeDataSource.fromNbt(
-                            valueTag, holderLookupProvider, sourceContext
-                        )
+        val CODEC: Codec<ObservationAttributeMapping> = Codec.list(
+            RecordCodecBuilder.create<Pair<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>>> { builder ->
+                builder.group(
+                    MappedAttributeKeyInfo.CODEC.fieldOf("key").forGetter { it.first },
+                    AttributeDataSource.CODEC.fieldOf("value").forGetter { it.second },
+                ).apply(builder) { key, value ->
+                    Pair(key, value)
+                }
+            },
+            0,
+            OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT,
+        ).comapFlatMap({ entries ->
+            val usedKeys: MutableSet<String> = mutableSetOf()
+            var duplicateKeys: MutableList<String>? = null
+            val result = buildMap {
+                for ((key, value) in entries) {
+                    if (!usedKeys.add(key.baseKey.key)) {
+                        if (duplicateKeys == null)
+                            duplicateKeys = mutableListOf(key.baseKey.key)
+                        else
+                            duplicateKeys.add(key.baseKey.key)
+                    } else {
                         put(key, value)
                     }
                 }
-            )
-        }
+            }
+            if (duplicateKeys != null)
+                DataResult.error(
+                    { "Duplicate keys in ObservationAttributeMapping: ${duplicateKeys.joinToString()}" },
+                    ObservationAttributeMapping(result)
+                )
+            else
+                DataResult.success(ObservationAttributeMapping(result))
+        }, { it.mapping.map { (key, value) -> Pair(key, value) } })
 
         val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationAttributeMapping> = StreamCodec.of(
             { bb, v ->
@@ -322,7 +316,7 @@ class ObservationAttributeMapping(
                 val mappingSize = bb.readUnsignedByte().also {
                     require(0 <= it && it < OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT)
                 }.toInt()
-                val mapping: Map<MappedAttributeKeyInfo<*, *>, AttributeDataSource<*>> =
+                val mapping: Map<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>> =
                     buildMap(mappingSize) {
                         repeat(mappingSize) { _ ->
                             val key = MappedAttributeKeyInfo.STREAM_CODEC.decode(bb)

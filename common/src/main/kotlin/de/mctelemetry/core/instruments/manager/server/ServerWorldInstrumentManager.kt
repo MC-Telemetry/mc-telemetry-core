@@ -1,8 +1,7 @@
 package de.mctelemetry.core.instruments.manager.server
 
+import com.mojang.serialization.DataResult
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
@@ -18,22 +17,31 @@ import de.mctelemetry.core.instruments.manager.InstrumentManagerBaseRegistration
 import de.mctelemetry.core.persistence.DirtyCallbackMutableMap
 import de.mctelemetry.core.persistence.SavedDataConcurrentMap
 import de.mctelemetry.core.utils.Union2
+import de.mctelemetry.core.utils.addErrorTo
+import de.mctelemetry.core.utils.mergeErrorMessages
+import de.mctelemetry.core.utils.resultOrElse
+import de.mctelemetry.core.utils.resultOrPartialOrElse
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.metrics.Meter
-import net.minecraft.core.HolderGetter
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.NbtOps
 import net.minecraft.nbt.Tag
+import net.minecraft.resources.RegistryOps
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.util.datafix.DataFixTypes
 import net.minecraft.world.level.storage.DimensionDataStorage
 import java.lang.AutoCloseable
 import java.lang.ref.WeakReference
+import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
+import java.util.function.Supplier
 import kotlin.collections.iterator
+import kotlin.jvm.optionals.getOrElse
+import kotlin.jvm.optionals.getOrNull
 
 internal class ServerWorldInstrumentManager private constructor(
     meter: Meter,
@@ -154,12 +162,13 @@ internal class ServerWorldInstrumentManager private constructor(
         return WorldMutableGaugeInstrumentRegistration(builder, supportsFloating = false)
     }
 
-    internal class WorldImmutableGaugeInstrumentRegistration: ImmutableGaugeInstrumentRegistration, IWorldInstrumentRegistration {
+    internal class WorldImmutableGaugeInstrumentRegistration : ImmutableGaugeInstrumentRegistration,
+        IWorldInstrumentRegistration {
         constructor(
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *, *>>,
             supportsFloating: Boolean,
             callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
         ) : super(name, description, unit, attributes, supportsFloating, callback)
@@ -186,8 +195,8 @@ internal class ServerWorldInstrumentManager private constructor(
     }
 
     internal class WorldMutableGaugeInstrumentRegistration :
-            MutableGaugeInstrumentRegistration<WorldMutableGaugeInstrumentRegistration>,
-            IWorldMutableInstrumentRegistration<WorldMutableGaugeInstrumentRegistration> {
+        MutableGaugeInstrumentRegistration<WorldMutableGaugeInstrumentRegistration>,
+        IWorldMutableInstrumentRegistration<WorldMutableGaugeInstrumentRegistration> {
 
         override val persistent: Boolean
 
@@ -202,7 +211,7 @@ internal class ServerWorldInstrumentManager private constructor(
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *, *>>,
             supportsFloating: Boolean,
             persistent: Boolean,
         ) : super(name, description, unit, attributes, supportsFloating) {
@@ -242,10 +251,11 @@ internal class ServerWorldInstrumentManager private constructor(
             private fun createEntryTag(
                 name: String,
                 registration: InstrumentManagerBaseRegistrationUnion,
-            ): CompoundTag? {
+                ops: RegistryOps<Tag>,
+            ): DataResult<Optional<CompoundTag>> {
                 val value = registration.value
-                if (value !is IWorldMutableInstrumentRegistration<*>) return null
-                if (!value.persistent) return null
+                if (value !is IWorldMutableInstrumentRegistration<*>) return DataResult.success(Optional.empty())
+                if (!value.persistent) return DataResult.success(Optional.empty())
                 return CompoundTag().apply {
                     putString("name", name)
                     val integral: Boolean = !value.supportsFloating
@@ -259,37 +269,47 @@ internal class ServerWorldInstrumentManager private constructor(
                     if (value.attributes.isNotEmpty()) {
                         put("attributes", ListTag().apply {
                             for (attributeKey in value.attributes.values) {
-                                this.add(attributeKey.save())
+                                this.add(
+                                    MappedAttributeKeyInfo.CODEC.encodeStart(ops, attributeKey)
+                                        .resultOrElse { err ->
+                                            return DataResult.error(err.messageSupplier)
+                                        })
                             }
                         })
                     }
-                }
+                }.let { DataResult.success(Optional.of(it)) }
             }
 
             private fun loadEntryTag(
                 tag: CompoundTag,
-                attributeKeyTypeHolderGetter: HolderGetter<IAttributeKeyTypeTemplate<*, *>>,
-            ): Pair<String, InstrumentManagerBaseRegistrationUnion> {
+                ops: RegistryOps<Tag>,
+            ): DataResult<Pair<String, InstrumentManagerBaseRegistrationUnion>> {
                 val name: String? = tag.getString("name")
-                if (name.isNullOrEmpty()) throw NoSuchElementException("Could not find key 'name'")
-                if (!tag.contains("integral", Tag.TAG_BYTE.toInt()))
-                    throw NoSuchElementException("Could not find key 'integral'")
+                if (name.isNullOrEmpty()) return DataResult.error { "Could not find key 'name'" }
+                if (!tag.contains(
+                        "integral",
+                        Tag.TAG_BYTE.toInt()
+                    )
+                ) return DataResult.error { "Could not find key 'integral'" }
                 val integral = tag.getBoolean("integral")
                 val description: String = tag.getString("description").orEmpty()
                 val unit: String = tag.getString("unit").orEmpty()
-                val attributes: Map<String, MappedAttributeKeyInfo<*, *>> =
+                var errors: MutableList<Supplier<String>>? = null
+                val attributes: Map<String, MappedAttributeKeyInfo<*, *, *>> =
                     if (tag.contains("attributes", Tag.TAG_LIST.toInt())) {
                         buildMap {
                             tag.getList("attributes", Tag.TAG_COMPOUND.toInt()).forEach {
-                                val keyInfo =
-                                    MappedAttributeKeyInfo.Companion.load(it as CompoundTag, attributeKeyTypeHolderGetter)
-                                this@buildMap.put(keyInfo.baseKey.key, keyInfo)
+                                val keyInfo = MappedAttributeKeyInfo.CODEC.parse(ops, it).resultOrPartialOrElse(
+                                    onError = { err -> errors = err.addErrorTo(errors) },
+                                    fallback = { _ -> return@forEach }
+                                )
+                                this@buildMap[keyInfo.baseKey.key] = keyInfo
                             }
                         }
                     } else {
                         emptyMap()
                     }
-                return name to Union2.Companion.of2(
+                val result: Pair<String, InstrumentManagerBaseRegistrationUnion> = name to Union2.of2(
                     WorldMutableGaugeInstrumentRegistration(
                         name = name,
                         description = description,
@@ -299,6 +319,10 @@ internal class ServerWorldInstrumentManager private constructor(
                         persistent = true,
                     )
                 )
+                return if (errors == null)
+                    DataResult.success(result)
+                else
+                    DataResult.error(mergeErrorMessages(errors), result)
             }
 
 
@@ -309,15 +333,32 @@ internal class ServerWorldInstrumentManager private constructor(
             )
 
             fun load(tag: CompoundTag, lookupProvider: HolderLookup.Provider): WorldInstrumentSavedData {
-                val attributeKeyTypeGetter: HolderGetter<IAttributeKeyTypeTemplate<*, *>> =
-                    lookupProvider.lookupOrThrow(OTelCoreModAPI.AttributeTypeMappings)
+                val ops: RegistryOps<Tag> = RegistryOps.create(NbtOps.INSTANCE, lookupProvider)
                 val data: Map<String, InstrumentManagerBaseRegistrationUnion> =
                     buildMap {
                         val dataTag = tag.getCompound("data") ?: return@buildMap
                         val listTag = dataTag.getList("instruments", ListTag.TAG_COMPOUND.toInt()) ?: return@buildMap
                         listTag.forEach {
-                            val (name, loadedRegistration) = loadEntryTag(it as CompoundTag, attributeKeyTypeGetter)
-                            this@buildMap.put(name, loadedRegistration)
+                            val (name, loadedRegistration) = loadEntryTag(
+                                it as CompoundTag,
+                                ops
+                            ).resultOrElse { error ->
+                                val partial = error.partialValue.getOrNull()
+                                if (partial != null) {
+                                    OTelCoreMod.logger.error(
+                                        "Error during loading of stored WorldInstrumentSaveData at instrument \"{}\": {}",
+                                        partial.first,
+                                        error.message()
+                                    )
+                                } else {
+                                    OTelCoreMod.logger.error(
+                                        "Error during loading of stored WorldInstrumentSaveData: {}",
+                                        error.message()
+                                    )
+                                }
+                                return@forEach
+                            }
+                            this@buildMap[name] = loadedRegistration
                         }
                     }
                 return WorldInstrumentSavedData(data)
@@ -329,10 +370,18 @@ internal class ServerWorldInstrumentManager private constructor(
             provider: HolderLookup.Provider,
             data: Map<String, InstrumentManagerBaseRegistrationUnion>,
         ): CompoundTag {
+            val ops = RegistryOps.create(NbtOps.INSTANCE, provider)
             compoundTag.put("data", CompoundTag().apply {
                 this.put("instruments", ListTag().apply {
                     for ((name, registration) in data) {
-                        this.add(createEntryTag(name, registration) ?: continue)
+                        this.add(createEntryTag(name, registration, ops).resultOrElse { err ->
+                            OTelCoreMod.logger.error(
+                                "Error during saving of WorldInstrumentSaveData at instrument \"{}\": {}",
+                                name,
+                                err.message()
+                            )
+                            continue
+                        }.getOrElse { continue })
                     }
                 })
             })

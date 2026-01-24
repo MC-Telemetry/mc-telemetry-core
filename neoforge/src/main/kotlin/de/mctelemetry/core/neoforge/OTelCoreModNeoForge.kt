@@ -42,7 +42,7 @@ object OTelCoreModNeoForge {
         val attributeKeyRegistry =
             RegistryBuilder(OTelCoreModAPI.AttributeTypeMappings)
                 .sync(true)
-                .create() as WritableRegistry<IAttributeKeyTypeTemplate<*, *>>
+                .create() as WritableRegistry<IAttributeKeyTypeTemplate<*, *, *>>
         OTelCoreMod.registerAttributeTypes(attributeKeyRegistry)
         event.register(attributeKeyRegistry)
 

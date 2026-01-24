@@ -53,7 +53,7 @@ class CommandMetricsCreate internal constructor(
         }
         val exportType: InstrumentExportType = context.getValue("type")
         val name: String = context.getValue("name", MetricNameArgumentType)
-        val labels: List<MappedAttributeKeyInfo<*, *>> = generateSequence(1) { it + 1 }.map {
+        val labels: List<MappedAttributeKeyInfo<*, *, *>> = generateSequence(1) { it + 1 }.map {
             LabelDefinitionArgumentType.get(context, "label$it")
         }.takeWhile { it != null }.requireNoNulls().toList()
         val instrument = instrumentManager.gaugeWorldInstrument(name) {

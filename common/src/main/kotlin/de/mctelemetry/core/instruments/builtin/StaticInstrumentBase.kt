@@ -16,7 +16,7 @@ abstract class StaticInstrumentBase(final override val name: String) : IInstrume
     override val unit: String = ""
 
 
-    final override val attributes: Map<String, MappedAttributeKeyInfo<*,*>> by lazy {
+    final override val attributes: Map<String, MappedAttributeKeyInfo<*,*, *>> by lazy {
         slots.mapValues { it.value.info }
     }
 
@@ -48,7 +48,7 @@ abstract class StaticInstrumentBase(final override val name: String) : IInstrume
         }
     }
 
-    protected fun <T : Any> IAttributeKeyTypeInstance<T, *>.createAttributeSlot(name: String): AttributeDataSource.Reference.TypedSlot<T> {
+    protected fun <T : Any> IAttributeKeyTypeInstance<T, *, *>.createAttributeSlot(name: String): AttributeDataSource.Reference.TypedSlot<T> {
         val slots = pendingAttributeSlots
             ?: throw IllegalStateException("Cannot create attribute slot references after attributes have already been accessed")
         val newValue = AttributeDataSource.Reference.TypedSlot(

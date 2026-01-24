@@ -25,7 +25,7 @@ interface IWorldInstrumentDefinition : IInstrumentDefinition {
         override val name: String,
         override val description: String = "",
         override val unit: String = "",
-        override val attributes: Map<String, MappedAttributeKeyInfo<*, *>> = emptyMap(),
+        override val attributes: Map<String, MappedAttributeKeyInfo<*, *, *>> = emptyMap(),
         override val supportsFloating: Boolean = false,
         override val persistent: Boolean = false,
     ) : IWorldInstrumentDefinition, IClientWorldInstrumentDefinition {
@@ -43,7 +43,7 @@ interface IWorldInstrumentDefinition : IInstrumentDefinition {
             name: String,
             description: String = "",
             unit: String = "",
-            attributes: Collection<MappedAttributeKeyInfo<*, *>>,
+            attributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
             supportsFloating: Boolean = false,
             persistent: Boolean = false,
         ) : this(
@@ -88,7 +88,7 @@ interface IWorldInstrumentDefinition : IInstrumentDefinition {
 
             operator fun invoke(
                 definition: IMetricDefinition,
-                attributes: Collection<MappedAttributeKeyInfo<*, *>>,
+                attributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
                 supportsFloating: Boolean,
                 persistent: Boolean,
             ): Record {

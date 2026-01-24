@@ -1,51 +1,66 @@
 package de.mctelemetry.core.api.attributes
 
+import com.mojang.serialization.Codec
 import de.mctelemetry.core.api.OTelCoreModAPI
-import net.minecraft.core.HolderLookup
+import de.mctelemetry.core.persistence.RegistryIdFieldCodec
 import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.Tag
+import net.minecraft.nbt.NbtOps
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.resources.ResourceKey
+import net.minecraft.util.NullOps
 
-interface IAttributeKeyTypeTemplate<T : Any, B : Any> {
+interface IAttributeKeyTypeTemplate<T : Any, B : Any, I : IAttributeKeyTypeInstance<T, B, *>> {
 
-    val id: ResourceKey<IAttributeKeyTypeTemplate<*, *>>
+    val id: ResourceKey<IAttributeKeyTypeTemplate<*, *, *>>
     val valueType: Class<T>
+    val valueCodec: Codec<T>
     val valueStreamCodec: StreamCodec<in RegistryFriendlyByteBuf, T>
+    val typeInstanceCodec: Codec<I>
+    val typeInstanceStreamCodec: StreamCodec<in RegistryFriendlyByteBuf, I>
+
     val baseType: GenericAttributeType<B>
     fun format(value: T): B
-    fun create(name: String, savedData: CompoundTag?): MappedAttributeKeyInfo<T, B> {
-        return create(savedData).create(name)
-    }
 
-    fun create(savedData: CompoundTag?): IAttributeKeyTypeInstance<T, B> {
-        return object : IAttributeKeyTypeInstance<T, B> {
-            override val templateType: IAttributeKeyTypeTemplate<T, B>
-                get() = this@IAttributeKeyTypeTemplate
-        }
-    }
-
-    fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *>): Boolean = false
-    fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *>): Boolean = false
-    fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *>, value: R): T? = null
-    fun <R : Any> convertDirectlyTo(supertype: IAttributeKeyTypeTemplate<R, *>, value: T): R? = null
-
-    fun fromNbt(tag: Tag, lookupProvider: HolderLookup.Provider): T
-    fun toNbt(value: T): Tag
+    fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean = false
+    fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *, *>): Boolean = false
+    fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): T? = null
+    fun <R : Any> convertDirectlyTo(supertype: IAttributeKeyTypeTemplate<R, *, *>, value: T): R? = null
 
     companion object {
 
-        val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, IAttributeKeyTypeTemplate<*, *>> =
+        val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, IAttributeKeyTypeTemplate<*, *, *>> =
             ByteBufCodecs.registry(
                 OTelCoreModAPI.AttributeTypeMappings
             )
+
+        val CODEC: Codec<IAttributeKeyTypeTemplate<*, *, *>> = RegistryIdFieldCodec(
+            OTelCoreModAPI.AttributeTypeMappings,
+            IAttributeKeyTypeTemplate<*, *, *>::id,
+        )
     }
 }
 
-infix fun IAttributeKeyTypeTemplate<*, *>.canConvertTo(
-    supertype: IAttributeKeyTypeTemplate<*, *>,
+fun <T : Any, B : Any, I : IAttributeKeyTypeInstance<T, B, I>> IAttributeKeyTypeTemplate<T, B, I>.create(
+    name: String,
+    data: CompoundTag? = null
+): MappedAttributeKeyInfo<T, B, I> {
+    return create(data).create(name)
+}
+
+fun <T : Any, B : Any, I : IAttributeKeyTypeInstance<T, B, I>> IAttributeKeyTypeTemplate<T, B, I>.create(
+    data: CompoundTag?
+): I {
+    return if (data == null) {
+        typeInstanceCodec.decode(NullOps.INSTANCE, net.minecraft.util.Unit.INSTANCE)
+    } else {
+        typeInstanceCodec.decode(NbtOps.INSTANCE, data)
+    }.orThrow.first
+}
+
+infix fun IAttributeKeyTypeTemplate<*, *, *>.canConvertTo(
+    supertype: IAttributeKeyTypeTemplate<*, *, *>,
 ): Boolean {
     return this === supertype ||
             canConvertDirectlyTo(supertype) ||
@@ -54,14 +69,14 @@ infix fun IAttributeKeyTypeTemplate<*, *>.canConvertTo(
 }
 
 @Suppress("unused")
-infix fun IAttributeKeyTypeTemplate<*, *>.canConvertFrom(
-    subtype: IAttributeKeyTypeTemplate<*, *>,
+infix fun IAttributeKeyTypeTemplate<*, *, *>.canConvertFrom(
+    subtype: IAttributeKeyTypeTemplate<*, *, *>,
 ): Boolean {
     return subtype canConvertTo this
 }
 
-fun <T : Any, R : Any> IAttributeKeyTypeTemplate<T, *>.convertTo(
-    supertype: IAttributeKeyTypeTemplate<R, *>,
+fun <T : Any, R : Any> IAttributeKeyTypeTemplate<T, *, *>.convertTo(
+    supertype: IAttributeKeyTypeTemplate<R, *, *>,
     value: T,
 ): R? {
     @Suppress("UNCHECKED_CAST")
@@ -74,59 +89,59 @@ fun <T : Any, R : Any> IAttributeKeyTypeTemplate<T, *>.convertTo(
 
 
 fun <T : Any, R : Any> MappedAttributeKeyValue<T, *>.convertTo(
-    supertype: IAttributeKeyTypeTemplate<R, *>,
+    supertype: IAttributeKeyTypeTemplate<R, *, *>,
 ): R? {
     @Suppress("UNCHECKED_CAST") // relevant part of cast (T) is still retained, only wildcard is cascaded
-    return (info.templateType as IAttributeKeyTypeTemplate<T, *>).convertTo(supertype, value)
+    return (info.templateType as IAttributeKeyTypeTemplate<T, *, *>).convertTo(supertype, value)
 }
 
 fun <T : Any, R : Any> AttributeDataSource.ConstantAttributeData<T>.convertValueTo(
-    supertype: IAttributeKeyTypeTemplate<R, *>,
+    supertype: IAttributeKeyTypeTemplate<R, *, *>,
 ): R? {
     return type.templateType.convertTo(supertype, value)
 }
 
 fun <T : Any, R : Any> AttributeDataSource.ConstantAttributeData<T>.convertTo(
-    supertype: IAttributeKeyTypeInstance<R, *>,
+    supertype: IAttributeKeyTypeInstance<R, *, *>,
 ): AttributeDataSource.ConstantAttributeData<R>? {
     return AttributeDataSource.ConstantAttributeData(
         supertype, type.templateType.convertTo(supertype.templateType, value) ?: return null
     )
 }
 
-fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(
-    subtype: IAttributeKeyTypeTemplate<T, *>,
+fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *, *>.convertFrom(
+    subtype: IAttributeKeyTypeTemplate<T, *, *>,
     value: T,
 ): R? {
     return subtype.convertTo(this, value)
 }
 
-fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertFrom(
+fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *, *>.convertFrom(
     subtypeValue: MappedAttributeKeyValue<T, *>,
 ): R? {
     return subtypeValue.convertTo(this)
 }
 
-fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *>.convertValueFrom(
+fun <T : Any, R : Any> IAttributeKeyTypeTemplate<R, *, *>.convertValueFrom(
     subtypeValue: AttributeDataSource.ConstantAttributeData<T>,
 ): R? {
     return subtypeValue.convertValueTo(this)
 }
 
-fun <T : Any, R : Any> IAttributeKeyTypeInstance<R, *>.convertFrom(
+fun <T : Any, R : Any> IAttributeKeyTypeInstance<R, *, *>.convertFrom(
     subtypeValue: AttributeDataSource.ConstantAttributeData<T>,
 ): AttributeDataSource.ConstantAttributeData<R>? {
     return subtypeValue.convertTo(this)
 }
 
-private fun IAttributeKeyTypeTemplate<*, *>.canConvertFormatTo(
-    supertype: IAttributeKeyTypeTemplate<*, *>,
+private fun IAttributeKeyTypeTemplate<*, *, *>.canConvertFormatTo(
+    supertype: IAttributeKeyTypeTemplate<*, *, *>,
 ): Boolean {
     return baseType.mappedType === supertype
 }
 
-private fun <T : Any, R : Any> IAttributeKeyTypeTemplate<T, *>.convertFormatTo(
-    supertype: IAttributeKeyTypeTemplate<R, *>,
+private fun <T : Any, R : Any> IAttributeKeyTypeTemplate<T, *, *>.convertFormatTo(
+    supertype: IAttributeKeyTypeTemplate<R, *, *>,
     value: T,
 ): R? {
     return if (baseType.mappedType === supertype)
@@ -134,17 +149,4 @@ private fun <T : Any, R : Any> IAttributeKeyTypeTemplate<T, *>.convertFormatTo(
         (format(value) as R)
     else
         null
-}
-
-operator fun <T : Any, B : Any> IAttributeKeyTypeTemplate<T, B>.invoke(
-    name: String,
-    savedData: CompoundTag? = null,
-): MappedAttributeKeyInfo<T, B> {
-    return create(name, savedData)
-}
-
-operator fun <T : Any, B : Any> IAttributeKeyTypeTemplate<T, B>.invoke(
-    savedData: CompoundTag? = null,
-): IAttributeKeyTypeInstance<T, B> {
-    return create(savedData)
 }

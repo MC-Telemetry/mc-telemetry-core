@@ -1,10 +1,11 @@
 package de.mctelemetry.core.observations.model
 
+import com.mojang.serialization.Codec
+import com.mojang.serialization.Encoder
+import com.mojang.serialization.codecs.RecordCodecBuilder
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
-import de.mctelemetry.core.api.observations.IObservationSource
-import net.minecraft.core.HolderLookup
-import net.minecraft.nbt.CompoundTag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.codec.ByteBufCodecs
@@ -18,6 +19,8 @@ data class ObservationSourceConfiguration(
     fun validate(): MutableComponent? {
         return mapping.validate(instrument.attributes.values)
     }
+
+    fun asTemplate(): Template = Template(instrument.name, mapping)
 
     data class Template(
         val instrumentName: String,
@@ -46,64 +49,33 @@ data class ObservationSourceConfiguration(
             )
         }
 
-        fun saveToTag(): CompoundTag {
-            return CompoundTag().also { tag ->
-                tag.putString("name", instrumentName)
-                tag.put("mapping", mapping.saveToTag())
-            }
-        }
-
         companion object {
 
+            val CODEC: Codec<Template> = RecordCodecBuilder.create {
+                it.group(
+                    Codec.string(1, OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH)
+                        .fieldOf("name")
+                        .forGetter(Template::instrumentName),
+                    ObservationAttributeMapping.CODEC
+                        .optionalFieldOf("mapping", ObservationAttributeMapping.empty())
+                        .forGetter(Template::mapping)
+                ).apply(it, ::Template)
+            }
+
             val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, Template> = StreamCodec.composite(
-                ByteBufCodecs.stringUtf8(256),
+                ByteBufCodecs.stringUtf8(OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH),
                 Template::instrumentName,
                 ObservationAttributeMapping.STREAM_CODEC,
                 Template::mapping,
                 ::Template
             )
-
-            fun loadFromTag(
-                tag: CompoundTag,
-                holderLookupProvider: HolderLookup.Provider,
-                sourceContext: IObservationSource<*, *>,
-            ): Template? {
-                val name = tag.getString("name")
-                if (name.isBlank()) return null
-                val mappingTag = tag.get("mapping") ?: return Template(name, ObservationAttributeMapping.empty())
-                return Template(
-                    instrumentName = name,
-                    mapping = ObservationAttributeMapping.loadFromTag(mappingTag, holderLookupProvider, sourceContext),
-                )
-            }
         }
-    }
-
-    fun saveToTag(): CompoundTag {
-        return Template(instrument.name, mapping).saveToTag()
     }
 
     companion object {
 
-        fun loadFromTag(
-            tag: CompoundTag,
-            holderLookupProvider: HolderLookup.Provider,
-            instrumentManager: IMutableInstrumentManager?,
-            sourceContext: IObservationSource<*, *>,
-        ): ObservationSourceConfiguration? {
-            if (tag.isEmpty) return null
-            return Template.loadFromTag(tag, holderLookupProvider, sourceContext)?.resolveOrMock(instrumentManager)
-        }
-
-        fun loadDelayedFromTag(
-            tag: CompoundTag,
-            holderLookupProvider: HolderLookup.Provider,
-            sourceContext: IObservationSource<*, *>,
-        ): (IMutableInstrumentManager?) -> (ObservationSourceConfiguration?) {
-            if (tag.isEmpty) return { _ -> null }
-            val template = Template.loadFromTag(tag, holderLookupProvider, sourceContext) ?: return { _ -> null }
-            return template::resolveOrMock
-        }
+        val ENCODER: Encoder<ObservationSourceConfiguration> =
+            Template.CODEC.comap(ObservationSourceConfiguration::asTemplate)
 
         val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, ObservationSourceConfiguration> = StreamCodec.composite(
             IInstrumentDefinition.Record.INTERFACE_STREAM_CODEC,

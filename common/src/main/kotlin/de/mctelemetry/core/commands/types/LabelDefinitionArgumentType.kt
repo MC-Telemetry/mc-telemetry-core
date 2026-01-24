@@ -9,6 +9,7 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.create
 import de.mctelemetry.core.utils.Validators
 import net.minecraft.commands.CommandBuildContext
 import net.minecraft.commands.CommandSourceStack
@@ -22,12 +23,12 @@ import java.lang.AssertionError
 import java.util.concurrent.CompletableFuture
 
 class LabelDefinitionArgumentType(
-    private val labelTypeLookup: HolderLookup.RegistryLookup<IAttributeKeyTypeTemplate<*, *>>,
-) : ArgumentType<MappedAttributeKeyInfo<*, *>> {
+    private val labelTypeLookup: HolderLookup.RegistryLookup<IAttributeKeyTypeTemplate<*, *, *>>,
+) : ArgumentType<MappedAttributeKeyInfo<*, *, *>> {
 
     constructor(context: CommandBuildContext) : this(context.lookupOrThrow(OTelCoreModAPI.AttributeTypeMappings))
 
-    companion object : IArgumentResolver<CommandSourceStack, MappedAttributeKeyInfo<*, *>> {
+    companion object : IArgumentResolver<CommandSourceStack, MappedAttributeKeyInfo<*, *, *>> {
 
         private const val SEPARATOR: Char = '#'
 
@@ -44,7 +45,7 @@ class LabelDefinitionArgumentType(
         override fun getValue(
             context: CommandContext<CommandSourceStack>,
             name: String,
-        ): MappedAttributeKeyInfo<*, *> {
+        ): MappedAttributeKeyInfo<*, *, *> {
             return context.getArgument(name, MappedAttributeKeyInfo::class.java)
         }
     }
@@ -74,7 +75,7 @@ class LabelDefinitionArgumentType(
         return builder.buildFuture()
     }
 
-    override fun parse(reader: StringReader): MappedAttributeKeyInfo<*, *> {
+    override fun parse(reader: StringReader): MappedAttributeKeyInfo<*, *, *> {
         val cursor = reader.cursor
         val name = Validators.parseOTelName(reader, stopAtInvalid = true)
         if (!reader.canRead())

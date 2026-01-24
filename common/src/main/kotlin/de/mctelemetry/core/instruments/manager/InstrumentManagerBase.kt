@@ -471,7 +471,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
 
         override var unit: String = ""
         override var description: String = ""
-        override var attributes: List<MappedAttributeKeyInfo<*, *>> = emptyList()
+        override var attributes: List<MappedAttributeKeyInfo<*, *, *>> = emptyList()
 
         override fun registerWithCallbackOfDouble(callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>): IDoubleInstrumentRegistration {
             val result = manager.localInstruments.compute(name) { key, old ->
@@ -562,7 +562,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         override val name: String,
         override val description: String,
         override val unit: String,
-        override val attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+        override val attributes: Map<String, MappedAttributeKeyInfo<*, *, *>>,
         override val supportsFloating: Boolean,
     ) : IDoubleInstrumentRegistration, ILongInstrumentRegistration {
 
@@ -634,7 +634,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *, *>>,
             supportsFloating: Boolean,
             callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
         ) : super(name, description, unit, attributes, supportsFloating) {
@@ -679,7 +679,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
             name: String,
             description: String,
             unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
+            attributes: Map<String, MappedAttributeKeyInfo<*, *, *>>,
             supportsFloating: Boolean,
         ) : super(
             name,

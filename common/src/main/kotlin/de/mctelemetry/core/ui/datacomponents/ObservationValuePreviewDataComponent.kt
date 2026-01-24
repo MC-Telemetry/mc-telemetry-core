@@ -130,7 +130,7 @@ class ObservationValuePreviewDataComponent(
 
         private fun linearAttributeValuesListing(
             values: Collection<RecordedObservationPoint>,
-            commonAttributes: Set<MappedAttributeKeyInfo<*, *>>,
+            commonAttributes: Set<MappedAttributeKeyInfo<*, *, *>>,
             limit: Int = Int.MAX_VALUE,
             initialLinebreak: Boolean = true,
             baseContent: MutableComponent,
@@ -181,8 +181,8 @@ class ObservationValuePreviewDataComponent(
 
         private fun componentForMultipleValues(
             values: Collection<RecordedObservationPoint>,
-            cardinalities: Map<MappedAttributeKeyInfo<*, *>, Int>,
-            cardinalitiesWithoutCommon: Map<MappedAttributeKeyInfo<*, *>, Int>,
+            cardinalities: Map<MappedAttributeKeyInfo<*, *, *>, Int>,
+            cardinalitiesWithoutCommon: Map<MappedAttributeKeyInfo<*, *, *>, Int>,
             tooltipValuePointLimit: Int = 10,
         ): TextTooltipPair {
             val textComponent = buildComponent {
@@ -195,7 +195,7 @@ class ObservationValuePreviewDataComponent(
                 }
             }
             val tooltipComponent = buildComponent {
-                val commonAttributeKeys: Set<MappedAttributeKeyInfo<*, *>>
+                val commonAttributeKeys: Set<MappedAttributeKeyInfo<*, *, *>>
                 if (cardinalitiesWithoutCommon.size != cardinalities.size) {
                     val commonAttributeValues: MappedAttributeKeyMap<*> = MappedAttributeKeyMap(
                         values.first().attributes.filter { it.info !in cardinalitiesWithoutCommon }

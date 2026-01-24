@@ -3,7 +3,6 @@ package de.mctelemetry.core.ui.components
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import io.github.pixix4.kobserve.base.ObservableMutableList
 import io.wispforest.owo.ui.component.Components
 import io.wispforest.owo.ui.container.Containers
@@ -14,11 +13,11 @@ import io.wispforest.owo.ui.core.Sizing
 import io.wispforest.owo.ui.core.VerticalAlignment
 import net.minecraft.client.Minecraft
 
-class AttributeCreatorEntry(var name: String, var type: IAttributeKeyTypeTemplate<*, *>)
+class AttributeCreatorEntry(var name: String, var type: IAttributeKeyTypeTemplate<*, *, *>)
 
 class AttributeCreatorComponent(
     val attributes: ObservableMutableList<AttributeCreatorEntry>,
-    val types: List<IAttributeKeyTypeTemplate<*, *>> = Minecraft.getInstance().level!!.registryAccess().registryOrThrow(
+    val types: List<IAttributeKeyTypeTemplate<*, *, *>> = Minecraft.getInstance().level!!.registryAccess().registryOrThrow(
         OTelCoreModAPI.AttributeTypeMappings
     ).toList()
 ) : FlowLayout(Sizing.content(), Sizing.content(), Algorithm.VERTICAL) {

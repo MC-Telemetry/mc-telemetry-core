@@ -71,8 +71,8 @@ object TranslationKeys {
             Component.translatable(WORLD_INSTRUMENT_MANAGER_MISSING)
 
         fun attributeTypesIncompatible(
-            sourceType: IAttributeKeyTypeTemplate<*, *>,
-            targetType: IAttributeKeyTypeTemplate<*, *>,
+            sourceType: IAttributeKeyTypeTemplate<*, *, *>,
+            targetType: IAttributeKeyTypeTemplate<*, *, *>,
         ): MutableComponent =
             Component.translatable(
                 ATTRIBUTES_TYPE_INCOMPATIBLE,
@@ -82,7 +82,7 @@ object TranslationKeys {
 
         fun attributeTypesIncompatible(
             source: AttributeDataSource.ConstantAttributeData<*>,
-            target: MappedAttributeKeyInfo<*, *>,
+            target: MappedAttributeKeyInfo<*, *, *>,
         ): MutableComponent =
             Component.translatable(
                 ATTRIBUTES_TYPE_INCOMPATIBLE_TARGET_DETAILED,
@@ -93,7 +93,7 @@ object TranslationKeys {
 
         fun attributeTypesIncompatible(
             source: AttributeDataSource.Reference<*>,
-            target: MappedAttributeKeyInfo<*, *>,
+            target: MappedAttributeKeyInfo<*, *, *>,
         ): MutableComponent =
             Component.translatable(
                 ATTRIBUTES_TYPE_INCOMPATIBLE_DETAILED,
@@ -108,14 +108,14 @@ object TranslationKeys {
 
         fun attributeTypesIncompatible(
             source: AttributeDataSource<*>,
-            target: MappedAttributeKeyInfo<*, *>,
+            target: MappedAttributeKeyInfo<*, *, *>,
         ): MutableComponent = when (source) {
             is AttributeDataSource.ConstantAttributeData<*> -> attributeTypesIncompatible(source, target)
             is AttributeDataSource.Reference<*> -> attributeTypesIncompatible(source, target)
         }
 
         fun attributeMappingMissing(
-            target: MappedAttributeKeyInfo<*, *>,
+            target: MappedAttributeKeyInfo<*, *, *>,
         ): MutableComponent =
             Component.translatable(
                 ATTRIBUTES_MAPPING_MISSING,
@@ -193,8 +193,8 @@ object TranslationKeys {
 
     object AttributeTypes {
 
-        operator fun get(source: IAttributeKeyTypeTemplate<*, *>): MutableComponent = this[source.id]
-        operator fun get(sourceKey: ResourceKey<IAttributeKeyTypeTemplate<*, *>>): MutableComponent =
+        operator fun get(source: IAttributeKeyTypeTemplate<*, *, *>): MutableComponent = this[source.id]
+        operator fun get(sourceKey: ResourceKey<IAttributeKeyTypeTemplate<*, *, *>>): MutableComponent =
             this[sourceKey.location()]
 
         operator fun get(sourceID: ResourceLocation): MutableComponent =

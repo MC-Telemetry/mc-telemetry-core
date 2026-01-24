@@ -47,10 +47,10 @@ data class RecordedObservations(
                 IInstrumentDefinition.Record.INTERFACE_STREAM_CODEC.decode(`object`)
             else
                 null
-            val builtInAttributeInfos: Array<MappedAttributeKeyInfo<*, *>> =
+            val builtInAttributeInfos: Array<MappedAttributeKeyInfo<*, *, *>> =
                 definition?.attributes?.values?.toTypedArray() ?: emptyArray()
             val extraAttributeInfosSize = `object`.readVarInt()
-            val extraAttributeInfos: Array<MappedAttributeKeyInfo<*, *>> =
+            val extraAttributeInfos: Array<MappedAttributeKeyInfo<*, *, *>> =
                 if (extraAttributeInfosSize == 0) emptyArray()
                 else Array(extraAttributeInfosSize) {
                     MappedAttributeKeyInfo.STREAM_CODEC.decode(`object`)
@@ -59,7 +59,7 @@ data class RecordedObservations(
             val attributeValues: Array<MappedAttributeKeyValue<*, *>> = if (attributeValuesSize == 0) emptyArray()
             else Array(attributeValuesSize) {
                 val infoId = `object`.readVarInt()
-                val info: MappedAttributeKeyInfo<*, *> = if (infoId >= 0) {
+                val info: MappedAttributeKeyInfo<*, *, *> = if (infoId >= 0) {
                     builtInAttributeInfos[infoId]
                 } else {
                     extraAttributeInfos[infoId.inv()]
@@ -131,10 +131,10 @@ data class RecordedObservations(
             val usedAttributeInfos = usedAttributeValues.mapTo(mutableSetOf()) { it.info }
             val instrumentAttributeInfos = instrument?.attributes?.values.orEmpty()
             val additionalAttributeInfos = (usedAttributeInfos - instrumentAttributeInfos).toTypedArray()
-            val attributeInfosToIndex: Object2IntMap<MappedAttributeKeyInfo<*, *>> =
+            val attributeInfosToIndex: Object2IntMap<MappedAttributeKeyInfo<*, *, *>> =
                 if (usedAttributeInfos.isEmpty()) Object2IntMaps.emptyMap()
                 else {
-                    Object2IntOpenHashMap<MappedAttributeKeyInfo<*, *>>(usedAttributeInfos.size).apply {
+                    Object2IntOpenHashMap<MappedAttributeKeyInfo<*, *, *>>(usedAttributeInfos.size).apply {
                         usedAttributeInfos.forEach { info ->
                             val instrumentIndex = instrumentAttributeInfos.indexOf(info)
                             val infoIndex = if (instrumentIndex >= 0) {

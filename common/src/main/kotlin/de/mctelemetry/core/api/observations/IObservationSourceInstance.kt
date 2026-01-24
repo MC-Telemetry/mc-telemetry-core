@@ -1,15 +1,12 @@
 package de.mctelemetry.core.api.observations
 
-import de.mctelemetry.core.api.OTelCoreModAPI
+import com.mojang.serialization.DataResult
+import com.mojang.serialization.DynamicOps
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
-import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
-import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.StreamCodec
-import java.util.Optional
-import kotlin.jvm.optionals.getOrNull
 
 interface IObservationSourceInstance<
         SC,
@@ -31,14 +28,18 @@ interface IObservationSourceInstance<
     )
 
     companion object {
+
         val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, IObservationSourceInstance<*, *, *>> =
-            StreamCodec.composite(
-                ByteBufCodecs.registry(OTelCoreModAPI.ObservationSources),
-                IObservationSourceInstance<*, *, *>::source,
-                ByteBufCodecs.optional(ByteBufCodecs.TAG),
-                { Optional.ofNullable(it.toNbt()) },
-            ) { source, data ->
-                source.fromNbt(data.getOrNull())
+            object : StreamCodec<RegistryFriendlyByteBuf, IObservationSourceInstance<*, *, *>> {
+                override fun encode(`object`: RegistryFriendlyByteBuf, object2: IObservationSourceInstance<*, *, *>) {
+                    IObservationSource.STREAM_CODEC.encode(`object`, object2.source)
+                    object2.encode(`object`)
+                }
+
+                override fun decode(`object`: RegistryFriendlyByteBuf): IObservationSourceInstance<*, *, *> {
+                    val source = IObservationSource.STREAM_CODEC.decode(`object`)
+                    return source.streamCodec.decode(`object`)
+                }
             }
     }
 }
@@ -47,4 +48,11 @@ val <SC> IObservationSourceInstance<SC, *, *>.sourceContextType: Class<SC>
     get() = source.sourceContextType
 
 @Suppress("UNCHECKED_CAST")
-fun <I : IObservationSourceInstance<*, *, I>> I.toNbt(): Tag? = (source as IObservationSource<*, I>).toNbt(this)
+context(ops: DynamicOps<T>)
+fun <T, I : IObservationSourceInstance<*, *, I>> I.encode(prefix: T = ops.empty()): DataResult<T> =
+    (source as IObservationSource<*, I>).codec.encode(this, ops, prefix)
+
+@Suppress("UNCHECKED_CAST")
+fun <I : IObservationSourceInstance<*, *, I>> I.encode(`object`: RegistryFriendlyByteBuf) {
+    (source as IObservationSource<*, I>).streamCodec.encode(`object`, this)
+}

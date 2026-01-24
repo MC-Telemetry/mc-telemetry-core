@@ -11,7 +11,7 @@ import net.minecraft.network.codec.StreamCodec
 
 interface IInstrumentDefinition : IMetricDefinition {
 
-    val attributes: Map<String, MappedAttributeKeyInfo<*, *>>
+    val attributes: Map<String, MappedAttributeKeyInfo<*, *, *>>
     val supportsFloating: Boolean
 
     @JvmRecord
@@ -23,7 +23,7 @@ interface IInstrumentDefinition : IMetricDefinition {
         override val name: String,
         override val description: String = "",
         override val unit: String = "",
-        override val attributes: Map<String, MappedAttributeKeyInfo<*, *>> = emptyMap(),
+        override val attributes: Map<String, MappedAttributeKeyInfo<*, *, *>> = emptyMap(),
         override val supportsFloating: Boolean = false,
     ) : IInstrumentDefinition, IClientInstrumentManager.IClientInstrumentDefinition {
 
@@ -40,7 +40,7 @@ interface IInstrumentDefinition : IMetricDefinition {
             name: String,
             description: String = "",
             unit: String = "",
-            attributes: Collection<MappedAttributeKeyInfo<*, *>>,
+            attributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
             supportsFloating: Boolean = false,
         ) : this(
             name,
@@ -65,7 +65,7 @@ interface IInstrumentDefinition : IMetricDefinition {
 
             operator fun invoke(
                 definition: IMetricDefinition,
-                attributes: Collection<MappedAttributeKeyInfo<*, *>>,
+                attributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
                 supportsFloating: Boolean,
             ): Record {
                 if (definition is Record) {
@@ -135,7 +135,7 @@ interface IInstrumentDefinition : IMetricDefinition {
                 val unit = bb.readUtf(OTelCoreModAPI.Limits.INSTRUMENT_UNIT_MAX_LENGTH)
                 val attributeCount = bb.readUnsignedByte()
                 require(attributeCount >= 0 && attributeCount < OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_MAX_COUNT)
-                val attributes: Map<String, MappedAttributeKeyInfo<*, *>> =
+                val attributes: Map<String, MappedAttributeKeyInfo<*, *, *>> =
                     if (attributeCount.toInt() == 0) emptyMap()
                     else buildMap {
                         repeat(attributeCount.toInt()) {

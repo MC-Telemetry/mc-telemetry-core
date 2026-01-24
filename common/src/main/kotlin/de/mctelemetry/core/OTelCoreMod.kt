@@ -111,8 +111,8 @@ object OTelCoreMod {
         registerContent()
     }
 
-    fun registerAttributeTypes(registry: WritableRegistry<IAttributeKeyTypeTemplate<*, *>>?) {
-        val attributeTypes: List<IAttributeKeyTypeTemplate<*, *>> =
+    fun registerAttributeTypes(registry: WritableRegistry<IAttributeKeyTypeTemplate<*, *, *>>?) {
+        val attributeTypes: List<IAttributeKeyTypeTemplate<*, *, *>> =
             NativeAttributeKeyTypes.ALL + BuiltinAttributeKeyTypes.ALL
         if (registry == null) {
             DeferredRegister.create(OTelCoreModAPI.MOD_ID, OTelCoreModAPI.AttributeTypeMappings).apply {

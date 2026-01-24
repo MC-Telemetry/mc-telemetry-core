@@ -110,7 +110,7 @@ interface IAttributeValueStore : IAttributeDateSourceReferenceSet {
 
             @JvmName("newFromAttributeKeyInfos")
             operator fun invoke(
-                data: Collection<MappedAttributeKeyInfo<*, *>>,
+                data: Collection<MappedAttributeKeyInfo<*, *, *>>,
                 parent: IAttributeValueStore = empty(),
             ) = MapAttributeStore(data.associateTo(mutableMapOf()) {
                 AttributeDataSource.Reference.TypedSlot(it) to null
@@ -118,7 +118,7 @@ interface IAttributeValueStore : IAttributeDateSourceReferenceSet {
 
             @JvmName("newFromAttributeKeyInfos")
             operator fun invoke(
-                data: Map<MappedAttributeKeyInfo<*, *>, Any?>,
+                data: Map<MappedAttributeKeyInfo<*, *, *>, Any?>,
                 parent: IAttributeValueStore = empty(),
             ) = MapAttributeStore(data.mapKeysTo(mutableMapOf()) { (key, value) ->
                 if (value != null) {

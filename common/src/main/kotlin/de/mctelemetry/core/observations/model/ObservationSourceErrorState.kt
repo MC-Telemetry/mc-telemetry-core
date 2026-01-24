@@ -1,18 +1,20 @@
 package de.mctelemetry.core.observations.model
 
+import com.mojang.serialization.Codec
+import com.mojang.serialization.DataResult
+import com.mojang.serialization.codecs.RecordCodecBuilder
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState.Configured.Errors
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState.Configured.Ok
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState.Configured.Warnings
 import de.mctelemetry.core.utils.ExceptionComponent
-import net.minecraft.nbt.CompoundTag
-import net.minecraft.nbt.ListTag
-import net.minecraft.nbt.NbtOps
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentSerialization
 import net.minecraft.network.chat.ThrowingComponent
 import net.minecraft.network.chat.contents.TranslatableContents
 import net.minecraft.util.StringRepresentable
+import java.util.Optional
+import kotlin.jvm.optionals.getOrElse
 
 sealed class ObservationSourceErrorState(val type: Type) {
 
@@ -26,34 +28,12 @@ sealed class ObservationSourceErrorState(val type: Type) {
         override fun getSerializedName() = serializedName
     }
 
-    abstract fun saveToTag(tag: CompoundTag)
-
-    object NotConfigured : ObservationSourceErrorState(Type.NotConfigured) {
-
-        override fun saveToTag(tag: CompoundTag) {}
-    }
+    object NotConfigured : ObservationSourceErrorState(Type.NotConfigured)
 
     sealed class Configured(type: Type) : ObservationSourceErrorState(type) {
 
         abstract val warnings: List<Component>
         abstract val errors: List<Component>
-
-        override fun saveToTag(tag: CompoundTag) {
-            val errors = errors
-            if (errors.isNotEmpty()) {
-                tag.put(
-                    "errors",
-                    ComponentSerialization.CODEC.listOf().encodeStart(NbtOps.INSTANCE, errors).orThrow
-                )
-            }
-            val warnings = warnings
-            if (warnings.isNotEmpty()) {
-                tag.put(
-                    "warnings",
-                    ComponentSerialization.CODEC.listOf().encodeStart(NbtOps.INSTANCE, warnings).orThrow
-                )
-            }
-        }
 
         abstract fun errorsAsException(): Exception?
         abstract fun errorsOrWarningsAsException(): Exception?
@@ -231,10 +211,6 @@ sealed class ObservationSourceErrorState(val type: Type) {
 
             override fun throwErrors() {}
             override fun throwErrorsOrWarnings() {}
-
-            override fun saveToTag(tag: CompoundTag) {
-                tag.putBoolean("ok", true)
-            }
         }
 
         companion object {
@@ -256,25 +232,57 @@ sealed class ObservationSourceErrorState(val type: Type) {
         internal val uninitializedError = TranslationKeys.Errors.observationsUninitialized()
         val Uninitialized = Errors(listOf(uninitializedError))
 
-        fun fromTag(tag: CompoundTag?): ObservationSourceErrorState {
-            if (tag == null || tag.isEmpty) return NotConfigured
-            val isOk = tag.getBoolean("ok")
-            val errorsTag = tag.get("errors")
-            val errors = if (errorsTag is ListTag) {
-                errorsTag.map { ComponentSerialization.CODEC.parse(NbtOps.INSTANCE, it).orThrow }
-            } else emptyList()
-            val warningsTag = tag.get("warnings")
-            val warnings = if (warningsTag is ListTag) {
-                warningsTag.map { ComponentSerialization.CODEC.parse(NbtOps.INSTANCE, it).orThrow }
-            } else emptyList()
-            return when {
-                errors.isNotEmpty() -> Errors(errors, warnings)
-                warnings.isNotEmpty() -> Warnings(warnings)
-                isOk -> Ok
-                else -> Uninitialized
+        val CODEC: Codec<ObservationSourceErrorState> = RecordCodecBuilder.create {
+            it.group(
+                Codec.BOOL.optionalFieldOf("ok", false).forGetter { errorState -> errorState == Ok },
+                ComponentSerialization.CODEC.listOf()
+                    .optionalFieldOf("errors")
+                    .validate { errors ->
+                        if (errors.isPresent && errors.get().isEmpty())
+                            DataResult.error { "Errors must not be empty when present" }
+                        else DataResult.success(errors)
+                    }
+                    .forGetter { errorState ->
+                        if (errorState is Configured && errorState != Ok){
+                            val errors = errorState.errors
+                            if(errors.isEmpty())
+                                Optional.empty()
+                            else
+                                Optional.of(errors)
+                        }
+                        else Optional.empty()
+                    },
+                ComponentSerialization.CODEC.listOf()
+                    .optionalFieldOf("warnings")
+                    .validate { warnings ->
+                        if (warnings.isPresent && warnings.get().isEmpty())
+                            DataResult.error { "Warnings must not be empty when present" }
+                        else DataResult.success(warnings)
+                    }
+                    .forGetter { errorState ->
+                        if (errorState is Configured && errorState != Ok) {
+                            val warnings = errorState.warnings
+                            if(warnings.isEmpty())
+                                Optional.empty()
+                            else
+                                Optional.of(warnings)
+                        }
+                        else Optional.empty()
+                    },
+            ).apply(it) { ok, errorsOptional, warningsOptional ->
+                val errors = errorsOptional.getOrElse(::emptyList)
+                val warnings = warningsOptional.getOrElse(::emptyList)
+                if (errors.isNotEmpty()) {
+                    Errors(errors, warnings)
+                } else if (warnings.isNotEmpty()) {
+                    Warnings(warnings)
+                } else if (ok) {
+                    Ok
+                } else {
+                    NotConfigured
+                }
             }
         }
-
 
         fun Collection<Component>.asException(): Exception {
             val size = this.size
