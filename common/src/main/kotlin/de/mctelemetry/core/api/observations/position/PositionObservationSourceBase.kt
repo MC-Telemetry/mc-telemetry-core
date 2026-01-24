@@ -61,7 +61,7 @@ abstract class PositionObservationSourceBase<
         private val typedThis: I
             get() = this as I
 
-        override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, I> =
+        override val streamCodec: StreamCodec<in RegistryFriendlyByteBuf, I> =
             StreamCodec.unit(typedThis)
 
         override fun fromNbt(tag: Tag?): I = typedThis

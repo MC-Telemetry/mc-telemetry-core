@@ -1,8 +1,10 @@
 package de.mctelemetry.core.ui.screens
 
+import com.mojang.brigadier.StringReader
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.observations.IObservationSourceSingleton
+import de.mctelemetry.core.api.observations.IParameterizedObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
@@ -12,6 +14,7 @@ import de.mctelemetry.core.network.observations.container.sync.C2SObservationSou
 import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateRemovePayload
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.ui.components.ActionButtonComponent
+import de.mctelemetry.core.ui.components.ArgumentInputComponent
 import de.mctelemetry.core.ui.components.SelectBoxComponentEntry
 import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponent
 import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
@@ -45,10 +48,13 @@ import kotlinx.coroutines.launch
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.Minecraft
+import net.minecraft.commands.CommandBuildContext
+import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.core.GlobalPos
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.CommonColors
+import net.minecraft.world.flag.FeatureFlagSet
 import java.util.concurrent.atomic.AtomicReference
 
 @Environment(EnvType.CLIENT)
@@ -273,20 +279,37 @@ class ScraperBlockScreen(
             }
         }
 
-        val options = observationSourceContainer.observationSources.map {
-            SelectBoxComponentEntry(it, TranslationKeys.ObservationSources[it])
-        }
+        val options = observationSourceContainer.observationSources
+            .filter { it is IObservationSourceSingleton<*, *, *> || it is IParameterizedObservationSource<*, *> }
+            .map {
+                SelectBoxComponentEntry(it, TranslationKeys.ObservationSources[it])
+            }
 
         val createButton = ActionButtonComponent(
             TranslationKeys.Ui.addObservations(),
             TranslationKeys.Ui.addObservations(),
             options
         ) { opt ->
-            val newValue = opt.value
-            if (newValue is IObservationSourceSingleton<*, *, *>) {
-                NetworkManager.sendToServer(C2SObservationSourceStateAddPayload(globalPos, newValue))
-            } else {
-                println("TODO: Cannot add non-singletons yet")
+            when (val newValue = opt.value) {
+                is IObservationSourceSingleton<*, *, *> -> {
+                    NetworkManager.sendToServer(C2SObservationSourceStateAddPayload(globalPos, newValue))
+                }
+
+                is IParameterizedObservationSource<*, *> -> {
+                    ArgumentInputComponent(
+                        list,
+                        TranslationKeys.Ui.addObservations(),
+                        TranslationKeys.Ui.addObservations(),
+                        newValue.parameters
+                    ) {
+                        NetworkManager.sendToServer(
+                            C2SObservationSourceStateAddPayload(
+                                globalPos,
+                                newValue.instanceFromParameters(it)
+                            )
+                        )
+                    }
+                }
             }
         }
         list.child(createButton)

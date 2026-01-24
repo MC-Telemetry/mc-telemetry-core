@@ -18,7 +18,7 @@ interface IObservationSource<
 
     val sourceContextType: Class<SC>
 
-    val streamCodec: StreamCodec<RegistryFriendlyByteBuf, I>
+    val streamCodec: StreamCodec<in RegistryFriendlyByteBuf, I>
 
     fun fromNbt(tag: Tag?): I
     fun toNbt(instance: I): Tag?

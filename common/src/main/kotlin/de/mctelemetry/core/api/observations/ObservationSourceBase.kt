@@ -52,7 +52,7 @@ abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAtt
     abstract class SingletonBase<SC, I : SingletonBase<SC, I>> : ObservationSourceBase<SC, SingletonBase<SC, I>>(),
         IObservationSourceSingleton<SC, IAttributeValueStore.MapAttributeStore, SingletonBase<SC, I>> {
 
-        override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, SingletonBase<SC, I>> = StreamCodec.unit(this)
+        override val streamCodec: StreamCodec<in RegistryFriendlyByteBuf, SingletonBase<SC, I>> = StreamCodec.unit(this)
         override fun fromNbt(tag: Tag?): SingletonBase<SC, I> = this
         override fun toNbt(instance: SingletonBase<SC, I>): Tag? = null
 
