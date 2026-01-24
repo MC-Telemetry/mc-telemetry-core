@@ -7,6 +7,7 @@ import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
+import de.mctelemetry.core.network.observations.container.observationrequest.RecordedObservations
 import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateAddPayload
 import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateRemovePayload
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
@@ -200,6 +201,13 @@ class ScraperBlockScreen(
         listClosable.closeConsumeAllRethrow()
         listClosable.clear()
 
+        val storedObservations: Byte2ObjectMap<RecordedObservations> =
+            Byte2ObjectOpenHashMap<RecordedObservations>().apply {
+                for (entry in observationValuePreviews.byte2ObjectEntrySet()) {
+                    val value = entry.value.value ?: continue
+                    put(entry.byteKey, value)
+                }
+            }
         observationValuePreviews.clear()
 
         var i = -1
@@ -235,7 +243,12 @@ class ScraperBlockScreen(
 
             observationValuePreviews[instanceID.toByte()] = ObservationValuePreviewDataComponent(
                 template.childByIdOrThrow<LabelComponent>("observation-source-value")
-            )
+            ).also {
+                val storedValue = storedObservations.get(instanceID.toByte())
+                if (storedValue != null) {
+                    it.value = storedValue
+                }
+            }
 
             val editButton: ButtonComponent = template.childWidgetByIdOrThrow("observation-source-edit")
             if (isDeleteMode) {
