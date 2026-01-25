@@ -10,7 +10,10 @@ import de.mctelemetry.core.network.observations.container.observationrequest.Rec
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
-class MemoryObservationRecorder(val mapping: ObservationAttributeMapping) : IObservationRecorder.Unresolved {
+class MemoryObservationRecorder(
+    val mapping: ObservationAttributeMapping,
+    override val supportsFloating: Boolean = true
+) : IObservationRecorder.Unresolved {
 
     private val backingMap: ConcurrentMap<IObservationSourceInstance<*, *, *>, ConcurrentMap<List<MappedAttributeKeyValue<*, *>>, RecordedObservationPoint>> =
         ConcurrentHashMap()
@@ -61,7 +64,4 @@ class MemoryObservationRecorder(val mapping: ObservationAttributeMapping) : IObs
         )
         mapForSource(sourceInstance)[attributeValues] = point
     }
-
-    override val supportsFloating: Boolean
-        get() = true
 }

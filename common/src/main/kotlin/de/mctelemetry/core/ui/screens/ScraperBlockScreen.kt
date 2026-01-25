@@ -3,14 +3,17 @@ package de.mctelemetry.core.ui.screens
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.observations.IObservationSourceSingleton
+import de.mctelemetry.core.api.observations.IParameterizedObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
+import de.mctelemetry.core.network.observations.container.observationrequest.RecordedObservations
 import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateAddPayload
 import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateRemovePayload
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.ui.components.ActionButtonComponent
+import de.mctelemetry.core.ui.components.ParameterInputComponent
 import de.mctelemetry.core.ui.components.SelectBoxComponentEntry
 import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponent
 import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
@@ -20,6 +23,8 @@ import de.mctelemetry.core.utils.closeAllCollect
 import de.mctelemetry.core.utils.closeConsumeAllRethrow
 import de.mctelemetry.core.utils.coroutineDispatcher
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
+import de.mctelemetry.core.utils.dsl.components.IStyleBuilder
+import de.mctelemetry.core.utils.dsl.components.onHoverShowText
 import de.mctelemetry.core.utils.dsl.components.style
 import de.mctelemetry.core.utils.globalPosOrThrow
 import de.mctelemetry.core.utils.runWithExceptionCleanup
@@ -198,6 +203,13 @@ class ScraperBlockScreen(
         listClosable.closeConsumeAllRethrow()
         listClosable.clear()
 
+        val storedObservations: Byte2ObjectMap<RecordedObservations> =
+            Byte2ObjectOpenHashMap<RecordedObservations>().apply {
+                for (entry in observationValuePreviews.byte2ObjectEntrySet()) {
+                    val value = entry.value.value ?: continue
+                    put(entry.byteKey, value)
+                }
+            }
         observationValuePreviews.clear()
 
         var i = -1
@@ -211,7 +223,16 @@ class ScraperBlockScreen(
                 mapOf()
             )
             template.childByIdOrThrow<LabelComponent>("observation-source-name").text(
-                TranslationKeys.ObservationSources[state.source]
+                TranslationKeys.ObservationSources[state.source].also {
+                    if (minecraft!!.options.advancedItemTooltips)
+                        it.withStyle(IStyleBuilder.buildStyle {
+                            onHoverShowText {
+                                append(state.source.id.location().toString())
+                                append("/")
+                                append(state.id.toString())
+                            }
+                        })
+                }
             )
             list.child(template)
 
@@ -224,7 +245,12 @@ class ScraperBlockScreen(
 
             observationValuePreviews[instanceID.toByte()] = ObservationValuePreviewDataComponent(
                 template.childByIdOrThrow<LabelComponent>("observation-source-value")
-            )
+            ).also {
+                val storedValue = storedObservations.get(instanceID.toByte())
+                if (storedValue != null) {
+                    it.value = storedValue
+                }
+            }
 
             val editButton: ButtonComponent = template.childWidgetByIdOrThrow("observation-source-edit")
             if (isDeleteMode) {
@@ -235,7 +261,12 @@ class ScraperBlockScreen(
                     }
                 }
                 editButton.onPress {
-                    NetworkManager.sendToServer(C2SObservationSourceStateRemovePayload(globalPos, entry.byteKey.toUByte()))
+                    NetworkManager.sendToServer(
+                        C2SObservationSourceStateRemovePayload(
+                            globalPos,
+                            entry.byteKey.toUByte()
+                        )
+                    )
                 }
             } else {
                 editButton.onPress {
@@ -244,20 +275,37 @@ class ScraperBlockScreen(
             }
         }
 
-        val options = observationSourceContainer.observationSources.map {
-            SelectBoxComponentEntry(it, TranslationKeys.ObservationSources[it])
-        }
+        val options = observationSourceContainer.observationSources
+            .filter { it is IObservationSourceSingleton<*, *, *> || it is IParameterizedObservationSource<*, *> }
+            .map {
+                SelectBoxComponentEntry(it, TranslationKeys.ObservationSources[it])
+            }
 
         val createButton = ActionButtonComponent(
             TranslationKeys.Ui.addObservations(),
             TranslationKeys.Ui.addObservations(),
             options
         ) { opt ->
-            val newValue = opt.value
-            if (newValue is IObservationSourceSingleton<*, *, *>) {
-                NetworkManager.sendToServer(C2SObservationSourceStateAddPayload(globalPos, newValue))
-            } else {
-                println("TODO: Cannot add non-singletons yet")
+            when (val newValue = opt.value) {
+                is IObservationSourceSingleton<*, *, *> -> {
+                    NetworkManager.sendToServer(C2SObservationSourceStateAddPayload(globalPos, newValue))
+                }
+
+                is IParameterizedObservationSource<*, *> -> {
+                    ParameterInputComponent(
+                        list,
+                        TranslationKeys.Ui.addObservations(),
+                        TranslationKeys.Ui.addObservations(),
+                        newValue.makeParameterMap(),
+                    ) {
+                        NetworkManager.sendToServer(
+                            C2SObservationSourceStateAddPayload(
+                                globalPos,
+                                context(it) { newValue.instanceFromParameters() }
+                            )
+                        )
+                    }
+                }
             }
         }
         list.child(createButton)

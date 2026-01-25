@@ -57,7 +57,7 @@ abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAtt
         private val typedThis: I
             get() = this as I
 
-        override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, I> = StreamCodec.unit(typedThis)
+        override val streamCodec: StreamCodec<in RegistryFriendlyByteBuf, I> = StreamCodec.unit(typedThis)
         override val codec: Codec<I> = DirectUnitCodec(typedThis)
 
         context(sourceContext: SC)

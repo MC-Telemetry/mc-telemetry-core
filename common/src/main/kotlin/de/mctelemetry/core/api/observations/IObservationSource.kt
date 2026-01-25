@@ -20,7 +20,7 @@ interface IObservationSource<
 
     val sourceContextType: Class<SC>
 
-    val streamCodec: StreamCodec<RegistryFriendlyByteBuf, I>
+    val streamCodec: StreamCodec<in RegistryFriendlyByteBuf, I>
 
     val codec: Codec<I>
 

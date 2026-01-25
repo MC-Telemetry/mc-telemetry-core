@@ -2,7 +2,6 @@ package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.ObservationContainerInteractionLimits
 import de.mctelemetry.core.observations.model.MemoryObservationRecorder
@@ -290,7 +289,8 @@ class ObservationRequestManagerServer(
         val memoryRecorders: Byte2ObjectMap<MemoryObservationRecorder> = Byte2ObjectOpenHashMap()
         container.observe(
             { mapping, state ->
-                MemoryObservationRecorder(mapping).also {
+                val supportsFloating: Boolean = state.instrument?.supportsFloating ?: true
+                MemoryObservationRecorder(mapping, supportsFloating).also {
                     val oldRecorder = memoryRecorders.put(state.id.toByte(), it)
                     assert(oldRecorder == null || oldRecorder.mapping.mapping === mapping.mapping)
                 }
