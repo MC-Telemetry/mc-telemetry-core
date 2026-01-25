@@ -1,6 +1,5 @@
 package de.mctelemetry.core.ui.screens
 
-import com.mojang.brigadier.StringReader
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.observations.IObservationSourceSingleton
@@ -14,7 +13,7 @@ import de.mctelemetry.core.network.observations.container.sync.C2SObservationSou
 import de.mctelemetry.core.network.observations.container.sync.C2SObservationSourceStateRemovePayload
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
 import de.mctelemetry.core.ui.components.ActionButtonComponent
-import de.mctelemetry.core.ui.components.ArgumentInputComponent
+import de.mctelemetry.core.ui.components.ParameterInputComponent
 import de.mctelemetry.core.ui.components.SelectBoxComponentEntry
 import de.mctelemetry.core.ui.datacomponents.ObservationValuePreviewDataComponent
 import de.mctelemetry.core.ui.datacomponents.ObservationValueStateDataComponent
@@ -48,13 +47,10 @@ import kotlinx.coroutines.launch
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.Minecraft
-import net.minecraft.commands.CommandBuildContext
-import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.core.GlobalPos
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.util.CommonColors
-import net.minecraft.world.flag.FeatureFlagSet
 import java.util.concurrent.atomic.AtomicReference
 
 @Environment(EnvType.CLIENT)
@@ -296,16 +292,16 @@ class ScraperBlockScreen(
                 }
 
                 is IParameterizedObservationSource<*, *> -> {
-                    ArgumentInputComponent(
+                    ParameterInputComponent(
                         list,
                         TranslationKeys.Ui.addObservations(),
                         TranslationKeys.Ui.addObservations(),
-                        newValue.parameters
+                        newValue.makeParameterMap(),
                     ) {
                         NetworkManager.sendToServer(
                             C2SObservationSourceStateAddPayload(
                                 globalPos,
-                                newValue.instanceFromParameters(it)
+                                context(it) { newValue.instanceFromParameters() }
                             )
                         )
                     }

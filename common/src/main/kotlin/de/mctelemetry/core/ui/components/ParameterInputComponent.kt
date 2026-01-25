@@ -1,10 +1,9 @@
 package de.mctelemetry.core.ui.components
 
-import com.mojang.brigadier.StringReader
-import com.mojang.brigadier.arguments.ArgumentType
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
+import de.mctelemetry.core.api.observations.IParameterizedObservationSource
+import de.mctelemetry.core.api.observations.IParameterizedObservationSource.Parameter.Companion.setFromText
 import io.wispforest.owo.ui.component.Components
 import io.wispforest.owo.ui.component.TextBoxComponent
 import io.wispforest.owo.ui.container.Containers
@@ -17,12 +16,12 @@ import io.wispforest.owo.ui.core.Sizing
 import io.wispforest.owo.ui.core.Surface
 import io.wispforest.owo.ui.core.VerticalAlignment
 
-class ArgumentInputComponent(
+class ParameterInputComponent(
     private val parent: FlowLayout,
     private val title: net.minecraft.network.chat.Component,
     private val commitLabel: net.minecraft.network.chat.Component,
-    private val arguments: Map<String, ArgumentType<*>>,
-    private val onCommit: (Map<String, Any?>) -> Unit
+    private val parameters: IParameterizedObservationSource.ParameterMap,
+    private val onCommit: (IParameterizedObservationSource.ParameterMap) -> Unit
 ) {
     private var overlayRef: ParentComponent? = null
 
@@ -50,7 +49,11 @@ class ArgumentInputComponent(
         entryList.surface(Surface.BLANK)
         entryList.horizontalAlignment(HorizontalAlignment.CENTER)
 
-        val textBoxes = arguments.mapValues { (name, argument) -> argument to createEntry(entryList, name, argument) }
+        val textBoxes = context(parameters) {
+            parameters.availableParameters.mapValues { (_, parameter) ->
+                parameter to createEntry(entryList, parameter)
+            }
+        }
 
         val scrollBox = Containers.verticalScroll(Sizing.fill(100), Sizing.fill(60), entryList)
         list.child(scrollBox)
@@ -58,12 +61,12 @@ class ArgumentInputComponent(
         list.child(
             (Components.button(commitLabel) {
                 try {
-                    val instantiated = textBoxes.mapValues { (_, pair) ->
-                        val (argument, textBox) = pair
-                        argument.parse(StringReader(textBox.value))
+                    context(parameters) {
+                        textBoxes.values.forEach { (parameter, textBox) ->
+                            parameter.setFromText(textBox.value)
+                        }
                     }
-
-                    onCommit(instantiated)
+                    onCommit(parameters)
                 } catch (e: CommandSyntaxException) {
                     OTelCoreMod.logger.error("Cannot parse parameters", e)
                 } finally {
@@ -93,12 +96,16 @@ class ArgumentInputComponent(
         overlayRef = null
     }
 
-    private fun createEntry(list: FlowLayout, name: String, argument: Any?): TextBoxComponent {
+    context(parameterMap: IParameterizedObservationSource.ParameterMap)
+    private fun <T> createEntry(
+        list: FlowLayout,
+        parameter: IParameterizedObservationSource.Parameter<T>
+    ): TextBoxComponent {
         val entryList = Containers.horizontalFlow(Sizing.fill(100), Sizing.content())
         entryList.verticalAlignment(VerticalAlignment.CENTER)
         entryList.horizontalAlignment(HorizontalAlignment.RIGHT)
 
-        val nameLabel = Components.label(buildComponent(name))
+        val nameLabel = Components.label(parameter.displayName)
         nameLabel.margins(Insets.right(4))
         entryList.child(nameLabel)
 
