@@ -1,6 +1,6 @@
 package de.mctelemetry.core.observations.model
 
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.api.observations.IObservationSource
 import net.minecraft.core.HolderLookup

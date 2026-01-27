@@ -2,9 +2,9 @@ package de.mctelemetry.core.commands.metrics
 
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
-import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager

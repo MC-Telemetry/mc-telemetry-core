@@ -1,4 +1,4 @@
-package de.mctelemetry.core.api.instruments
+package de.mctelemetry.core.api.instruments.definition
 
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
@@ -7,9 +7,6 @@ import net.fabricmc.api.EnvType
 import net.fabricmc.api.EnvironmentInterface
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.collections.forEach
 
 interface IWorldInstrumentDefinition : IInstrumentDefinition {
 

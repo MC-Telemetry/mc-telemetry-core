@@ -1,8 +1,9 @@
-package de.mctelemetry.core.api.instruments
+package de.mctelemetry.core.api.instruments.gauge
 
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.InvocationSynchronizationHint
 import de.mctelemetry.core.api.TickSynchronizationHint
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import io.opentelemetry.api.common.Attributes
 
 interface IInstrumentRegistration : IInstrumentDefinition, AutoCloseable {

@@ -2,10 +2,10 @@ package de.mctelemetry.core.instruments.builtin.world.player
 
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
-import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
-import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
-import de.mctelemetry.core.api.instruments.builder.IWorldGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.builder.IWorldGaugeInstrumentBuilder
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.instruments.builtin.world.WorldInstrumentBase
 import net.minecraft.server.MinecraftServer

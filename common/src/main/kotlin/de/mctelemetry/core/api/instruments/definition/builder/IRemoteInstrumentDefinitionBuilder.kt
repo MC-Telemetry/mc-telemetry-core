@@ -1,4 +1,4 @@
-package de.mctelemetry.core.api.instruments.builder
+package de.mctelemetry.core.api.instruments.definition.builder
 
 import org.jetbrains.annotations.Contract
 

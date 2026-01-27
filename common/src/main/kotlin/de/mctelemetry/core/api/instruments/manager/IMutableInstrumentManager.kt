@@ -1,8 +1,8 @@
 package de.mctelemetry.core.api.instruments.manager
 
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
-import de.mctelemetry.core.api.instruments.builder.IGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.builder.IGaugeInstrumentBuilder
 
 interface IMutableInstrumentManager : IInstrumentManager {
 

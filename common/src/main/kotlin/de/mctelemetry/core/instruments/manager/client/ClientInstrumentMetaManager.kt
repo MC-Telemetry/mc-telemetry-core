@@ -2,7 +2,7 @@ package de.mctelemetry.core.instruments.manager.client
 
 import com.mojang.datafixers.util.Either
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
 import de.mctelemetry.core.network.instrumentsync.S2CAllInstrumentsPayload

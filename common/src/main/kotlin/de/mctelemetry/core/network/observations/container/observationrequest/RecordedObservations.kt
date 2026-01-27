@@ -1,6 +1,6 @@
 package de.mctelemetry.core.network.observations.container.observationrequest
 
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue

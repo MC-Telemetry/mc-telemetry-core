@@ -1,4 +1,4 @@
-package de.mctelemetry.core.api.instruments
+package de.mctelemetry.core.api.instruments.definition
 
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.OTelCoreModAPI
@@ -115,7 +115,7 @@ interface IInstrumentDefinition : IMetricDefinition {
                 bb.writeUtf(v.unit, OTelCoreModAPI.Limits.INSTRUMENT_UNIT_MAX_LENGTH)
                 bb.writeByte(attributeCount)
                 for (attribute in attributes.values) {
-                    MappedAttributeKeyInfo.STREAM_CODEC.encode(bb, attribute)
+                    MappedAttributeKeyInfo.Companion.STREAM_CODEC.encode(bb, attribute)
                 }
                 bb.writeBoolean(v.supportsFloating)
             }
@@ -139,7 +139,7 @@ interface IInstrumentDefinition : IMetricDefinition {
                     if (attributeCount.toInt() == 0) emptyMap()
                     else buildMap {
                         repeat(attributeCount.toInt()) {
-                            val attribute = MappedAttributeKeyInfo.STREAM_CODEC.decode(bb)
+                            val attribute = MappedAttributeKeyInfo.Companion.STREAM_CODEC.decode(bb)
                             val existing = putIfAbsent(attribute.baseKey.key, attribute)
                             require(existing == null) { "Duplicate attributes for ${attribute.baseKey.key}: Stored $existing, tried to add $attribute" }
                         }

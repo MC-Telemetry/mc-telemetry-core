@@ -4,11 +4,11 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
-import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
-import de.mctelemetry.core.api.instruments.IWorldInstrumentRegistration
-import de.mctelemetry.core.api.instruments.builder.IWorldGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.IWorldInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.builder.IWorldGaugeInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IWorldMutableInstrumentRegistration

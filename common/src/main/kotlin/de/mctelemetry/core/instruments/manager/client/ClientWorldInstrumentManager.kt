@@ -3,9 +3,9 @@ package de.mctelemetry.core.instruments.manager.client
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
-import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
-import de.mctelemetry.core.api.instruments.builder.IRemoteWorldInstrumentDefinitionBuilder
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.builder.IRemoteWorldInstrumentDefinitionBuilder
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager

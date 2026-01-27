@@ -1,6 +1,6 @@
-package de.mctelemetry.core.api.instruments.builder
+package de.mctelemetry.core.api.instruments.definition.builder
 
-import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import org.jetbrains.annotations.Contract
 
 interface IWorldInstrumentDefinitionBuilder<out B : IWorldInstrumentDefinitionBuilder<B>> :

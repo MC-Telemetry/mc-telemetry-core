@@ -1,7 +1,7 @@
 package de.mctelemetry.core.ui.screens
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager

@@ -3,7 +3,7 @@ package de.mctelemetry.core.observations.model
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.*
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.AttributeKey

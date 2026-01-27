@@ -1,7 +1,7 @@
 package de.mctelemetry.core.network.instrumentsync
 
 import de.mctelemetry.core.api.IMetricDefinition
-import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager

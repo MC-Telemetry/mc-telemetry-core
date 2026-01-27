@@ -1,4 +1,4 @@
-package de.mctelemetry.core.api.instruments
+package de.mctelemetry.core.api.instruments.gauge
 
 interface ILongInstrumentRegistration : IInstrumentRegistration {
 

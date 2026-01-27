@@ -1,7 +1,7 @@
-package de.mctelemetry.core.api.instruments.builder
+package de.mctelemetry.core.api.instruments.definition.builder
 
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import io.opentelemetry.api.common.AttributeKey
 import org.jetbrains.annotations.Contract
 

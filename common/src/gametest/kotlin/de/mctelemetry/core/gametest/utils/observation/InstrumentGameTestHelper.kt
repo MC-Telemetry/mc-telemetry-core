@@ -3,11 +3,11 @@ package de.mctelemetry.core.gametest.utils.observation
 import com.mojang.datafixers.util.Either
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
 import de.mctelemetry.core.api.instruments.DuplicateInstrumentException
-import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
-import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.instruments.builder.IGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.gauge.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.gaugeWorldInstrument

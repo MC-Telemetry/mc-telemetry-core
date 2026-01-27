@@ -4,7 +4,7 @@ import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeInstance
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.observations.model.ObservationIdentityResolver
 import kotlin.contracts.InvocationKind

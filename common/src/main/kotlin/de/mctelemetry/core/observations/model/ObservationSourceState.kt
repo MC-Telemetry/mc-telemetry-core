@@ -1,8 +1,8 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
-import de.mctelemetry.core.api.instruments.IInstrumentSubRegistration
+import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.IInstrumentSubRegistration
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager

@@ -1,10 +1,10 @@
 package de.mctelemetry.core.instruments.builtin.game
 
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
-import de.mctelemetry.core.api.instruments.IDoubleInstrumentRegistration
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
-import de.mctelemetry.core.api.instruments.ILongInstrumentRegistration
-import de.mctelemetry.core.api.instruments.builder.IGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
+import de.mctelemetry.core.api.instruments.gauge.builder.IGaugeInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.gaugeInstrument
 import de.mctelemetry.core.api.observations.IObservationRecorder

@@ -1,7 +1,7 @@
 package de.mctelemetry.core.network.instrumentsync
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.gaugeWorldInstrument
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager

@@ -8,8 +8,8 @@ import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
-import de.mctelemetry.core.api.instruments.IWorldInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IWorldInstrumentManager
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager

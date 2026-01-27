@@ -1,6 +1,6 @@
 package de.mctelemetry.core.api.instruments.manager.client
 
-import de.mctelemetry.core.api.instruments.builder.IRemoteWorldInstrumentDefinitionBuilder
+import de.mctelemetry.core.api.instruments.definition.builder.IRemoteWorldInstrumentDefinitionBuilder
 import de.mctelemetry.core.api.instruments.manager.IWorldInstrumentManager
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import dev.architectury.event.Event

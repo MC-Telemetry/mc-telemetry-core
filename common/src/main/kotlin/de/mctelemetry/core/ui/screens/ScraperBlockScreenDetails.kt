@@ -5,7 +5,7 @@ import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
-import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.manager.client.IClientInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
