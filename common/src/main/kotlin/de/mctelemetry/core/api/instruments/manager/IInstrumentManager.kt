@@ -1,8 +1,8 @@
 package de.mctelemetry.core.api.instruments.manager
 
-import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
+import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 
 interface IInstrumentManager : IInstrumentAvailabilityCallback<IMetricDefinition> {
 

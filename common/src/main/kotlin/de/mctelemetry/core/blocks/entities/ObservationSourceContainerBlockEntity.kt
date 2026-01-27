@@ -3,20 +3,20 @@
 package de.mctelemetry.core.blocks.entities
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.instrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager.Companion.useInstrumentManagerWhenAvailable
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.api.observations.IObservationSourceSingleton
 import de.mctelemetry.core.api.observations.toNbt
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.component.OTelCoreModComponents
-import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceContainer
+import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.observations.model.ObservationSourceStateID
 import de.mctelemetry.core.utils.globalPos
@@ -50,9 +50,6 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.entity.BlockEntityType
 import net.minecraft.world.level.block.state.BlockState
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.forEach
-import kotlin.collections.mapNotNullTo
-import kotlin.collections.mutableSetOf
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 import kotlin.jvm.optionals.getOrElse

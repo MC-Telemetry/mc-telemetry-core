@@ -15,7 +15,13 @@ import de.mctelemetry.core.component.OTelCoreModComponents
 import de.mctelemetry.core.instruments.builtin.BuiltinInstruments
 import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager
 import de.mctelemetry.core.items.OTelCoreModItems
-import de.mctelemetry.core.network.instrumentsync.*
+import de.mctelemetry.core.network.instrumentsync.A2AInstrumentAddedPayload
+import de.mctelemetry.core.network.instrumentsync.A2AInstrumentRemovedPayload
+import de.mctelemetry.core.network.instrumentsync.C2SAllInstrumentRequestPayload
+import de.mctelemetry.core.network.instrumentsync.S2CAllInstrumentsPayload
+import de.mctelemetry.core.network.instrumentsync.S2CReservedNameAddedPayload
+import de.mctelemetry.core.network.instrumentsync.S2CReservedNameRemovedPayload
+import de.mctelemetry.core.network.instrumentsync.SyncSubscriptions
 import de.mctelemetry.core.network.observations.container.observationrequest.C2SObservationsRequestPayload
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerServer
 import de.mctelemetry.core.network.observations.container.observationrequest.S2CObservationsPayload
@@ -43,7 +49,7 @@ import net.minecraft.world.item.CreativeModeTab
 import net.minecraft.world.item.ItemStack
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import java.util.*
+import java.util.Optional
 
 object OTelCoreMod {
 

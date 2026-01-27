@@ -19,7 +19,6 @@ import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandBuildContext
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
-import kotlin.with
 
 class CommandMetricsCreate internal constructor(
     private val buildContext: CommandBuildContext,

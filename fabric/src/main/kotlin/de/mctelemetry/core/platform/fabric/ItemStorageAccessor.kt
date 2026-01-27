@@ -1,7 +1,6 @@
 package de.mctelemetry.core.platform.fabric
 
 import de.mctelemetry.core.platform.IItemStorageAccessor
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction

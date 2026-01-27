@@ -2,7 +2,6 @@ package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.ObservationContainerInteractionLimits
 import de.mctelemetry.core.observations.model.MemoryObservationRecorder
@@ -26,7 +25,6 @@ import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.collections.mutableListOf
 import kotlin.concurrent.withLock
 import kotlin.math.min
 

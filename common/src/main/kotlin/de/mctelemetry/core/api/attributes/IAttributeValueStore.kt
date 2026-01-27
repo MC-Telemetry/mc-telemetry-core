@@ -1,8 +1,5 @@
 package de.mctelemetry.core.api.attributes
 
-import kotlin.collections.associateWithTo
-import kotlin.collections.mutableMapOf
-
 interface IAttributeValueStore : IAttributeDateSourceReferenceSet {
 
     operator fun <T : Any> get(reference: AttributeDataSource.Reference<T>): T?

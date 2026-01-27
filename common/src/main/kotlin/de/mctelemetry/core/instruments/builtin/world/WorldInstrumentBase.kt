@@ -1,10 +1,10 @@
 package de.mctelemetry.core.instruments.builtin.world
 
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
-import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.gauge.builder.IWorldGaugeInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.server.IServerWorldInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.server.gaugeWorldInstrument

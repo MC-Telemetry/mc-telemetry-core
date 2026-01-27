@@ -3,7 +3,6 @@ package de.mctelemetry.core.ui.components
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
-import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import io.github.pixix4.kobserve.base.ObservableMutableList
 import io.wispforest.owo.ui.component.Components
 import io.wispforest.owo.ui.container.Containers

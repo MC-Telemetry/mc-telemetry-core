@@ -16,8 +16,8 @@ import de.mctelemetry.core.observations.model.ObservationSourceState
 import de.mctelemetry.core.ui.components.AttributeMappingComponent
 import de.mctelemetry.core.ui.components.SuggestingTextBoxComponent
 import de.mctelemetry.core.utils.Validators
-import de.mctelemetry.core.utils.childWidgetByIdOrThrow
 import de.mctelemetry.core.utils.childByIdOrThrow
+import de.mctelemetry.core.utils.childWidgetByIdOrThrow
 import de.mctelemetry.core.utils.dsl.components.IStyleBuilder
 import de.mctelemetry.core.utils.dsl.components.onHoverShowText
 import dev.architectury.networking.NetworkManager

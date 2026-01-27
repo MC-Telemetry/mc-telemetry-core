@@ -1,9 +1,9 @@
 package de.mctelemetry.core.api.instruments.gauge.builder
 
+import de.mctelemetry.core.api.instruments.definition.builder.IInstrumentDefinitionBuilder
 import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
-import de.mctelemetry.core.api.instruments.definition.builder.IInstrumentDefinitionBuilder
 
 interface IGaugeInstrumentBuilder<out B : IGaugeInstrumentBuilder<B>> : IInstrumentDefinitionBuilder<B> {
 

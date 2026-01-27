@@ -1,16 +1,15 @@
 package de.mctelemetry.core.network.observations.container.observationrequest
 
-import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue.Companion.decodeToValue
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import it.unimi.dsi.fastutil.objects.Object2IntMap
 import it.unimi.dsi.fastutil.objects.Object2IntMaps
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
-import java.lang.AssertionError
 
 data class RecordedObservations(
     val instrument: IInstrumentDefinition?,

@@ -1,8 +1,8 @@
 package de.mctelemetry.core.network.observations.container.observationrequest
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.observations.model.ObservationSourceStateID
 import dev.architectury.networking.NetworkManager
 import dev.architectury.platform.Platform

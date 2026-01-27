@@ -33,7 +33,6 @@ import java.lang.AutoCloseable
 import java.lang.ref.WeakReference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
-import kotlin.collections.iterator
 
 internal class ServerWorldInstrumentManager private constructor(
     meter: Meter,

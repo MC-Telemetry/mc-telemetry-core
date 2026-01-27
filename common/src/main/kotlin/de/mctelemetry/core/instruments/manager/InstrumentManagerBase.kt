@@ -3,19 +3,19 @@
 package de.mctelemetry.core.instruments.manager
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException
-import de.mctelemetry.core.api.instruments.DuplicateInstrumentException
+import de.mctelemetry.core.api.IMetricDefinition
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.DuplicateInstrumentException
 import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentSubRegistration
 import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
-import de.mctelemetry.core.api.IMetricDefinition
-import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.instruments.gauge.builder.IGaugeInstrumentBuilder
-import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
+import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
+import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.utils.InstrumentAvailabilityLogger
 import de.mctelemetry.core.utils.Union2
 import de.mctelemetry.core.utils.Validators

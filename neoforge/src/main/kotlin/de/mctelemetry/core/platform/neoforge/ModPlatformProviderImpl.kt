@@ -4,9 +4,6 @@ import de.mctelemetry.core.platform.IEnergyStorageAccessor
 import de.mctelemetry.core.platform.IFluidStorageAccessor
 import de.mctelemetry.core.platform.IItemStorageAccessor
 import de.mctelemetry.core.platform.ModPlatform
-import net.minecraft.core.BlockPos
-import net.minecraft.core.Direction
-import net.minecraft.server.level.ServerLevel
 
 @Suppress("unused")
 object ModPlatformProviderImpl {
