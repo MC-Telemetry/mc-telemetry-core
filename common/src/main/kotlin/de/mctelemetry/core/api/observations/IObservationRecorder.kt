@@ -1,6 +1,6 @@
 package de.mctelemetry.core.api.observations
 
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import io.opentelemetry.api.common.Attributes
 
 sealed interface IObservationRecorder {

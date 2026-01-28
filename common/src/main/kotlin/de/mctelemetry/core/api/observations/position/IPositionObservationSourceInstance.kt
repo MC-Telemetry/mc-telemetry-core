@@ -1,7 +1,7 @@
 package de.mctelemetry.core.api.observations.position
 
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import net.minecraft.core.BlockPos

@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.world.level
 
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration

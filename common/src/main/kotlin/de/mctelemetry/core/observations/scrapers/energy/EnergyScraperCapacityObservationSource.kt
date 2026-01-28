@@ -2,7 +2,7 @@ package de.mctelemetry.core.observations.scrapers.energy
 
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.MapAttributeStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.position.PositionObservationSourceBase
@@ -22,7 +22,7 @@ object EnergyScraperCapacityObservationSource :
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "energy_scraper.capacity")
     )
 
-    context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceContext: BlockEntity, attributeStore: MapAttributeStore)
     override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

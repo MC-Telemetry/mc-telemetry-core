@@ -3,13 +3,14 @@ package de.mctelemetry.core.api.observations
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeInstance
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.MapAttributeStore
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 
-abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAttributeValueStore.MapAttributeStore, I>> :
+abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, MapAttributeStore, I>> :
     IObservationSource<SC, I> {
 
     final override val attributes: IAttributeDateSourceReferenceSet by lazy {
@@ -41,24 +42,24 @@ abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAtt
 
     abstract class InstanceBase<SC, out I : InstanceBase<SC, I>>(
         override val source: ObservationSourceBase<SC, out I>
-    ) : IObservationSourceInstance<SC, IAttributeValueStore.MapAttributeStore, I> {
+    ) : IObservationSourceInstance<SC, MapAttributeStore, I> {
 
         context(sourceContext: SC)
-        override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
-            return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+        override fun createAttributeStore(parent: IAttributeValueStore): MapAttributeStore {
+            return MapAttributeStore(attributes.references, parent)
         }
     }
 
     abstract class SingletonBase<SC, I : SingletonBase<SC, I>> : ObservationSourceBase<SC, SingletonBase<SC, I>>(),
-        IObservationSourceSingleton<SC, IAttributeValueStore.MapAttributeStore, SingletonBase<SC, I>> {
+        IObservationSourceSingleton<SC, MapAttributeStore, SingletonBase<SC, I>> {
 
         override val streamCodec: StreamCodec<RegistryFriendlyByteBuf, SingletonBase<SC, I>> = StreamCodec.unit(this)
         override fun fromNbt(tag: Tag?): SingletonBase<SC, I> = this
         override fun toNbt(instance: SingletonBase<SC, I>): Tag? = null
 
         context(sourceContext: SC)
-        override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
-            return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+        override fun createAttributeStore(parent: IAttributeValueStore): MapAttributeStore {
+            return MapAttributeStore(attributes.references, parent)
         }
     }
 }

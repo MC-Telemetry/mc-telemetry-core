@@ -2,11 +2,11 @@ package de.mctelemetry.core.api.observations.position
 
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.MapAttributeStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSourceSingleton
 import de.mctelemetry.core.api.observations.ObservationSourceBase
-import de.mctelemetry.core.api.observations.position.IPositionObservationSourceInstance.Companion.defaultFacingAccessor
 import de.mctelemetry.core.api.observations.position.IPositionObservationSourceInstance.Companion.observeDefaultImpl
 import net.minecraft.core.Direction
 import net.minecraft.nbt.Tag
@@ -15,7 +15,7 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.world.level.block.entity.BlockEntity
 
 abstract class PositionObservationSourceBase<
-        I : IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>
+        I : IPositionObservationSourceInstance<MapAttributeStore, I>
         > : ObservationSourceBase<BlockEntity, I>(),
     IPositionObservationSource<I> {
 
@@ -25,16 +25,16 @@ abstract class PositionObservationSourceBase<
     final override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
 
     open fun getFacingDirection(sourceContext: BlockEntity): Direction? {
-        return defaultFacingAccessor(sourceContext)
+        return IPositionObservationSourceInstance.Companion.defaultFacingAccessor(sourceContext)
     }
 
     abstract class PositionInstanceBase<out I : PositionInstanceBase<I>>(
         override val source: PositionObservationSourceBase<out I>
     ) : InstanceBase<BlockEntity, I>(source),
-        IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>
+        IPositionObservationSourceInstance<MapAttributeStore, I>
     {
 
-        context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+        context(sourceContext: BlockEntity, attributeStore: MapAttributeStore)
         final override fun observe(
             recorder: IObservationRecorder.Unresolved,
             unusedAttributes: Set<AttributeDataSource<*>>
@@ -43,16 +43,16 @@ abstract class PositionObservationSourceBase<
         }
 
         context(sourceContext: BlockEntity)
-        override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
-            return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+        override fun createAttributeStore(parent: IAttributeValueStore): MapAttributeStore {
+            return MapAttributeStore(attributes.references, parent)
         }
     }
 
     abstract class PositionSingletonBase<I : PositionSingletonBase<I>> :
         PositionObservationSourceBase<I>(),
         IPositionObservationSource<I>,
-        IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>,
-        IObservationSourceSingleton<BlockEntity, IAttributeValueStore.MapAttributeStore, I> {
+        IPositionObservationSourceInstance<MapAttributeStore, I>,
+        IObservationSourceSingleton<BlockEntity, MapAttributeStore, I> {
 
         override val source: PositionSingletonBase<I>
             get() = this
@@ -68,8 +68,8 @@ abstract class PositionObservationSourceBase<
         override fun toNbt(instance: I): Tag? = null
 
         context(sourceContext: BlockEntity)
-        override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
-            return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+        override fun createAttributeStore(parent: IAttributeValueStore): MapAttributeStore {
+            return MapAttributeStore(attributes.references, parent)
         }
     }
 }

@@ -1,7 +1,7 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager

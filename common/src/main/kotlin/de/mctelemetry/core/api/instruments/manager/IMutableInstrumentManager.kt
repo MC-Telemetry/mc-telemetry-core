@@ -3,6 +3,9 @@ package de.mctelemetry.core.api.instruments.manager
 import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.builder.IGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.histogram.builder.IHistogramInstrumentBuilder
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 interface IMutableInstrumentManager : IInstrumentManager {
 
@@ -67,10 +70,26 @@ interface IMutableInstrumentManager : IInstrumentManager {
     }
 
     fun gaugeInstrument(name: String): IGaugeInstrumentBuilder<*>
+    fun histogramInstrument(name: String): IHistogramInstrumentBuilder<*>
 }
 
 
 inline fun IMutableInstrumentManager.gaugeInstrument(
     name: String,
     block: IGaugeInstrumentBuilder<*>.() -> Unit,
-): IGaugeInstrumentBuilder<*> = gaugeInstrument(name).apply(block)
+): IGaugeInstrumentBuilder<*>{
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+    return gaugeInstrument(name).apply(block)
+}
+
+inline fun IMutableInstrumentManager.histogramInstrument(
+    name: String,
+    block: IHistogramInstrumentBuilder<*>.() -> Unit,
+): IHistogramInstrumentBuilder<*> {
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+    return histogramInstrument(name).apply(block)
+}

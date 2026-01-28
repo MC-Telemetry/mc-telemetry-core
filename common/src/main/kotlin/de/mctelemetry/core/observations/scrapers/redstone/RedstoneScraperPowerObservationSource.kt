@@ -2,7 +2,7 @@ package de.mctelemetry.core.observations.scrapers.redstone
 
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.MapAttributeStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.position.side.PositionSideObservationSourceBase
@@ -22,7 +22,7 @@ object RedstoneScraperPowerObservationSource :
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.power")
     )
 
-    context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceContext: BlockEntity, attributeStore: MapAttributeStore)
     override fun observeSide(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

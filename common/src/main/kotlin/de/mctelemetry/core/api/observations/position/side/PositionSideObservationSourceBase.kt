@@ -2,7 +2,8 @@ package de.mctelemetry.core.api.observations.position.side
 
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.MapAttributeStore
 import de.mctelemetry.core.api.observations.IObservationSourceSingleton
 import de.mctelemetry.core.api.observations.position.PositionObservationSourceBase
 import net.minecraft.core.Direction
@@ -12,7 +13,7 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.world.level.block.entity.BlockEntity
 
 abstract class PositionSideObservationSourceBase<
-        I : IPositionSideObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>
+        I : IPositionSideObservationSourceInstance<MapAttributeStore, I>
         > : PositionObservationSourceBase<I>(),
     IPositionSideObservationSource<I> {
 
@@ -22,13 +23,13 @@ abstract class PositionSideObservationSourceBase<
     abstract class PositionSideInstanceBase<I : PositionSideInstanceBase<I>>(
         override val source: PositionSideObservationSourceBase<I>
     ) : PositionInstanceBase<I>(source),
-        IPositionSideObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>
+        IPositionSideObservationSourceInstance<MapAttributeStore, I>
 
     abstract class PositionSideSingletonBase<I : PositionSideSingletonBase<I>> :
         PositionSideObservationSourceBase<I>(),
         IPositionSideObservationSource<I>,
-        IPositionSideObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>,
-        IObservationSourceSingleton<BlockEntity, IAttributeValueStore.MapAttributeStore, I> {
+        IPositionSideObservationSourceInstance<MapAttributeStore, I>,
+        IObservationSourceSingleton<BlockEntity, MapAttributeStore, I> {
 
         override val source: PositionSideSingletonBase<I>
             get() = this
@@ -44,8 +45,8 @@ abstract class PositionSideObservationSourceBase<
         override fun toNbt(instance: I): Tag? = null
 
         context(sourceContext: BlockEntity)
-        override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
-            return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+        override fun createAttributeStore(parent: IAttributeValueStore): MapAttributeStore {
+            return MapAttributeStore(attributes.references, parent)
         }
     }
 }

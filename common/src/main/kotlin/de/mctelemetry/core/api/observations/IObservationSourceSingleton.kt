@@ -1,7 +1,7 @@
 package de.mctelemetry.core.api.observations
 
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import net.minecraft.nbt.Tag
 
 interface IObservationSourceSingleton<

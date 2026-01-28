@@ -89,7 +89,7 @@ sealed class A2AInstrumentAddedPayload(
                 val server = context.player.server!!
                 val manager = server.instrumentManager!!
                 manager.gaugeWorldInstrument(instrument.name) {
-                    importWorldInstrument(instrument)
+                    importInstrument(instrument)
                 }.let {
                     if (instrument.supportsFloating)
                         it.registerMutableOfDouble()

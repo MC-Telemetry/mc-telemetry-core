@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.game
 
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration

@@ -1,7 +1,7 @@
 package de.mctelemetry.core.instruments.builtin.world.player
 
 import de.mctelemetry.core.api.attributes.BuiltinAttributeKeyTypes
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration

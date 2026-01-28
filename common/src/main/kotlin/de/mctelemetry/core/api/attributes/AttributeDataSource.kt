@@ -1,6 +1,7 @@
 package de.mctelemetry.core.api.attributes
 
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationSource
 import net.minecraft.core.HolderLookup
 import net.minecraft.nbt.CompoundTag

@@ -2,8 +2,9 @@ package de.mctelemetry.core.instruments.builtin
 
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeInstance
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.attributes.stores.MapAttributeStore
 import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.observations.model.ObservationIdentityResolver
@@ -30,7 +31,7 @@ abstract class StaticInstrumentBase(final override val name: String) : IInstrume
         mutableMapOf()
 
     protected open fun createAttributeStore(): IAttributeValueStore.Mutable {
-        return IAttributeValueStore.MapAttributeStore(
+        return MapAttributeStore(
             slots.values,
         )
     }

@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.world
 
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
@@ -21,7 +21,7 @@ abstract class WorldInstrumentBase<T : IInstrumentRegistration?>(name: String) :
 
     override fun worldInstrumentManagerLoading(manager: IServerWorldInstrumentManager, server: MinecraftServer) {
         manager.gaugeWorldInstrument(name) {
-            importWorldInstrument(this@WorldInstrumentBase)
+            importInstrument(this@WorldInstrumentBase)
         }.apply {
             context(server) {
                 register()

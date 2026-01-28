@@ -3,6 +3,7 @@ package de.mctelemetry.core.api.instruments.manager.server
 import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.gauge.IWorldInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.builder.IWorldGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.histogram.builder.IWorldHistogramInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
@@ -20,6 +21,7 @@ interface IServerWorldInstrumentManager : IMutableInstrumentManager, IWorldInstr
     val gameInstruments: IGameInstrumentManager
 
     override fun gaugeInstrument(name: String): IWorldGaugeInstrumentBuilder<*>
+    override fun histogramInstrument(name: String): IWorldHistogramInstrumentBuilder<*>
 
 
     override fun findLocal(pattern: Regex?): Sequence<IWorldInstrumentRegistration>
@@ -105,4 +107,14 @@ inline fun IServerWorldInstrumentManager.gaugeWorldInstrument(
         callsInPlace(block, InvocationKind.AT_MOST_ONCE)
     }
     return gaugeInstrument(name).apply(block)
+}
+
+inline fun IServerWorldInstrumentManager.histogramWorldInstrument(
+    name: String,
+    block: IWorldHistogramInstrumentBuilder<*>.()->Unit,
+): IWorldHistogramInstrumentBuilder<*> {
+    contract {
+        callsInPlace(block, InvocationKind.AT_MOST_ONCE)
+    }
+    return histogramInstrument(name).apply(block)
 }

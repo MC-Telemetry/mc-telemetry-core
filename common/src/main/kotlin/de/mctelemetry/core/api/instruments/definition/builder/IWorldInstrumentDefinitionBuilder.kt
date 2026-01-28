@@ -1,5 +1,6 @@
 package de.mctelemetry.core.api.instruments.definition.builder
 
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import org.jetbrains.annotations.Contract
 
@@ -8,11 +9,12 @@ interface IWorldInstrumentDefinitionBuilder<out B : IWorldInstrumentDefinitionBu
 
     var persistent: Boolean
 
-
     @Contract("_ -> this", mutates= "this")
-    fun importWorldInstrument(instrument: IWorldInstrumentDefinition): B {
-        return importInstrument(instrument).also {
-            persistent = instrument.persistent
+    override fun importInstrument(instrument: IInstrumentDefinition): B {
+        return super.importInstrument(instrument).also {
+            if(instrument is IWorldInstrumentDefinition){
+                persistent = instrument.persistent
+            }
         }
     }
 

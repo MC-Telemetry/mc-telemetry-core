@@ -1,6 +1,6 @@
 package de.mctelemetry.core.instruments.builtin.world
 
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.utils.observe
 import net.minecraft.server.MinecraftServer

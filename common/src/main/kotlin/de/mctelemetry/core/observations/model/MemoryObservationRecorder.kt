@@ -1,6 +1,6 @@
 package de.mctelemetry.core.observations.model
 
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
 import de.mctelemetry.core.api.observations.IObservationRecorder

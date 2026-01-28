@@ -4,7 +4,7 @@ import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
 import de.mctelemetry.core.api.attributes.canConvertTo
