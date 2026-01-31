@@ -174,7 +174,10 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
     val hasSubRegistration: Boolean
         get() = instrumentSubRegistrationField != null
 
+    var isClosed: Boolean = false
+
     override fun close() {
+        isClosed = true
         try {
             try {
                 instrumentSubRegistration = null
