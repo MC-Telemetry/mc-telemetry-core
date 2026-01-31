@@ -24,7 +24,7 @@ class ParameterValidationTextBoxComponent<T>(private val parameter: IParameteriz
     }
 
     private fun isValid(value: String): Boolean {
-        if (value.isEmpty()) {
+        if (parameter.optional && value.isEmpty()) {
             return true
         }
 

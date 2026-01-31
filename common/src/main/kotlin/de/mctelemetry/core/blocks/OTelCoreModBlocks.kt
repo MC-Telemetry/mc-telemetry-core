@@ -12,20 +12,16 @@ import java.util.function.Supplier
 object OTelCoreModBlocks {
     val BLOCKS: DeferredRegister<Block> = DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.BLOCK)
 
+    val NBT_SCRAPER_BLOCK: RegistrySupplier<NbtScraperBlock> = registerBlock("nbt_scraper") {
+        NbtScraperBlock(BlockBehaviour.Properties.of())
+    }
+
+    val CONTAINER_SCRAPER_BLOCK: RegistrySupplier<ContainerScraperBlock> = registerBlock("container_scraper") {
+        ContainerScraperBlock(BlockBehaviour.Properties.of())
+    }
+
     val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<RedstoneScraperBlock> = registerBlock("redstone_scraper") {
         RedstoneScraperBlock(BlockBehaviour.Properties.of())
-    }
-
-    val ITEM_SCRAPER_BLOCK: RegistrySupplier<ItemScraperBlock> = registerBlock("item_scraper") {
-        ItemScraperBlock(BlockBehaviour.Properties.of())
-    }
-
-    val FLUID_SCRAPER_BLOCK: RegistrySupplier<FluidScraperBlock> = registerBlock("fluid_scraper") {
-        FluidScraperBlock(BlockBehaviour.Properties.of())
-    }
-
-    val ENERGY_SCRAPER_BLOCK: RegistrySupplier<EnergyScraperBlock> = registerBlock("energy_scraper") {
-        EnergyScraperBlock(BlockBehaviour.Properties.of())
     }
 
     fun init() {

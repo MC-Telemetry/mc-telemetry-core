@@ -4,7 +4,7 @@
 	"textures": {
 		"0": "mcotelcore:block/scraper_base",
 		"1": "mcotelcore:block/scraper_frame",
-		"2": "mcotelcore:block/redstone_scraper_core",
+		"2": "mcotelcore:block/nbt_scraper_core",
 		"3": "mcotelcore:block/scraper_status_green",
 		"particle": "mcotelcore:block/scraper_base"
 	},

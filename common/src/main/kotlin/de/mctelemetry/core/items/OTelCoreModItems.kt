@@ -14,35 +14,26 @@ import java.util.function.Supplier
 object OTelCoreModItems {
     val ITEMS: DeferredRegister<Item> = DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.ITEM)
 
-    val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("redstone_scraper") {
+    val NBT_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("nbt_scraper") {
         BlockItem(
-            OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(),
-            Item.Properties()
-                .`arch$tab`(OTelCoreMod.OTEL_TAB)
-                .component(OTelCoreModComponents.GENERATE_SINGLETON_STATES.get(), true)
-        )
-    }
-
-    val ITEM_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("item_scraper") {
-        BlockItem(
-            OTelCoreModBlocks.ITEM_SCRAPER_BLOCK.get(),
-            Item.Properties()
-                .`arch$tab`(OTelCoreMod.OTEL_TAB)
-                .component(OTelCoreModComponents.GENERATE_SINGLETON_STATES.get(), true)
-        )
-    }
-
-    val FLUID_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("fluid_scraper") {
-        BlockItem(
-            OTelCoreModBlocks.FLUID_SCRAPER_BLOCK.get(),
+            OTelCoreModBlocks.NBT_SCRAPER_BLOCK.get(),
             Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB)
                 .component(OTelCoreModComponents.GENERATE_SINGLETON_STATES.get(), true)
         )
     }
 
-    val ENERGY_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("energy_scraper") {
+    val CONTAINER_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("container_scraper") {
         BlockItem(
-            OTelCoreModBlocks.ENERGY_SCRAPER_BLOCK.get(),
+            OTelCoreModBlocks.CONTAINER_SCRAPER_BLOCK.get(),
+            Item.Properties()
+                .`arch$tab`(OTelCoreMod.OTEL_TAB)
+                .component(OTelCoreModComponents.GENERATE_SINGLETON_STATES.get(), true)
+        )
+    }
+
+    val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("redstone_scraper") {
+        BlockItem(
+            OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(),
             Item.Properties()
                 .`arch$tab`(OTelCoreMod.OTEL_TAB)
                 .component(OTelCoreModComponents.GENERATE_SINGLETON_STATES.get(), true)

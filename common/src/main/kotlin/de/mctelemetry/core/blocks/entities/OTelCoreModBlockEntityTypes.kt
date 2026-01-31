@@ -19,10 +19,9 @@ object OTelCoreModBlockEntityTypes {
             BlockEntityType.Builder
                 .of(
                     ::ScraperBlockEntity,
+                    OTelCoreModBlocks.NBT_SCRAPER_BLOCK.get(),
+                    OTelCoreModBlocks.CONTAINER_SCRAPER_BLOCK.get(),
                     OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(),
-                    OTelCoreModBlocks.ITEM_SCRAPER_BLOCK.get(),
-                    OTelCoreModBlocks.FLUID_SCRAPER_BLOCK.get(),
-                    OTelCoreModBlocks.ENERGY_SCRAPER_BLOCK.get()
                 )
                 .build(
                     @Suppress("NULLABILITY_MISMATCH_BASED_ON_JAVA_ANNOTATIONS") // null is actually acceptable here

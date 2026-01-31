@@ -1,13 +1,13 @@
 package de.mctelemetry.core.observations
 
 import de.mctelemetry.core.api.observations.IObservationSource
-import de.mctelemetry.core.observations.scrapers.energy.EnergyScraperAmountObservationSource
-import de.mctelemetry.core.observations.scrapers.energy.EnergyScraperCapacityObservationSource
-import de.mctelemetry.core.observations.scrapers.energy.EnergyScraperFillRatioObservationSource
-import de.mctelemetry.core.observations.scrapers.fluid.FluidScraperAmountObservationSource
-import de.mctelemetry.core.observations.scrapers.fluid.FluidScraperFillRatioObservationSource
-import de.mctelemetry.core.observations.scrapers.item.ItemScraperAmountObservationSource
-import de.mctelemetry.core.observations.scrapers.item.ItemScraperFillRatioObservationSource
+import de.mctelemetry.core.observations.scrapers.container.ContainerScraperEnergyAmountObservationSource
+import de.mctelemetry.core.observations.scrapers.container.ContainerScraperEnergyCapacityObservationSource
+import de.mctelemetry.core.observations.scrapers.container.ContainerScraperEnergyFillRatioObservationSource
+import de.mctelemetry.core.observations.scrapers.container.ContainerScraperFluidAmountObservationSource
+import de.mctelemetry.core.observations.scrapers.container.ContainerScraperFluidFillRatioObservationSource
+import de.mctelemetry.core.observations.scrapers.container.ContainerScraperItemAmountObservationSource
+import de.mctelemetry.core.observations.scrapers.container.ContainerScraperItemFillRatioObservationSource
 import de.mctelemetry.core.observations.scrapers.nbt.NbtScraperSignLineObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperComparatorObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperDirectPowerObservationSource
@@ -18,13 +18,13 @@ object ObservationSources {
         RedstoneScraperComparatorObservationSource,
         RedstoneScraperDirectPowerObservationSource,
         RedstoneScraperPowerObservationSource,
-        ItemScraperAmountObservationSource,
-        ItemScraperFillRatioObservationSource,
-        FluidScraperAmountObservationSource,
-        FluidScraperFillRatioObservationSource,
-        EnergyScraperAmountObservationSource,
-        EnergyScraperCapacityObservationSource,
-        EnergyScraperFillRatioObservationSource,
+        ContainerScraperItemAmountObservationSource,
+        ContainerScraperItemFillRatioObservationSource,
+        ContainerScraperFluidAmountObservationSource,
+        ContainerScraperFluidFillRatioObservationSource,
+        ContainerScraperEnergyAmountObservationSource,
+        ContainerScraperEnergyCapacityObservationSource,
+        ContainerScraperEnergyFillRatioObservationSource,
         NbtScraperSignLineObservationSource,
     )
 }

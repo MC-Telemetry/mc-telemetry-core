@@ -66,7 +66,7 @@ object OTelCoreMod {
     {
         CreativeTabRegistry.create(
             Component.translatable("key.mcotelcore.category")
-        ) { ItemStack(OTelCoreModItems.REDSTONE_SCRAPER_BLOCK) }
+        ) { ItemStack(OTelCoreModItems.NBT_SCRAPER_BLOCK) }
     }
 
     fun registerCallbacks() {
