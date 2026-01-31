@@ -1,9 +1,8 @@
 package de.mctelemetry.core.api.instruments.manager.server
 
 import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
-import de.mctelemetry.core.api.instruments.gauge.IWorldInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.builder.IWorldGaugeInstrumentBuilder
-import de.mctelemetry.core.api.instruments.histogram.builder.IWorldHistogramInstrumentBuilder
+import de.mctelemetry.core.api.instruments.histogram.builder.IHistogramInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
@@ -21,14 +20,7 @@ interface IServerWorldInstrumentManager : IMutableInstrumentManager, IWorldInstr
     val gameInstruments: IGameInstrumentManager
 
     override fun gaugeInstrument(name: String): IWorldGaugeInstrumentBuilder<*>
-    override fun histogramInstrument(name: String): IWorldHistogramInstrumentBuilder<*>
-
-
-    override fun findLocal(pattern: Regex?): Sequence<IWorldInstrumentRegistration>
-
-    override fun findLocal(name: String): IWorldInstrumentRegistration? {
-        return findLocal(Regex("^"+Regex.escape(name)+"$")).firstOrNull()
-    }
+    //override fun histogramInstrument(name: String): IWorldHistogramInstrumentBuilder<*>
 
     override fun findLocalMutable(name: String): IWorldMutableInstrumentRegistration<*>? {
         return super.findLocalMutable(name) as? IWorldMutableInstrumentRegistration<*>
@@ -111,8 +103,8 @@ inline fun IServerWorldInstrumentManager.gaugeWorldInstrument(
 
 inline fun IServerWorldInstrumentManager.histogramWorldInstrument(
     name: String,
-    block: IWorldHistogramInstrumentBuilder<*>.()->Unit,
-): IWorldHistogramInstrumentBuilder<*> {
+    block: IHistogramInstrumentBuilder<*>.()->Unit,
+): IHistogramInstrumentBuilder<*> {
     contract {
         callsInPlace(block, InvocationKind.AT_MOST_ONCE)
     }

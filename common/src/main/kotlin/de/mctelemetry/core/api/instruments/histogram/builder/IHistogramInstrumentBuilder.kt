@@ -11,6 +11,14 @@ import org.jetbrains.annotations.Contract
 interface IHistogramInstrumentBuilder<out B : IHistogramInstrumentBuilder<B>> : IInstrumentDefinitionBuilder<B> {
 
     val boundaries: DoubleSortedSet
+    var supportsFloating: Boolean
+
+    @Contract("_ -> this", mutates = "this")
+    fun withSupportsFloating(value: Boolean): B {
+        supportsFloating = value
+        @Suppress("UNCHECKED_CAST")
+        return this as B
+    }
 
     @Contract("_ -> this", mutates = "this")
     override fun importInstrument(instrument: IInstrumentDefinition): B {
@@ -48,4 +56,6 @@ interface IHistogramInstrumentBuilder<out B : IHistogramInstrumentBuilder<B>> : 
         @Suppress("UNCHECKED_CAST")
         return this as B
     }
+
+    fun build(): IHistogramInstrument
 }

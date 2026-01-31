@@ -54,13 +54,6 @@ interface IMutableInstrumentManager : IInstrumentManager {
         })
     }
 
-
-
-    override fun findLocal(pattern: Regex?): Sequence<IInstrumentRegistration>
-    override fun findLocal(name: String): IInstrumentRegistration? {
-        return findLocal(Regex("^"+Regex.escape(name)+"$")).firstOrNull()
-    }
-
     fun findLocalMutable(pattern: Regex?=null): Sequence<IInstrumentRegistration.Mutable<*>> {
         return findLocal(pattern).filterIsInstance<IInstrumentRegistration.Mutable<*>>()
     }

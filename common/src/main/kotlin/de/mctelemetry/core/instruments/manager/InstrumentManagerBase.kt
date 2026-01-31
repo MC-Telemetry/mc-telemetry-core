@@ -9,37 +9,41 @@ import de.mctelemetry.core.api.instruments.DuplicateInstrumentException
 import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
-import de.mctelemetry.core.api.instruments.gauge.IInstrumentSubRegistration
 import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.builder.IGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.histogram.IHistogramInstrument
+import de.mctelemetry.core.api.instruments.histogram.builder.IHistogramInstrumentBuilder
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
-import de.mctelemetry.core.api.observations.IObservationRecorder
+import de.mctelemetry.core.instruments.manager.gauge.GaugeInstrumentRegistration
+import de.mctelemetry.core.instruments.manager.gauge.ImmutableGaugeInstrumentRegistration
+import de.mctelemetry.core.instruments.manager.gauge.MutableGaugeInstrumentRegistration
+import de.mctelemetry.core.instruments.manager.histogram.NativeHistogram
 import de.mctelemetry.core.utils.InstrumentAvailabilityLogger
-import de.mctelemetry.core.utils.Union2
+import de.mctelemetry.core.utils.Union3
 import de.mctelemetry.core.utils.Validators
-import de.mctelemetry.core.utils.consumeAllRethrow
 import de.mctelemetry.core.utils.forEachCollect
 import de.mctelemetry.core.utils.forEachRethrow
 import de.mctelemetry.core.utils.plus
 import de.mctelemetry.core.utils.runWithExceptionCleanup
-import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.Meter
-import io.opentelemetry.api.metrics.ObservableMeasurement
+import it.unimi.dsi.fastutil.doubles.DoubleRBTreeSet
+import it.unimi.dsi.fastutil.doubles.DoubleSortedSet
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedDeque
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicReference
 
-internal typealias InstrumentManagerBaseRegistrationUnion = Union2<
-        InstrumentManagerBase.ImmutableGaugeInstrumentRegistration,
-        InstrumentManagerBase.MutableGaugeInstrumentRegistration<*>,
-        InstrumentManagerBase.GaugeInstrumentRegistration>
+internal typealias InstrumentManagerBaseRegistrationUnion = Union3<
+        ImmutableGaugeInstrumentRegistration,
+        MutableGaugeInstrumentRegistration<*>,
+        IHistogramInstrument,
+        IInstrumentDefinition>
 
-internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeInstrumentBuilder<*>> protected constructor(
+internal abstract class InstrumentManagerBase<
+        GB : InstrumentManagerBase.GaugeInstrumentBuilder<GB>
+        > protected constructor(
     val meter: Meter,
     protected open val localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion> =
         ConcurrentHashMap(),
@@ -53,7 +57,9 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
 
     init {
         localInstruments.values.forEach {
-            it.value.provideUntrackCallback(this::untrackRegistration)
+            val value = it.value
+            if (value is GaugeInstrumentRegistration)
+                value.provideUntrackCallback(this::untrackRegistration)
         }
     }
 
@@ -61,11 +67,11 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         addLocalCallback(InstrumentAvailabilityLogger(this, local = true))
     }
 
-    override fun findLocal(name: String): IInstrumentRegistration? {
+    override fun findLocal(name: String): IInstrumentDefinition? {
         return localInstruments.getOrElse(name.lowercase()) { return null }.value
     }
 
-    override fun findLocal(pattern: Regex?): Sequence<IInstrumentRegistration> {
+    override fun findLocal(pattern: Regex?): Sequence<IInstrumentDefinition> {
         if (pattern == null) {
             return localInstruments.values.asSequence().map { it.value }
         }
@@ -85,16 +91,19 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
     protected fun unregisterAllLocal() {
         var firstException: Exception? = null
         outerLoop@ do {
-            val (key, value) = localInstruments.entries.firstOrNull() ?: break@outerLoop
-            try {
-                value.value.close()
-            } catch (ex: Exception) {
-                if (firstException == null)
-                    firstException = ex
-                else
-                    firstException.addSuppressed(ex)
+            val (key, union) = localInstruments.entries.firstOrNull() ?: break@outerLoop
+            val value = union.value
+            if (value is AutoCloseable) {
+                try {
+                    value.close()
+                } catch (ex: Exception) {
+                    if (firstException == null)
+                        firstException = ex
+                    else
+                        firstException.addSuppressed(ex)
+                }
             }
-            localInstruments.remove(key, value)
+            localInstruments.remove(key, union)
         } while (true)
         if (firstException != null)
             throw firstException
@@ -104,7 +113,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         if (!allowsRegistration) throw IllegalStateException("Manager does not accept new registrations")
     }
 
-    protected fun untrackRegistration(name: String, value: IInstrumentRegistration) {
+    internal fun untrackRegistration(name: String, value: IInstrumentRegistration) {
         var exceptionAccumulator: Exception? = null
         try {
             triggerOwnInstrumentRemoved(value, IInstrumentAvailabilityCallback.Phase.PRE)
@@ -112,7 +121,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
             exceptionAccumulator = ex
         }
         try {
-            localInstruments.computeIfPresent(name.lowercase()) { k, v ->
+            localInstruments.computeIfPresent(name.lowercase()) { _, v ->
                 v.takeIf { v.value !== value }
             }
         } catch (ex: Exception) {
@@ -154,17 +163,62 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         return MutableGaugeInstrumentRegistration(builder, supportsFloating = false)
     }
 
+    protected open fun createDoubleHistogram(builder: HistogramInstrumentBuilder): IHistogramInstrument {
+        assertAllowsRegistration()
+        val name: String = builder.name
+        val unit: String = builder.unit
+        val description: String = builder.description
+        val attributes: List<MappedAttributeKeyInfo<*, *>> = builder.attributes
+        val boundaries: DoubleSortedSet = builder.boundaries
+        var otelBuilder = meter.histogramBuilder(name)
+        if (unit.isNotEmpty()) otelBuilder = otelBuilder.setUnit(unit)
+        if (description.isNotEmpty()) otelBuilder = otelBuilder.setDescription(description)
+        if (boundaries.isNotEmpty()) otelBuilder = otelBuilder.setExplicitBucketBoundariesAdvice(boundaries.toList())
+        return NativeHistogram.OfDouble(
+            name = name,
+            description = description,
+            unit = unit,
+            attributes = attributes,
+            boundaries = boundaries,
+            histogram = otelBuilder.build()
+        )
+    }
+
+    protected open fun createLongHistogram(builder: HistogramInstrumentBuilder): IHistogramInstrument {
+        assertAllowsRegistration()
+        val name: String = builder.name
+        val unit: String = builder.unit
+        val description: String = builder.description
+        val attributes: List<MappedAttributeKeyInfo<*, *>> = builder.attributes
+        val boundaries: DoubleSortedSet = builder.boundaries
+        var otelBuilder = meter.histogramBuilder(name)
+        if (unit.isNotEmpty()) otelBuilder = otelBuilder.setUnit(unit)
+        if (description.isNotEmpty()) otelBuilder = otelBuilder.setDescription(description)
+        if (boundaries.isNotEmpty()) otelBuilder = otelBuilder.setExplicitBucketBoundariesAdvice(boundaries.toList())
+        return NativeHistogram.OfLong(
+            name = name,
+            description = description,
+            unit = unit,
+            attributes = attributes,
+            boundaries = boundaries,
+            histogram = otelBuilder.ofLongs().build()
+        )
+    }
+
     override fun gaugeInstrument(name: String): IGaugeInstrumentBuilder<*> {
-        @Suppress("UNCHECKED_CAST")
-        return GaugeInstrumentBuilder(name, this as InstrumentManagerBase<GaugeInstrumentBuilder<*>>)
+        return GaugeInstrumentBuilder(name, this)
+    }
+
+    override fun histogramInstrument(name: String): IHistogramInstrumentBuilder<*> {
+        return HistogramInstrumentBuilder(name, this)
     }
 
     protected open fun triggerOwnInstrumentAdded(
-        instrument: IInstrumentRegistration,
+        instrument: IInstrumentDefinition,
         phase: IInstrumentAvailabilityCallback.Phase,
     ) {
         val completedCallbacks =
-            ArrayDeque<IInstrumentAvailabilityCallback<IInstrumentRegistration>>(localCallbacks.size)
+            ArrayDeque<IInstrumentAvailabilityCallback<IInstrumentDefinition>>(localCallbacks.size)
         val cascadeEarly = when (phase) {
             IInstrumentAvailabilityCallback.Phase.PRE -> true
             IInstrumentAvailabilityCallback.Phase.POST -> false
@@ -237,6 +291,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
                 // Because the triggering exception is rethrown, the newly added value is not actually stored and
                 // nothing needs to be done.
             }
+
             IInstrumentAvailabilityCallback.Phase.POST -> {
                 // value is already stored, needs to be closed (removes itself)
                 try {
@@ -290,7 +345,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         }
     }
 
-    open class Root<GB : GaugeInstrumentBuilder<*>> protected constructor(
+    open class Root<GB : GaugeInstrumentBuilder<GB>> protected constructor(
         meter: Meter,
         localInstruments: ConcurrentMap<String, InstrumentManagerBaseRegistrationUnion> = ConcurrentHashMap(),
         protected val globalManagerMap: ConcurrentMap<String, IInstrumentManager> = ConcurrentHashMap(),
@@ -346,6 +401,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
                         }
                     }
                 }
+
                 IInstrumentAvailabilityCallback.Phase.POST -> {
                     val stored = globalManagerMap[instrument.name.lowercase()]
                     assert(stored == manager) {
@@ -398,6 +454,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
                             null
                         }
                     }
+
                     IInstrumentAvailabilityCallback.Phase.PRE -> {}
                 }
             } catch (ex: Exception) {
@@ -458,7 +515,7 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
 
     internal open class GaugeInstrumentBuilder<GB : GaugeInstrumentBuilder<GB>>(
         override val name: String,
-        val manager: InstrumentManagerBase<GaugeInstrumentBuilder<GB>>,
+        val manager: InstrumentManagerBase<GB>,
     ) : IGaugeInstrumentBuilder<GB> {
 
         init {
@@ -474,9 +531,10 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
         override var attributes: List<MappedAttributeKeyInfo<*, *>> = emptyList()
 
         override fun registerWithCallbackOfDouble(callback: IInstrumentRegistration.Callback<IDoubleInstrumentRegistration>): IDoubleInstrumentRegistration {
-            val result = manager.localInstruments.compute(name) { key, old ->
+            val result = manager.localInstruments.compute(name) { _, old ->
                 if (old != null) throw IllegalArgumentException("Metric with name $name is already registered: $old")
-                val registration = manager.createImmutableDoubleRegistration(this, callback)
+                @Suppress("UNCHECKED_CAST")
+                val registration = manager.createImmutableDoubleRegistration(this as GB, callback)
                 runWithExceptionCleanup(registration::close) {
                     manager.triggerOwnInstrumentAdded(registration, IInstrumentAvailabilityCallback.Phase.PRE)
                     val otelRegistration = manager.meter.gaugeBuilder(name).let {
@@ -487,17 +545,18 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
                         registration.observe(it)
                     }
                     registration.provideOTelRegistration(otelRegistration)
-                    Union2.of1(registration)
+                    Union3.of1(registration)
                 }
-            } as Union2.UnionT1
+            } as Union3.UnionT1
             manager.triggerOwnInstrumentAdded(result.value, IInstrumentAvailabilityCallback.Phase.POST)
             return result.value
         }
 
         override fun registerWithCallbackOfLong(callback: IInstrumentRegistration.Callback<ILongInstrumentRegistration>): ILongInstrumentRegistration {
-            val result = manager.localInstruments.compute(name) { key, old ->
+            val result = manager.localInstruments.compute(name) { _, old ->
                 if (old != null) throw DuplicateInstrumentException(name, old.value)
-                val registration = manager.createImmutableLongRegistration(this, callback)
+                @Suppress("UNCHECKED_CAST")
+                val registration = manager.createImmutableLongRegistration(this as GB, callback)
                 runWithExceptionCleanup(registration::close) {
                     manager.triggerOwnInstrumentAdded(registration, IInstrumentAvailabilityCallback.Phase.PRE)
                     val otelRegistration = manager.meter.gaugeBuilder(name).let {
@@ -508,17 +567,18 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
                         registration.observe(it)
                     }
                     registration.provideOTelRegistration(otelRegistration)
-                    Union2.of1(registration)
+                    Union3.of1(registration)
                 }
-            } as Union2.UnionT1
+            } as Union3.UnionT1
             manager.triggerOwnInstrumentAdded(result.value, IInstrumentAvailabilityCallback.Phase.POST)
             return result.value
         }
 
         override fun registerMutableOfLong(): ILongInstrumentRegistration.Mutable<*> {
-            val result = manager.localInstruments.compute(name) { key, old ->
+            val result = manager.localInstruments.compute(name) { _, old ->
                 if (old != null) throw DuplicateInstrumentException(name, old.value)
-                val registration = manager.createMutableLongRegistration(this)
+                @Suppress("UNCHECKED_CAST")
+                val registration = manager.createMutableLongRegistration(this as GB)
                 runWithExceptionCleanup(registration::close) {
                     manager.triggerOwnInstrumentAdded(registration, IInstrumentAvailabilityCallback.Phase.PRE)
                     val otelRegistration = manager.meter.gaugeBuilder(name).let {
@@ -529,17 +589,18 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
                         registration.observe(it)
                     }
                     registration.provideOTelRegistration(otelRegistration)
-                    Union2.of2(registration)
+                    Union3.of2(registration)
                 }
-            } as Union2.UnionT2
+            } as Union3.UnionT2
             manager.triggerOwnInstrumentAdded(result.value, IInstrumentAvailabilityCallback.Phase.POST)
             return result.value
         }
 
         override fun registerMutableOfDouble(): IDoubleInstrumentRegistration.Mutable<*> {
-            val result = manager.localInstruments.compute(name) { key, old ->
+            val result = manager.localInstruments.compute(name) { _, old ->
                 if (old != null) throw DuplicateInstrumentException(name, old.value)
-                val registration = manager.createMutableDoubleRegistration(this)
+                @Suppress("UNCHECKED_CAST")
+                val registration = manager.createMutableDoubleRegistration(this as GB)
                 runWithExceptionCleanup(registration::close) {
                     manager.triggerOwnInstrumentAdded(registration, IInstrumentAvailabilityCallback.Phase.PRE)
                     val otelRegistration = manager.meter.gaugeBuilder(name).let {
@@ -550,193 +611,42 @@ internal abstract class InstrumentManagerBase<GB : InstrumentManagerBase.GaugeIn
                         registration.observe(it)
                     }
                     registration.provideOTelRegistration(otelRegistration)
-                    Union2.of2(registration)
+                    Union3.of2(registration)
                 }
-            } as Union2.UnionT2
+            } as Union3.UnionT2
             manager.triggerOwnInstrumentAdded(result.value, IInstrumentAvailabilityCallback.Phase.POST)
             return result.value
         }
     }
 
-    internal abstract class GaugeInstrumentRegistration(
+    internal open class HistogramInstrumentBuilder(
         override val name: String,
-        override val description: String,
-        override val unit: String,
-        override val attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-        override val supportsFloating: Boolean,
-    ) : IDoubleInstrumentRegistration, ILongInstrumentRegistration {
+        val manager: InstrumentManagerBase<*>,
+    ) : IHistogramInstrumentBuilder<HistogramInstrumentBuilder> {
+        override var unit: String = ""
+        override var description: String = ""
+        override var attributes: List<MappedAttributeKeyInfo<*, *>> = emptyList()
+        override val boundaries: DoubleSortedSet = DoubleRBTreeSet()
+        override var supportsFloating: Boolean = true
 
-        constructor(builder: GaugeInstrumentBuilder<*>, supportsFloating: Boolean) : this(
-            builder.name,
-            builder.description,
-            builder.unit,
-            builder.attributes.associateBy { it.baseKey.key.lowercase() },
-            supportsFloating,
-        ) {
-            untrackCallback.set(builder.manager::untrackRegistration)
-        }
-
-        private val otelRegistration: AtomicReference<AutoCloseable?> = AtomicReference(null)
-        private val untrackCallback: AtomicReference<((name: String, value: IInstrumentRegistration) -> Unit)?> =
-            AtomicReference(null)
-
-        protected val closed: AtomicBoolean = AtomicBoolean(false)
-
-        open fun observe(instrument: ObservableMeasurement) {
-            if (closed.get()) {
-                otelRegistration.get()?.close()
-                untrackCallback.get()?.invoke(name, this)
-                return
-            }
-            observe(ResolvedObservationRecorder(instrument, supportsFloating = supportsFloating))
-        }
-
-        abstract override fun observe(recorder: IObservationRecorder.Resolved)
-
-        fun provideOTelRegistration(otelRegistration: AutoCloseable) {
-            val previous = this.otelRegistration.compareAndExchange(null, otelRegistration)
-            if (previous != null) throw IllegalStateException("Unregister callback already provided: $previous (tried to set $otelRegistration)")
-            if (closed.get())
-                otelRegistration.close()
-        }
-
-        fun provideUntrackCallback(callback: (name: String, value: IInstrumentRegistration) -> Unit) {
-            val previous = untrackCallback.compareAndExchange(null, callback)
-            if (previous != null) throw IllegalStateException("Untrack callback already provided: $previous (tried to set $callback)")
-            if (closed.get())
-                callback.invoke(name, this)
-        }
-
-        override fun close() {
-            if (!closed.compareAndSet(false, true)) return
-            var ex: Exception? = null
-            try {
-                otelRegistration.get()!!.close()
-            } catch (ex2: Exception) {
-                ex = ex2
-            }
-            try {
-                untrackCallback.get()!!.invoke(name, this)
-            } catch (ex2: Exception) {
-                if (ex == null)
-                    ex = ex2
+        override fun build(): IHistogramInstrument {
+            val result = manager.localInstruments.compute(name) { _, old ->
+                if (old != null) throw DuplicateInstrumentException(name, old.value)
+                val histogram = if (supportsFloating)
+                    manager.createDoubleHistogram(this)
                 else
-                    ex.addSuppressed(ex2)
-            }
-            if (ex != null) throw ex
-        }
-    }
-
-    internal open class ImmutableGaugeInstrumentRegistration :
-            GaugeInstrumentRegistration {
-
-        constructor(
-            name: String,
-            description: String,
-            unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-            supportsFloating: Boolean,
-            callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
-        ) : super(name, description, unit, attributes, supportsFloating) {
-            this.callback = callback
-        }
-
-        constructor(
-            builder: GaugeInstrumentBuilder<*>,
-            supportsFloating: Boolean,
-            callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>,
-        ) : super(builder, supportsFloating) {
-            this.callback = callback
-        }
-
-        val callback: IInstrumentRegistration.Callback<ImmutableGaugeInstrumentRegistration>
-        override fun observe(recorder: IObservationRecorder.Resolved) {
-            callback.observe(this, recorder)
-        }
-
-        override fun close() {
-            var accumulator: Exception? = null
-            try {
-                super.close()
-            } catch (ex: Exception) {
-                accumulator = ex
-            }
-            try {
-                callback.onRemove(this)
-            } catch (ex: Exception) {
-                accumulator += ex
-            }
-            if (accumulator != null) throw accumulator
-        }
-    }
-
-    internal open class MutableGaugeInstrumentRegistration<T : MutableGaugeInstrumentRegistration<T>> :
-            GaugeInstrumentRegistration,
-            IDoubleInstrumentRegistration.Mutable<T>,
-            ILongInstrumentRegistration.Mutable<T> {
-
-        constructor(
-            name: String,
-            description: String,
-            unit: String,
-            attributes: Map<String, MappedAttributeKeyInfo<*, *>>,
-            supportsFloating: Boolean,
-        ) : super(
-            name,
-            description,
-            unit,
-            attributes,
-            supportsFloating,
-        )
-
-        constructor(
-            builder: GaugeInstrumentBuilder<*>,
-            supportsFloating: Boolean,
-        ) : super(builder, supportsFloating)
-
-        val callbacks: ConcurrentLinkedDeque<IInstrumentRegistration.Callback<T>> =
-            ConcurrentLinkedDeque()
-
-        override fun observe(recorder: IObservationRecorder.Resolved) {
-            callbacks.forEach {
-                it.observe(
-                    @Suppress("UNCHECKED_CAST")
-                    (this@MutableGaugeInstrumentRegistration as T),
-                    recorder
-                )
-            }
-        }
-
-        override fun addCallback(
-            attributes: Attributes,
-            callback: IInstrumentRegistration.Callback<T>,
-        ): IInstrumentSubRegistration<T> {
-            val closeCallback: IInstrumentSubRegistration<T> = object : IInstrumentSubRegistration<T> {
-                override val baseInstrument: T =
-                    @Suppress("UNCHECKED_CAST")
-                    (this@MutableGaugeInstrumentRegistration as T)
-
-                override fun close() {
-                    callbacks.remove(callback)
+                    manager.createLongHistogram(this)
+                if(histogram is AutoCloseable) {
+                    runWithExceptionCleanup(histogram::close) {
+                        manager.triggerOwnInstrumentAdded(histogram, IInstrumentAvailabilityCallback.Phase.PRE)
+                    }
+                } else {
+                    manager.triggerOwnInstrumentAdded(histogram, IInstrumentAvailabilityCallback.Phase.PRE)
                 }
-            }
-            callbacks.add(callback)
-            return closeCallback
-        }
-
-        override fun close() {
-            var accumulator: Exception? = null
-            try {
-                super.close()
-            } catch (ex: Exception) {
-                accumulator = ex
-            }
-            callbacks.consumeAllRethrow(accumulator) {
-                it.onRemove(
-                    @Suppress("UNCHECKED_CAST")
-                    (this@MutableGaugeInstrumentRegistration as T)
-                )
-            }
+                Union3.of3(histogram)
+            } as Union3.UnionT3
+            manager.triggerOwnInstrumentAdded(result.value, IInstrumentAvailabilityCallback.Phase.POST)
+            return result.value
         }
     }
 }

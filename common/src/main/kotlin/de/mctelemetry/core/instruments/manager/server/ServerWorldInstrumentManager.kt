@@ -4,6 +4,7 @@ import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.instruments.definition.IWorldInstrumentDefinition
 import de.mctelemetry.core.api.instruments.gauge.IDoubleInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.gauge.ILongInstrumentRegistration
@@ -15,9 +16,12 @@ import de.mctelemetry.core.api.instruments.manager.server.IWorldMutableInstrumen
 import de.mctelemetry.core.instruments.manager.GameInstrumentManager
 import de.mctelemetry.core.instruments.manager.InstrumentManagerBase
 import de.mctelemetry.core.instruments.manager.InstrumentManagerBaseRegistrationUnion
+import de.mctelemetry.core.instruments.manager.gauge.GaugeInstrumentRegistration
+import de.mctelemetry.core.instruments.manager.gauge.ImmutableGaugeInstrumentRegistration
+import de.mctelemetry.core.instruments.manager.gauge.MutableGaugeInstrumentRegistration
 import de.mctelemetry.core.persistence.DirtyCallbackMutableMap
 import de.mctelemetry.core.persistence.SavedDataConcurrentMap
-import de.mctelemetry.core.utils.Union2
+import de.mctelemetry.core.utils.Union3
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.metrics.Meter
 import net.minecraft.core.HolderGetter
@@ -55,12 +59,12 @@ internal class ServerWorldInstrumentManager private constructor(
     private val server: WeakReference<MinecraftServer> = WeakReference(server)
 
 
-    override fun findLocal(name: String): IWorldInstrumentRegistration? {
-        return super<Child>.findLocal(name) as IWorldInstrumentRegistration?
+    override fun findLocal(name: String): IWorldInstrumentDefinition? {
+        return super<Child>.findLocal(name) as IWorldInstrumentDefinition?
     }
 
-    override fun findLocal(pattern: Regex?): Sequence<IWorldInstrumentRegistration> {
-        return super<Child>.findLocal(pattern).map { it as IWorldInstrumentRegistration }
+    override fun findLocal(pattern: Regex?): Sequence<IWorldInstrumentDefinition> {
+        return super<Child>.findLocal(pattern).map { it as IWorldInstrumentDefinition }
     }
 
     companion object {
@@ -99,7 +103,8 @@ internal class ServerWorldInstrumentManager private constructor(
                             }
                         }
                     runWithExceptionCleanup(otelRegistration::close) {
-                        registrationValue.provideOTelRegistration(otelRegistration)
+                        if(registrationValue is GaugeInstrumentRegistration)
+                            registrationValue.provideOTelRegistration(otelRegistration)
                         manager.triggerOwnInstrumentAdded(registrationValue, IInstrumentAvailabilityCallback.Phase.POST)
                     }
                 }
@@ -177,8 +182,7 @@ internal class ServerWorldInstrumentManager private constructor(
         manager: ServerWorldInstrumentManager,
     ) : GaugeInstrumentBuilder<WorldGaugeInstrumentBuilder>(
         name,
-        @Suppress("UNCHECKED_CAST")
-        (manager as InstrumentManagerBase<GaugeInstrumentBuilder<WorldGaugeInstrumentBuilder>>),
+        manager,
     ), IWorldGaugeInstrumentBuilder<WorldGaugeInstrumentBuilder> {
 
         override var persistent: Boolean = false
@@ -288,7 +292,7 @@ internal class ServerWorldInstrumentManager private constructor(
                     } else {
                         emptyMap()
                     }
-                return name to Union2.Companion.of2(
+                return name to Union3.of2(
                     WorldMutableGaugeInstrumentRegistration(
                         name = name,
                         description = description,

@@ -1,18 +1,14 @@
 package de.mctelemetry.core.api.instruments.histogram
 
-import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
-import de.mctelemetry.core.api.attributes.MappedAttributeKeyMap
 import de.mctelemetry.core.api.attributes.stores.AttributeKeyMapAttributeStore
+import de.mctelemetry.core.api.attributes.stores.IAttributeValueStore
+import de.mctelemetry.core.api.instruments.definition.IInstrumentDefinition
 import de.mctelemetry.core.api.observations.IObservationRecorder
-import de.mctelemetry.core.network.observations.container.observationrequest.ObservationSourceObservationMap
 import io.opentelemetry.api.common.Attributes
 import it.unimi.dsi.fastutil.doubles.DoubleSortedSet
 
-sealed interface IHistogramInstrument {
+sealed interface IHistogramInstrument : IInstrumentDefinition {
     val boundaries: DoubleSortedSet
-
-    val supportsFloating: Boolean
 
     interface Resolved : IHistogramInstrument, IObservationRecorder.Resolved {
         operator fun get(attributes: Attributes): DataPoint<Resolved, Attributes> {
