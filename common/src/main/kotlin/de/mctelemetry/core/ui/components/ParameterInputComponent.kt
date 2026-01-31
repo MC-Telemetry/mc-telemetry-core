@@ -109,7 +109,7 @@ class ParameterInputComponent(
         nameLabel.margins(Insets.right(4))
         entryList.child(nameLabel)
 
-        val textBox = Components.textBox(Sizing.fill(60))
+        val textBox = ParameterValidationTextBoxComponent(parameter, Sizing.fill(60))
         entryList.child(textBox as Component)
 
         list.child(entryList)
