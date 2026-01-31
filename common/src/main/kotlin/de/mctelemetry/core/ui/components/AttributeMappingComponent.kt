@@ -2,8 +2,15 @@ package de.mctelemetry.core.ui.components
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.api.attributes.*
+import de.mctelemetry.core.api.attributes.AttributeDataSource
+import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeInstance
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes
 import de.mctelemetry.core.api.attributes.NativeAttributeKeyTypes.StringType.convertValueToString
+import de.mctelemetry.core.api.attributes.canConvertFrom
+import de.mctelemetry.core.api.attributes.convertFrom
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.utils.dsl.components.IComponentDSLBuilder.Companion.buildComponent
 import io.github.pixix4.kobserve.base.ObservableProperty

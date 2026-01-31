@@ -10,7 +10,6 @@ import de.mctelemetry.core.utils.dsl.commands.argument
 import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandBuildContext
 import net.minecraft.commands.CommandSourceStack
-import kotlin.with
 
 class CommandMetricsDelete internal constructor(
     private val buildContext: CommandBuildContext,

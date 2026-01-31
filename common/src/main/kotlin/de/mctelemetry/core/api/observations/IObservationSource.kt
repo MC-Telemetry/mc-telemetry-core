@@ -1,7 +1,6 @@
 package de.mctelemetry.core.api.observations
 
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import net.minecraft.nbt.Tag
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec

@@ -2,8 +2,8 @@ package de.mctelemetry.core.commands.scrape
 
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
-import de.mctelemetry.core.commands.types.MetricNameArgumentType
 import de.mctelemetry.core.api.instruments.manager.IMetricsAccessor
+import de.mctelemetry.core.commands.types.MetricNameArgumentType
 import de.mctelemetry.core.commands.types.get
 import de.mctelemetry.core.metrics.exporters.MetricDefinitionReadback
 import de.mctelemetry.core.utils.dsl.commands.CommandDSLBuilder
