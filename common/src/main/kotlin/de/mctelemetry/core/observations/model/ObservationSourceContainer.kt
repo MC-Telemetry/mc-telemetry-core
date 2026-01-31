@@ -1,11 +1,11 @@
 package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
-import de.mctelemetry.core.api.observations.IObservationRecorder
+import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
+import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.utils.closeAllRethrow

@@ -3,13 +3,13 @@ package de.mctelemetry.core.gametest.tests.observations.scraper.redstone
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
-import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.gametest.utils.assertBlockEntityDataC
 import de.mctelemetry.core.gametest.utils.assertBlockStateC
 import de.mctelemetry.core.gametest.utils.assertNotNullC
 import de.mctelemetry.core.gametest.utils.assertTrueC
 import de.mctelemetry.core.gametest.utils.thenExecuteForC
 import de.mctelemetry.core.gametest.utils.thenWaitUntilC
+import de.mctelemetry.core.items.OTelCoreModItems
 import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.core.BlockPos

@@ -1,6 +1,5 @@
 package de.mctelemetry.core.gametest.utils.observation
 
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import io.opentelemetry.api.common.Attributes
 import org.jetbrains.annotations.Contract

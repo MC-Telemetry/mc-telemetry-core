@@ -1,7 +1,6 @@
 import de.undercouch.gradle.tasks.download.Download
 import de.undercouch.gradle.tasks.download.Verify
 import net.fabricmc.loom.api.LoomGradleExtensionAPI
-import org.gradle.kotlin.dsl.register
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {

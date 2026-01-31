@@ -1,8 +1,8 @@
 package de.mctelemetry.core.api.instruments
 
-import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.InvocationSynchronizationHint
 import de.mctelemetry.core.api.TickSynchronizationHint
+import de.mctelemetry.core.api.observations.IObservationRecorder
 import io.opentelemetry.api.common.Attributes
 
 interface IInstrumentRegistration : IInstrumentDefinition, AutoCloseable {

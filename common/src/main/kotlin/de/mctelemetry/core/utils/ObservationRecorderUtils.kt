@@ -2,7 +2,6 @@ package de.mctelemetry.core.utils
 
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
 
 context(source: IObservationSourceInstance<*, *, *>, attributeStore: IAttributeValueStore)

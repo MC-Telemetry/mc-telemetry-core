@@ -1,8 +1,8 @@
 package de.mctelemetry.core.network.observations.container.settings
 
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.ObservationContainerInteractionLimits
 import de.mctelemetry.core.observations.model.ObservationSourceConfiguration

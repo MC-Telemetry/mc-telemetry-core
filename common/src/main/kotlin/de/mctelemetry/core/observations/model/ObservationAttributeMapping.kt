@@ -2,7 +2,13 @@ package de.mctelemetry.core.observations.model
 
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.api.attributes.*
+import de.mctelemetry.core.api.attributes.AttributeDataSource
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
+import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyInfo
+import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
+import de.mctelemetry.core.api.attributes.canConvertTo
+import de.mctelemetry.core.api.attributes.convertFrom
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.utils.runWithExceptionCleanup
@@ -18,8 +24,6 @@ import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.codec.StreamCodec
 import org.intellij.lang.annotations.MagicConstant
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.component1
-import kotlin.collections.component2
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
