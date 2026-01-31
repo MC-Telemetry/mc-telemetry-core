@@ -40,6 +40,13 @@ object ItemScraperAmountObservationSource :
         }
 
         if (map == null) return
+
+        if (observedItem in unusedAttributes) {
+            observedItem.unset()
+            recorder.observe(map.values.sum(), this)
+            return
+        }
+
         for ((item, count) in map) {
             observedItem.set(item)
             recorder.observe(count, this)

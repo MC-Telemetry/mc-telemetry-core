@@ -19,7 +19,7 @@ import net.minecraft.world.level.material.Fluid
 object FluidScraperAmountObservationSource :
     PositionObservationSourceBase.PositionSingletonBase<FluidScraperAmountObservationSource>() {
 
-    val observedItem = BuiltinAttributeKeyTypes.FluidType.createObservationAttributeReference("fluid")
+    val observedFluid = BuiltinAttributeKeyTypes.FluidType.createObservationAttributeReference("fluid")
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
@@ -40,8 +40,14 @@ object FluidScraperAmountObservationSource :
         }
 
         if (map == null) return
+        if (observedFluid in unusedAttributes) {
+            observedFluid.unset()
+            recorder.observe(map.values.sum(), this)
+            return
+        }
+
         for ((fluid, count) in map) {
-            observedItem.set(fluid)
+            observedFluid.set(fluid)
             recorder.observe(count, this)
         }
     }
