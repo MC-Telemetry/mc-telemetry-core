@@ -3,12 +3,21 @@ package de.mctelemetry.core.api.attributes
 import net.minecraft.network.RegistryFriendlyByteBuf
 
 @JvmInline
-value class MappedAttributeKeyValue<out T : Any, I : MappedAttributeKeyInfo<out T, *>>(val pair: Pair<I, T>): Map.Entry<I,T> {
+value class MappedAttributeKeyValue<out T : Any, I : MappedAttributeKeyInfo<out T, *>>(val pair: Pair<I, T>) :
+    Map.Entry<I, T> {
 
-    constructor(info: I, value: T): this(info to value)
+    constructor(info: I, value: T) : this(info to value)
 
     init {
-        require(info.templateType.valueType.isAssignableFrom(value::class.java)) {"$value cannot be used as a value for $info"}
+        val valueType = info.templateType.valueType
+        if (!valueType.isPrimitive)
+            require(valueType.isAssignableFrom(value::class.java)) { "$value cannot be used as a value for $info" }
+        else {
+            val primitiveType = primitiveTypeMap[value::class.java]
+            require(primitiveType != null && info.templateType.valueType.isAssignableFrom(primitiveType)) {
+                "$value cannot be used as a value for $info"
+            }
+        }
     }
 
     operator fun component1(): I = pair.first
@@ -23,11 +32,24 @@ value class MappedAttributeKeyValue<out T : Any, I : MappedAttributeKeyInfo<out 
 
     fun encodeValue(buf: RegistryFriendlyByteBuf) {
         @Suppress("UNCHECKED_CAST")
-        (info as MappedAttributeKeyInfo<T,*>).templateType.valueStreamCodec.encode(buf, value)
+        (info as MappedAttributeKeyInfo<T, *>).templateType.valueStreamCodec.encode(buf, value)
     }
+
     companion object {
-        fun <T: Any> MappedAttributeKeyInfo<T,*>.decodeToValue(buf: RegistryFriendlyByteBuf): MappedAttributeKeyValue<T, *> {
+        fun <T : Any> MappedAttributeKeyInfo<T, *>.decodeToValue(buf: RegistryFriendlyByteBuf): MappedAttributeKeyValue<T, *> {
             return MappedAttributeKeyValue(this, this.templateType.valueStreamCodec.decode(buf))
         }
+
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+        private val primitiveTypeMap: Map<Class<*>, Class<*>> = mapOf(
+            java.lang.Boolean::class.java to Boolean::class.java,
+            java.lang.Byte::class.java to Byte::class.java,
+            java.lang.Short::class.java to Short::class.java,
+            java.lang.Character::class.java to Char::class.java,
+            java.lang.Integer::class.java to Int::class.java,
+            java.lang.Long::class.java to Long::class.java,
+            java.lang.Float::class.java to Float::class.java,
+            java.lang.Double::class.java to Double::class.java,
+        )
     }
 }
