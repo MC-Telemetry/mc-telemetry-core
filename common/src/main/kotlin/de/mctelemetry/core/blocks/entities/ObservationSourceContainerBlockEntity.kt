@@ -244,7 +244,12 @@ abstract class ObservationSourceContainerBlockEntity(
         if (!level.isClientSide) {
             if (level.isLoaded(blockPos)) {
                 level.sendBlockUpdated(blockPos, blockState, blockState, Block.UPDATE_CLIENTS)
-                level.scheduleTick(blockPos, blockState.block, 1)
+                val chunkX = SectionPos.blockToSectionCoord(blockPos.x)
+                val chunkZ = SectionPos.blockToSectionCoord(blockPos.z)
+                val chunk = level.chunkSource.getChunkNow(chunkX, chunkZ)
+                if (chunk != null && chunk.loaded) {
+                    level.scheduleTick(blockPos, blockState.block, 1)
+                }
             } else {
                 updateState()
             }

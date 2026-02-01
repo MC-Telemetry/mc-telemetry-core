@@ -44,10 +44,12 @@ class AttributeMappingComponent(
     }
 
     sealed class AttributeMappingSources {
-        abstract val type: IAttributeKeyTypeTemplate<*,*>?
+        abstract val type: IAttributeKeyTypeTemplate<*, *>?
+
         object None : AttributeMappingSources() {
-            override val type: IAttributeKeyTypeTemplate<*,*>? = null
+            override val type: IAttributeKeyTypeTemplate<*, *>? = null
         }
+
         class Reference(val reference: AttributeDataSource.Reference<*>) :
             AttributeMappingSources() {
             override val type: IAttributeKeyTypeTemplate<*, *> = reference.type.templateType
@@ -71,11 +73,13 @@ class AttributeMappingComponent(
             stringConstantData
         )
         return if (convertedConstantData == null) {
-            OTelCoreMod.logger.info(
-                "Failed to convert \"{}\" to {}",
-                text,
-                targetType
-            )
+            if (text.isNotEmpty()) {
+                OTelCoreMod.logger.debug(
+                    "Failed to convert \"{}\" to {}",
+                    text,
+                    targetType
+                )
+            }
             input?.setTextColor(CommonColors.RED)
             stringConstantData
         } else {
@@ -88,8 +92,12 @@ class AttributeMappingComponent(
         val observationSourceAttributes = sourceAttributes.references
         val instrumentAttributes = instrumentAttributes?.values?.toList() ?: emptyList()
 
-        val noneOption = SelectBoxComponentEntry<AttributeMappingSources>(AttributeMappingSources.None, TranslationKeys.Ui.none())
-        val customOption = SelectBoxComponentEntry<AttributeMappingSources>(AttributeMappingSources.Custom, TranslationKeys.Ui.custom())
+        val noneOption =
+            SelectBoxComponentEntry<AttributeMappingSources>(AttributeMappingSources.None, TranslationKeys.Ui.none())
+        val customOption = SelectBoxComponentEntry<AttributeMappingSources>(
+            AttributeMappingSources.Custom,
+            TranslationKeys.Ui.custom()
+        )
         val options = listOf(
             noneOption
         ) + observationSourceAttributes.map { reference ->
