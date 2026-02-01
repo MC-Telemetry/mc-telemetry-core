@@ -34,6 +34,7 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
             return false
         }
         instanceField = value
+        oldValue.close()
         configuration?.mapping?.resetValidationFlags()
         if (!silent) triggerOnDirty()
         return true

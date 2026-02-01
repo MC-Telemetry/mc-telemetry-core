@@ -356,10 +356,8 @@ abstract class ObservationSourceContainerBlockEntity(
         }
 
         protected open fun <SC, I : IObservationSourceInstance<SC, *, I>>
-                instantiateObservationSource(source: IObservationSource<SC, I>, data: Tag?, context: SC): I {
-            return source.fromNbt(data).also {
-                it.onLoad(context)
-            }
+                instantiateObservationSource(source: IObservationSource<SC, I>, data: Tag?): I {
+            return source.fromNbt(data)
         }
 
         protected fun getNextId(): Byte {
@@ -377,16 +375,17 @@ abstract class ObservationSourceContainerBlockEntity(
             }
         }
 
-        final override fun addObservationSourceState(
+        override fun addObservationSourceState(
             source: IObservationSource<in ObservationSourceContainerBlockEntity, *>,
             data: Tag?
         ): ObservationSourceState<in ObservationSourceContainerBlockEntity, *> {
             @Suppress("UNCHECKED_CAST")
             val instance = instantiateObservationSource(
                 source as IObservationSource<ObservationSourceContainerBlockEntity, *>,
-                data,
-                this@ObservationSourceContainerBlockEntity
-            )
+                data
+            ).also {
+                it.onLoad(this@ObservationSourceContainerBlockEntity)
+            }
             return addObservationSourceState(instance)
         }
 
@@ -481,7 +480,6 @@ abstract class ObservationSourceContainerBlockEntity(
                         IObservationSourceInstance<ObservationSourceContainerBlockEntity, *, *>
                         >,
                 data,
-                this@ObservationSourceContainerBlockEntity,
             ) as I
             state.instance = instance
         }
@@ -490,7 +488,7 @@ abstract class ObservationSourceContainerBlockEntity(
             compoundTag: CompoundTag,
             holderLookupProvider: HolderLookup.Provider,
             removeMissing: Boolean = true,
-            block: (source: ObservationSourceState<in ObservationSourceContainerBlockEntity, *>, data: CompoundTag, isNew: Boolean) -> T,
+            block: (source: ObservationSourceState<in ObservationSourceContainerBlockEntity, *>, data: CompoundTag, isNewState: Boolean, isNewInstance: Boolean) -> T,
         ): Map<ObservationSourceState<in ObservationSourceContainerBlockEntity, *>, T> {
             contract {
                 callsInPlace(block, InvocationKind.UNKNOWN)
@@ -539,18 +537,21 @@ abstract class ObservationSourceContainerBlockEntity(
                             tag.getByte("index")
                         else
                             throw IllegalArgumentException("Received no instanceId/index for ${this@ObservationSourceContainerBlockEntity}@${this@ObservationSourceContainerBlockEntity.globalPos}#$observationIndex")
-                        var isNew = false
+                        var isNewState = false
+                        var isNewInstance = false
                         val state = _observationStates.compute(instanceId) { instanceId, old ->
                             if (old != null) {
                                 if (source.javaClass !== old.source.javaClass || source !is IObservationSourceSingleton<*, *, *>) {
+                                    isNewInstance = true
                                     mergeSourceInstanceIntoExistingState(old, source, tag.get("params"))
                                 }
                                 old
                             } else {
-                                isNew = true
+                                isNewInstance = true
+                                isNewState = true
                                 val sourceInstance = instantiateObservationSource(
-                                    source, tag.get("params"),
-                                    this@ObservationSourceContainerBlockEntity
+                                    source,
+                                    tag.get("params"),
                                 )
                                 makeNewSourceState(sourceInstance, instanceId.toUByte()).also {
                                     runWithExceptionCleanup(it::close) {
@@ -560,9 +561,9 @@ abstract class ObservationSourceContainerBlockEntity(
                             }
                         }
                         runWithExceptionCleanup({ _observationStates.remove(instanceId)?.close() }) {
-                            put(state, block(state, tag.getCompound("data"), isNew))
+                            put(state, block(state, tag.getCompound("data"), isNewState, isNewInstance))
                         }
-                        if (isNew) {
+                        if (isNewState) {
                             triggerStateAdded(state)
                         }
                     }
@@ -604,12 +605,15 @@ abstract class ObservationSourceContainerBlockEntity(
                 compoundTag,
                 holderLookupProvider,
                 removeMissing = removeMissing,
-            ) { state, dataTag, isNew ->
-                if (isNew) {
+            ) { state, dataTag, isNewState, isNewInstance ->
+                if (isNewState) {
                     setupCallback(state)
                     state.cascadeUpdates = _cascadesUpdates
                 }
                 state.loadFromTag(dataTag, holderLookupProvider, instrumentManager)
+                if (isNewInstance) {
+                    state.instance.onLoad(context)
+                }
             }
         }
 
@@ -621,16 +625,24 @@ abstract class ObservationSourceContainerBlockEntity(
         ): (Level) -> Unit {
             var pendingNewStates: MutableList<ObservationSourceState<in ObservationSourceContainerBlockEntity, *>>? =
                 null
+            var pendingNewInstances: MutableList<IObservationSourceInstance<in ObservationSourceContainerBlockEntity, *, *>>? =
+                null
             val delayedMap = loadTagsAndApplyToState(
                 compoundTag,
                 holderLookupProvider,
                 removeMissing = removeMissing,
-            ) { state, dataTag, isNew ->
-                if (isNew) {
+            ) { state, dataTag, isNewState, isNewInstance ->
+                if (isNewState) {
                     if (pendingNewStates == null)
                         pendingNewStates = mutableListOf(state)
                     else
                         pendingNewStates.add(state)
+                }
+                if(isNewInstance) {
+                    if(pendingNewInstances == null)
+                        pendingNewInstances = mutableListOf(state.instance)
+                    else
+                        pendingNewInstances.add(state.instance)
                 }
                 state.loadDelayedFromTag(dataTag, holderLookupProvider)
             }
@@ -646,11 +658,13 @@ abstract class ObservationSourceContainerBlockEntity(
                     for (delayedCallback in delayedMap.values) {
                         delayedCallback.invoke(null)
                     }
+                    pendingNewInstances?.forEach { it.onLoad(this@ObservationSourceContainerBlockEntity) }
                 } else {
                     (level as ServerLevel).server.useInstrumentManagerWhenAvailable { manager ->
                         for (delayedCallback in delayedMap.values) {
                             delayedCallback.invoke(manager)
                         }
+                        pendingNewInstances?.forEach { it.onLoad(this@ObservationSourceContainerBlockEntity) }
                     }
                 }
             }
