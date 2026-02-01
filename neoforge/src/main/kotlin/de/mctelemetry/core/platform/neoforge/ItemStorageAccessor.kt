@@ -1,5 +1,7 @@
 package de.mctelemetry.core.platform.neoforge
 
+import de.mctelemetry.core.neoforge.capabilities.CountingItemHandlerProxy
+import de.mctelemetry.core.observations.IORecorder
 import de.mctelemetry.core.platform.IItemStorageAccessor
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
@@ -46,5 +48,9 @@ object ItemStorageAccessor : IItemStorageAccessor {
         }
 
         return fillRatio / count.toDouble()
+    }
+
+    override fun getIORecorder(level: ServerLevel, position: BlockPos): IORecorder.IORecorderAccess<Item> {
+        return CountingItemHandlerProxy.getIORecorder(level, position)
     }
 }

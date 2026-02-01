@@ -351,8 +351,10 @@ abstract class ObservationSourceContainerBlockEntity(
         }
 
         protected open fun <SC, I : IObservationSourceInstance<SC, *, I>>
-                instantiateObservationSource(source: IObservationSource<SC, I>, data: Tag?): I {
-            return source.fromNbt(data)
+                instantiateObservationSource(source: IObservationSource<SC, I>, data: Tag?, context: SC): I {
+            return source.fromNbt(data).also {
+                it.onLoad(context)
+            }
         }
 
         protected fun getNextId(): Byte {
@@ -365,7 +367,9 @@ abstract class ObservationSourceContainerBlockEntity(
             instance: I,
             id: ObservationSourceStateID
         ): ObservationSourceState<SC, I> {
-            return ObservationSourceState(instance, id)
+            return runWithExceptionCleanup(instance::close) {
+                ObservationSourceState(instance, id)
+            }
         }
 
         final override fun addObservationSourceState(
@@ -375,7 +379,8 @@ abstract class ObservationSourceContainerBlockEntity(
             @Suppress("UNCHECKED_CAST")
             val instance = instantiateObservationSource(
                 source as IObservationSource<ObservationSourceContainerBlockEntity, *>,
-                data
+                data,
+                this@ObservationSourceContainerBlockEntity
             )
             return addObservationSourceState(instance)
         }
@@ -383,12 +388,16 @@ abstract class ObservationSourceContainerBlockEntity(
         override fun addObservationSourceState(
             instance: IObservationSourceInstance<in ObservationSourceContainerBlockEntity, *, *>
         ): ObservationSourceState<in ObservationSourceContainerBlockEntity, *> {
-            if (_observationStates.size >= UByte.MAX_VALUE.toInt()) {
-                throw IllegalArgumentException("Cannot add more than 256 observations to one ObservationSourceContainer")
-            }
             var result: ObservationSourceState<in ObservationSourceContainerBlockEntity, *>? = null
-            var nextId: Byte = getNextId()
-            val startId: Byte = nextId
+            var nextId: Byte
+            val startId: Byte
+            runWithExceptionCleanup(instance::close) {
+                if (_observationStates.size >= UByte.MAX_VALUE.toInt()) {
+                    throw IllegalArgumentException("Cannot add more than 256 observations to one ObservationSourceContainer")
+                }
+                nextId = getNextId()
+                startId = nextId
+            }
             result =
                 run { // same value will already be stored in result when this assignment happens, this just helps the type checker
                     do {
@@ -407,8 +416,11 @@ abstract class ObservationSourceContainerBlockEntity(
                                 return@run result
                             }
                         }
-                        nextId = getNextId()
+                        runWithExceptionCleanup(instance::close) {
+                            nextId = getNextId()
+                        }
                     } while (nextId != startId)
+                    instance.close()
                     throw IllegalArgumentException("Cannot add more than 256 observations to one ObservationSourceContainer")
                 }
             setupCallback(result)
@@ -463,7 +475,8 @@ abstract class ObservationSourceContainerBlockEntity(
                         ObservationSourceContainerBlockEntity,
                         IObservationSourceInstance<ObservationSourceContainerBlockEntity, *, *>
                         >,
-                data
+                data,
+                this@ObservationSourceContainerBlockEntity,
             ) as I
             state.instance = instance
         }
@@ -530,9 +543,14 @@ abstract class ObservationSourceContainerBlockEntity(
                                 old
                             } else {
                                 isNew = true
-                                val sourceInstance = instantiateObservationSource(source, tag.get("params"))
+                                val sourceInstance = instantiateObservationSource(
+                                    source, tag.get("params"),
+                                    this@ObservationSourceContainerBlockEntity
+                                )
                                 makeNewSourceState(sourceInstance, instanceId.toUByte()).also {
-                                    it.cascadeUpdates = _cascadesUpdates
+                                    runWithExceptionCleanup(it::close) {
+                                        it.cascadeUpdates = _cascadesUpdates
+                                    }
                                 }
                             }
                         }

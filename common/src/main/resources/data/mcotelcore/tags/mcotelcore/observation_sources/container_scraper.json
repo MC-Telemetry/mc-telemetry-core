@@ -2,6 +2,7 @@
   "values": [
     "mcotelcore:container_scraper.item.amount",
     "mcotelcore:container_scraper.item.fill_ratio",
+    "mcotelcore:container_scraper.item.io",
     "mcotelcore:container_scraper.fluid.amount",
     "mcotelcore:container_scraper.fluid.fill_ratio",
     "mcotelcore:container_scraper.energy.amount",

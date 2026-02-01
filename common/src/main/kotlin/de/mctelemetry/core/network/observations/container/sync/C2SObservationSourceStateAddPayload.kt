@@ -5,6 +5,8 @@ import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.api.observations.sourceContextType
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.network.observations.container.ObservationContainerInteractionLimits
+import de.mctelemetry.core.observations.model.ObservationSourceContainer
+import de.mctelemetry.core.utils.runWithExceptionCleanup
 import dev.architectury.networking.NetworkManager
 import net.minecraft.core.GlobalPos
 import net.minecraft.network.RegistryFriendlyByteBuf
@@ -25,13 +27,14 @@ data class C2SObservationSourceStateAddPayload(
             )
         )
 
-        val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, C2SObservationSourceStateAddPayload> = StreamCodec.composite(
-            GlobalPos.STREAM_CODEC,
-            C2SObservationSourceStateAddPayload::blockPos,
-            IObservationSourceInstance.STREAM_CODEC,
-            C2SObservationSourceStateAddPayload::sourceInstance,
-            ::C2SObservationSourceStateAddPayload
-        )
+        val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, C2SObservationSourceStateAddPayload> =
+            StreamCodec.composite(
+                GlobalPos.STREAM_CODEC,
+                C2SObservationSourceStateAddPayload::blockPos,
+                IObservationSourceInstance.STREAM_CODEC,
+                C2SObservationSourceStateAddPayload::sourceInstance,
+                ::C2SObservationSourceStateAddPayload
+            )
 
         fun register() {
             NetworkManager.registerReceiver(NetworkManager.c2s(), TYPE, STREAM_CODEC, Receiver)
@@ -40,27 +43,33 @@ data class C2SObservationSourceStateAddPayload(
 
     object Receiver : NetworkManager.NetworkReceiver<C2SObservationSourceStateAddPayload> {
         override fun receive(value: C2SObservationSourceStateAddPayload, context: NetworkManager.PacketContext) {
-            if (!ObservationContainerInteractionLimits.checkCanInteract(
-                    context.player,
-                    value.blockPos.dimension,
-                    value.blockPos.pos,
-                    log = true,
-                    checkBlockEntity = true,
-                )
-            ) return
-            val blockEntity = context.player.level() // cast should succeed because checkCanInteract tests for type
-                .getBlockEntity(value.blockPos.pos) as ObservationSourceContainerBlockEntity
-            val container = blockEntity.container
-            val sourceInstance = value.sourceInstance
-            if (sourceInstance.source !in container.observationSources) {
-                // TODO: Log debug message stating that received source is not whitelisted
-                return
+            val container: ObservationSourceContainer<ObservationSourceContainerBlockEntity>
+            val sourceInstance: IObservationSourceInstance<in ObservationSourceContainerBlockEntity, *, *>
+            runWithExceptionCleanup(value.sourceInstance::close) {
+                if (!ObservationContainerInteractionLimits.checkCanInteract(
+                        context.player,
+                        value.blockPos.dimension,
+                        value.blockPos.pos,
+                        log = true,
+                        checkBlockEntity = true,
+                    )
+                ) return
+                val blockEntity = context.player.level() // cast should succeed because checkCanInteract tests for type
+                    .getBlockEntity(value.blockPos.pos) as ObservationSourceContainerBlockEntity
+                container = blockEntity.container
+                val testSourceInstance = value.sourceInstance
+                if (testSourceInstance.source !in container.observationSources) {
+                    // TODO: Log debug message stating that received source is not whitelisted
+                    return
+                }
+                assert(testSourceInstance.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
+                @Suppress("UNCHECKED_CAST")
+                // cast is checked by being element in `container.observationSources`, all of which are of the given type
+                sourceInstance =
+                    testSourceInstance as IObservationSourceInstance<in ObservationSourceContainerBlockEntity, *, *>
+                sourceInstance.onLoad(blockEntity)
             }
-            assert(sourceInstance.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
-            @Suppress("UNCHECKED_CAST")
-            // cast is checked by being element in `container.observationSources`, all of which are of the given type
-            sourceInstance as IObservationSourceInstance<in ObservationSourceContainerBlockEntity, *, *>
-            container.addObservationSourceState(instance=sourceInstance)
+            container.addObservationSourceState(instance = sourceInstance)
         }
     }
 }

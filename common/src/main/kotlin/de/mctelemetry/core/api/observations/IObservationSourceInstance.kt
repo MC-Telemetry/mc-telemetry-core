@@ -15,7 +15,7 @@ interface IObservationSourceInstance<
         SC,
         AS : IAttributeValueStore.Mutable,
         out I : IObservationSourceInstance<SC, AS, I>
-        > {
+        > : AutoCloseable {
     val source: IObservationSource<SC, out I>
 
     val attributes: IAttributeDateSourceReferenceSet
@@ -29,6 +29,9 @@ interface IObservationSourceInstance<
         recorder: IObservationRecorder.Unresolved,
         unusedAttributes: Set<AttributeDataSource<*>>,
     )
+
+    fun onLoad(sourceContext: SC) {}
+    override fun close() {}
 
     companion object {
         val STREAM_CODEC: StreamCodec<RegistryFriendlyByteBuf, IObservationSourceInstance<*, *, *>> =

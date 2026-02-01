@@ -1,5 +1,6 @@
 package de.mctelemetry.core.platform.fabric
 
+import de.mctelemetry.core.observations.IORecorder
 import de.mctelemetry.core.platform.IItemStorageAccessor
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage
 import net.minecraft.core.BlockPos
@@ -39,5 +40,9 @@ object ItemStorageAccessor : IItemStorageAccessor {
         }
 
         return fillRatio / count.toDouble()
+    }
+
+    override fun getIORecorder(level: ServerLevel, position: BlockPos): IORecorder.IORecorderAccess<Item> {
+        TODO("Not yet implemented")
     }
 }

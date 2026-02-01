@@ -8,6 +8,7 @@ import de.mctelemetry.core.observations.scrapers.container.ContainerScraperFluid
 import de.mctelemetry.core.observations.scrapers.container.ContainerScraperFluidFillRatioObservationSource
 import de.mctelemetry.core.observations.scrapers.container.ContainerScraperItemAmountObservationSource
 import de.mctelemetry.core.observations.scrapers.container.ContainerScraperItemFillRatioObservationSource
+import de.mctelemetry.core.observations.scrapers.container.ContainerScraperItemIOObservationSource
 import de.mctelemetry.core.observations.scrapers.nbt.NbtScraperSignLineObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperComparatorObservationSource
 import de.mctelemetry.core.observations.scrapers.redstone.RedstoneScraperDirectPowerObservationSource
@@ -20,6 +21,7 @@ object ObservationSources {
         RedstoneScraperPowerObservationSource,
         ContainerScraperItemAmountObservationSource,
         ContainerScraperItemFillRatioObservationSource,
+        ContainerScraperItemIOObservationSource,
         ContainerScraperFluidAmountObservationSource,
         ContainerScraperFluidFillRatioObservationSource,
         ContainerScraperEnergyAmountObservationSource,

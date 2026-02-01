@@ -176,16 +176,21 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
 
     var isClosed: Boolean = false
 
+    @Suppress("ConvertTryFinallyToUseCall")
     override fun close() {
         isClosed = true
         try {
             try {
-                instrumentSubRegistration = null
+                try {
+                    instrumentSubRegistration = null
+                } finally {
+                    availabilityCallbackCloser = null
+                }
             } finally {
-                availabilityCallbackCloser = null
+                onDirtyListeners.clear()
             }
         } finally {
-            onDirtyListeners.clear()
+            instanceField.close()
         }
     }
 
