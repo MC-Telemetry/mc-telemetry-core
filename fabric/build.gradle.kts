@@ -263,6 +263,9 @@ tasks.processResources {
     dependsOn(commonProcessResources)
     inputs.dir(commonProcessResources.destinationDir)
     from(commonProcessResources.destinationDir)
+    filesMatching("mcotelcore.mixins.json") {
+        this.duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
 }
 
 tasks.named<ProcessResources>("processGametestResources") {

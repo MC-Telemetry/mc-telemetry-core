@@ -1,5 +1,6 @@
 package de.mctelemetry.core.platform.fabric
 
+import de.mctelemetry.core.fabric.IORecorderManager
 import de.mctelemetry.core.observations.IORecorder
 import de.mctelemetry.core.platform.IItemStorageAccessor
 import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage
@@ -43,6 +44,6 @@ object ItemStorageAccessor : IItemStorageAccessor {
     }
 
     override fun getIORecorder(level: ServerLevel, position: BlockPos): IORecorder.IORecorderAccess<Item> {
-        TODO("Not yet implemented")
+        return IORecorderManager.getIORecorder(level, position)
     }
 }

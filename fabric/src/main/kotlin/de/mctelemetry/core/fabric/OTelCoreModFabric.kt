@@ -7,6 +7,7 @@ import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.fabric.instruments.manager.client.register
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
+import de.mctelemetry.core.mixin.api.registerWrapper
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import dev.architectury.platform.Platform
 import net.fabricmc.api.EnvType
@@ -16,7 +17,12 @@ import net.fabricmc.fabric.api.command.v2.ArgumentTypeRegistry
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents
 import net.fabricmc.fabric.api.event.registry.FabricRegistryBuilder
 import net.fabricmc.fabric.api.event.registry.RegistryAttribute
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage
+import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant
+import net.fabricmc.fabric.api.transfer.v1.storage.Storage
+import net.fabricmc.fabric.impl.lookup.block.BlockApiLookupImpl
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
+import net.minecraft.core.Direction
 
 object OTelCoreModFabric : ModInitializer {
 
@@ -48,6 +54,7 @@ object OTelCoreModFabric : ModInitializer {
                 ObservationRequestManagerClient.onClientConnecting()
             }
         }
+        (ItemStorage.SIDED as BlockApiLookupImpl<Storage<ItemVariant>, Direction?>).registerWrapper(IORecorderManager::transform)
     }
 
     private fun registerContent() {

@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "de.mctelemetry.core.mixin.impl",
+  "compatibilityLevel": "JAVA_21",
+  "minVersion": "0.8",
+  "client": [
+  ],
+  "mixins": [
+    "BlockApiLookupImplWrapperMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
