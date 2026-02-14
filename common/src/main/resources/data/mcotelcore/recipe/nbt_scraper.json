@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "mcotelcore:telemetry_core"
+    },
+    {
+      "item": "minecraft:observer"
+    },
+    {
+      "item": "minecraft:name_tag"
+    }
+  ],
+  "result": {
+    "id": "mcotelcore:nbt_scraper",
+    "count": 1
+  }
+}

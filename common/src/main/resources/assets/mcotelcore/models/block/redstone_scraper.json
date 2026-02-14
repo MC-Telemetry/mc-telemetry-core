@@ -2,11 +2,11 @@
 	"format_version": "1.9.0",
 	"credit": "Made with Blockbench",
 	"textures": {
-		"0": "mcotelcore:block/redstone_scraper_base",
-		"1": "mcotelcore:block/redstone_scraper_frame",
+		"0": "mcotelcore:block/scraper_base",
+		"1": "mcotelcore:block/scraper_frame",
 		"2": "mcotelcore:block/redstone_scraper_core",
 		"3": "mcotelcore:block/scraper_status_green",
-		"particle": "mcotelcore:block/redstone_scraper_base"
+		"particle": "mcotelcore:block/scraper_base"
 	},
 	"elements": [
 		{

@@ -3,9 +3,9 @@ package de.mctelemetry.core.api.instruments.manager.server
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
 import de.mctelemetry.core.api.instruments.IWorldInstrumentRegistration
 import de.mctelemetry.core.api.instruments.builder.IWorldGaugeInstrumentBuilder
+import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IInstrumentAvailabilityCallback
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
-import de.mctelemetry.core.api.instruments.manager.IGameInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IWorldInstrumentManager
 import de.mctelemetry.core.instruments.manager.server.ServerInstrumentMetaManager

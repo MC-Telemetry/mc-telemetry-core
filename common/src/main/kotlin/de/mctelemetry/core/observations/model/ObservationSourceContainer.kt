@@ -2,11 +2,11 @@ package de.mctelemetry.core.observations.model
 
 import com.mojang.serialization.DynamicOps
 import de.mctelemetry.core.api.attributes.AttributeDataSource
-import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
-import de.mctelemetry.core.api.observations.IObservationRecorder
+import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.manager.IInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
+import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
 import de.mctelemetry.core.utils.closeAllRethrow
@@ -103,11 +103,13 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
     protected fun onDirty(sourceState: ObservationSourceState<in SC, *>) {
         if (!dirtyRunningTracker.add(sourceState.id.toByte())) return
         try {
-            assert(
-                observationStates.getValue(
-                    sourceState.id.toByte()
-                ) === sourceState
-            )
+            if(!sourceState.isClosed){
+                assert(
+                    observationStates.getValue(
+                        sourceState.id.toByte()
+                    ) === sourceState
+                )
+            }
             doOnDirty(sourceState)
         } finally {
             dirtyRunningTracker.remove(sourceState.id.toByte())
@@ -115,7 +117,7 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
     }
 
     protected open fun doOnDirty(state: ObservationSourceState<in SC, *>) {
-        if (state.cascadeUpdates) {
+        if (state.cascadeUpdates && !state.isClosed) {
             val instrumentManager = instrumentManager
             if (instrumentManager is IMutableInstrumentManager) {
                 runWithExceptionCleanup(cleanup = { state.instrument = null }) {

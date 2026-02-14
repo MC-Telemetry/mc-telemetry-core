@@ -3,9 +3,9 @@ package de.mctelemetry.core.commands.scrape
 import com.mojang.brigadier.arguments.DoubleArgumentType
 import com.mojang.brigadier.context.CommandContext
 import de.mctelemetry.core.TranslationKeys
+import de.mctelemetry.core.api.instruments.manager.IMetricsAccessor
 import de.mctelemetry.core.commands.types.LabelStringValueMapArgumentType
 import de.mctelemetry.core.commands.types.MetricNameArgumentType
-import de.mctelemetry.core.api.instruments.manager.IMetricsAccessor
 import de.mctelemetry.core.commands.types.get
 import de.mctelemetry.core.commands.types.getValue
 import de.mctelemetry.core.metrics.exporters.MetricValueReadback
@@ -19,8 +19,6 @@ import de.mctelemetry.core.utils.dsl.components.style
 import de.mctelemetry.core.utils.sendFailureAndThrow
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.network.chat.Component
-import kotlin.collections.component1
-import kotlin.collections.component2
 
 class CommandScrapeValue(private val metricsAccessor: IMetricsAccessor?) {
 

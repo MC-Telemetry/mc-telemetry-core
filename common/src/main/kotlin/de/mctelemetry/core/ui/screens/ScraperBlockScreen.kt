@@ -213,7 +213,8 @@ class ScraperBlockScreen(
         observationValuePreviews.clear()
 
         var i = -1
-        for (entry in observationSourceContainer.observationStates.byte2ObjectEntrySet()) {
+
+        for (entry in observationSourceContainer.observationStates.byte2ObjectEntrySet().sortedBy { it.byteKey }) {
             i += 1
             val state = entry.value
             val instanceID = entry.byteKey.toUByte()

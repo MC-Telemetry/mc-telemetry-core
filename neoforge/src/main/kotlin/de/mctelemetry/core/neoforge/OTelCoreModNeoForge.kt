@@ -2,12 +2,12 @@ package de.mctelemetry.core.neoforge
 
 import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.OTelCoreModAPI
-import de.mctelemetry.core.commands.types.ArgumentTypes
+import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.neoforge.instruments.manager.client.register
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient

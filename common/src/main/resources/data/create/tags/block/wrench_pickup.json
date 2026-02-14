@@ -1,0 +1,4 @@
+{
+  "replace": false,
+  "values": ["mcotelcore:nbt_scraper", "mcotelcore:redstone_scraper", "mcotelcore:container_scraper"]
+}
