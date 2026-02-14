@@ -1,6 +1,8 @@
 package de.mctelemetry.core.observations.scrapers.nbt
 
 import com.mojang.brigadier.arguments.IntegerArgumentType
+import com.mojang.serialization.Codec
+import com.mojang.serialization.DataResult
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
@@ -18,9 +20,6 @@ import de.mctelemetry.core.utils.withValues
 import io.netty.buffer.ByteBuf
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
-import net.minecraft.nbt.ByteTag
-import net.minecraft.nbt.NumericTag
-import net.minecraft.nbt.Tag
 import net.minecraft.network.codec.ByteBufCodecs
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.resources.ResourceKey
@@ -65,12 +64,12 @@ object NbtScraperSignLineObservationSource :
             },
         )
 
-    override fun fromNbt(tag: Tag?): Instance {
-        tag!! as NumericTag
-        return Instance(tag.asByte)
-    }
-
-    override fun toNbt(instance: Instance): ByteTag = ByteTag.valueOf(instance.line)
+    override val codec: Codec<Instance> = Codec.BYTE.comapFlatMap({
+        if (it !in 0..(2 * SignText.LINES)) return@comapFlatMap DataResult.error { "Line number must be between 0 and ${2 * SignText.LINES}" }
+        DataResult.success(Instance(it))
+    }, {
+        it.line
+    })
 
     class Instance(val line: Byte) : PositionInstanceBase<Instance>(NbtScraperSignLineObservationSource) {
 
