@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "mcotelcore:item/nbt_scraper"
+    "model": "mcotelcore:item/telemetry_core"
   }
 }

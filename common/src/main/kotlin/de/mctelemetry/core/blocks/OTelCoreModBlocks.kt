@@ -13,15 +13,15 @@ object OTelCoreModBlocks {
     val BLOCKS: DeferredRegister<Block> = DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.BLOCK)
 
     val NBT_SCRAPER_BLOCK: RegistrySupplier<NbtScraperBlock> = registerBlock("nbt_scraper") {
-        NbtScraperBlock(BlockBehaviour.Properties.of())
+        NbtScraperBlock(BlockBehaviour.Properties.of().requiresCorrectToolForDrops().strength(3.5f))
     }
 
     val CONTAINER_SCRAPER_BLOCK: RegistrySupplier<ContainerScraperBlock> = registerBlock("container_scraper") {
-        ContainerScraperBlock(BlockBehaviour.Properties.of())
+        ContainerScraperBlock(BlockBehaviour.Properties.of().requiresCorrectToolForDrops().strength(3.5f))
     }
 
     val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<RedstoneScraperBlock> = registerBlock("redstone_scraper") {
-        RedstoneScraperBlock(BlockBehaviour.Properties.of())
+        RedstoneScraperBlock(BlockBehaviour.Properties.of().requiresCorrectToolForDrops().strength(3.5f))
     }
 
     fun init() {

@@ -14,6 +14,10 @@ import java.util.function.Supplier
 object OTelCoreModItems {
     val ITEMS: DeferredRegister<Item> = DeferredRegister.create(OTelCoreMod.MOD_ID, Registries.ITEM)
 
+    val TELEMETRY_CORE: RegistrySupplier<Item> = registerItem("telemetry_core") {
+        Item(Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB))
+    }
+
     val NBT_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("nbt_scraper") {
         BlockItem(
             OTelCoreModBlocks.NBT_SCRAPER_BLOCK.get(),

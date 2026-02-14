@@ -24,7 +24,7 @@ class CommandMetricsCreate internal constructor(
     private val buildContext: CommandBuildContext,
 ) {
 
-    val command = buildCommand("create") {
+    val command = buildCommand("data/create") {
         requires { it.hasPermission(2) }
         "gauge" {
             argument("type", EnumArgumentType(InstrumentExportType::class.java)) {
