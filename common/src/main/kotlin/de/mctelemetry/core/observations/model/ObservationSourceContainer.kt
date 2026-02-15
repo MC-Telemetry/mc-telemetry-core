@@ -76,8 +76,14 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
 
     protected val dirtyRunningTracker: ByteSet = ByteSets.synchronize(ByteArraySet(1))
 
-    override fun close() {
-        observationStates.values.closeAllRethrow()
+    final override fun close() {
+        close(false)
+    }
+
+    open fun close(silent: Boolean = false) {
+        observationStates.values.forEachRethrow {
+            it.close(silent)
+        }
     }
 
     protected open fun setupCallback(state: ObservationSourceState<in SC, *>) {
@@ -103,7 +109,7 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
     protected fun onDirty(sourceState: ObservationSourceState<in SC, *>) {
         if (!dirtyRunningTracker.add(sourceState.id.toByte())) return
         try {
-            if(!sourceState.isClosed){
+            if (!sourceState.isClosed) {
                 assert(
                     observationStates.getValue(
                         sourceState.id.toByte()

@@ -58,6 +58,7 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
 
     protected open fun runUpdateCascade(silent: Boolean = false): Boolean {
         var modified = false
+        val initialErrorState = this.errorState
         run {
             val configuration = configuration
             val oldInstrument = instrument
@@ -73,7 +74,8 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
             }
         }
         run {
-            modified = updateDerivedErrorState(silent = true) || modified
+            updateDerivedErrorState(silent = true)
+            modified = modified || (initialErrorState !== errorState)
         }
         if (modified && !silent) triggerOnDirty()
         return modified
@@ -181,11 +183,15 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
 
     var isClosed: Boolean = false
 
-    override fun close() {
+    final override fun close() {
+        close(false)
+    }
+
+    open fun close(silent: Boolean = false) {
         isClosed = true
         try {
             try {
-                instrumentSubRegistration = null
+                setInstrumentSubRegistration(null, silent)
             } finally {
                 availabilityCallbackCloser = null
             }
@@ -466,8 +472,10 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
         private val defaultDataCodec: MapCodec<Pair<ObservationSourceErrorState, ObservationSourceConfiguration.Template?>> =
             RecordCodecBuilder.mapCodec { builder ->
                 builder.group(
-                    ObservationSourceErrorState.CODEC.optionalFieldOf("errorState", ObservationSourceErrorState.NotConfigured)
-                        .forGetter { pair -> pair.first},
+                    ObservationSourceErrorState.CODEC.optionalFieldOf(
+                        "errorState",
+                        ObservationSourceErrorState.NotConfigured
+                    ).forGetter { pair -> pair.first },
                     ObservationSourceConfiguration.Template.CODEC.optionalFieldOf("configuration")
                         .forGetter { pair -> Optional.ofNullable(pair.second) }
                 ).apply(builder) { errorState, configuration ->

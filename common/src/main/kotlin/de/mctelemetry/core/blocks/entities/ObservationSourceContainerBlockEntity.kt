@@ -178,21 +178,24 @@ abstract class ObservationSourceContainerBlockEntity(
         }
         if (Platform.isDevelopmentEnvironment()) {
             fun visit(tag: Tag?, path: String) {
-                when(tag?.id) {
+                when (tag?.id) {
                     Tag.TAG_COMPOUND -> {
                         tag as CompoundTag
                         tag.allKeys.forEach { key ->
                             visit(tag[key], "$path.$key")
                         }
                     }
+
                     Tag.TAG_LIST -> {
                         (tag as ListTag).forEachIndexed { index, subtag ->
                             visit(subtag, "$path[$index]")
                         }
                     }
+
                     null, Tag.TAG_END -> {
                         throw IllegalArgumentException("Encountered illegal tag $tag at $path")
                     }
+
                     else -> {}
                 }
             }
@@ -348,7 +351,7 @@ abstract class ObservationSourceContainerBlockEntity(
         super.setRemoved()
         val oldContainer = _container
         try {
-            oldContainer?.close()
+            oldContainer?.close(silent = true)
         } finally {
             _container = null
         }
