@@ -38,7 +38,6 @@ import de.mctelemetry.core.utils.resultOrElse
 import de.mctelemetry.core.utils.resultOrNull
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import de.mctelemetry.core.utils.withEntry
-import dev.architectury.platform.Platform
 import it.unimi.dsi.fastutil.bytes.Byte2ObjectMap
 import it.unimi.dsi.fastutil.bytes.Byte2ObjectMaps
 import it.unimi.dsi.fastutil.bytes.Byte2ObjectOpenHashMap
@@ -176,31 +175,29 @@ abstract class ObservationSourceContainerBlockEntity(
                 compoundTag.put(key.asString, value)
             }
         }
-        if (Platform.isDevelopmentEnvironment()) {
-            fun visit(tag: Tag?, path: String) {
-                when (tag?.id) {
-                    Tag.TAG_COMPOUND -> {
-                        tag as CompoundTag
-                        tag.allKeys.forEach { key ->
-                            visit(tag[key], "$path.$key")
-                        }
+        fun visit(tag: Tag?, path: String) {
+            when (tag?.id) {
+                Tag.TAG_COMPOUND -> {
+                    tag as CompoundTag
+                    tag.allKeys.forEach { key ->
+                        visit(tag[key], "$path.$key")
                     }
-
-                    Tag.TAG_LIST -> {
-                        (tag as ListTag).forEachIndexed { index, subtag ->
-                            visit(subtag, "$path[$index]")
-                        }
-                    }
-
-                    null, Tag.TAG_END -> {
-                        throw IllegalArgumentException("Encountered illegal tag $tag at $path")
-                    }
-
-                    else -> {}
                 }
+
+                Tag.TAG_LIST -> {
+                    (tag as ListTag).forEachIndexed { index, subtag ->
+                        visit(subtag, "$path[$index]")
+                    }
+                }
+
+                null, Tag.TAG_END -> {
+                    throw IllegalArgumentException("Encountered illegal tag $tag at $path")
+                }
+
+                else -> {}
             }
-            visit(compoundTag, "<root>")
         }
+        visit(compoundTag, "<root>")
     }
 
     override fun getUpdateTag(provider: HolderLookup.Provider): CompoundTag {
