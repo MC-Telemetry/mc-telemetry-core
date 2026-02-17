@@ -247,6 +247,8 @@ class ScraperBlockScreen(
                 val storedValue = storedObservations.get(instanceID.toByte())
                 if (storedValue != null) {
                     it.value = storedValue
+                } else if (state.shouldBeObserved()) {
+                    it.unhideEmpty()
                 }
             }
 

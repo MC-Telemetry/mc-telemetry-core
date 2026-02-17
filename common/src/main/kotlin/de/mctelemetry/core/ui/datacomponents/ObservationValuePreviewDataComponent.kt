@@ -23,18 +23,28 @@ class ObservationValuePreviewDataComponent(
         set(value) {
             if (field === value) return
             field = value
-            updateComponentValue(value)
+            updateComponentValue(value, hideEmpty = false)
         }
 
     init {
-        updateComponentValue(null)
+        updateComponentValue(null, hideEmpty = true)
     }
 
-    private data class TextTooltipPair(val textComponent: Component, val tooltipComponent: Component? = null)
+    private data class TextTooltipPair(val textComponent: Component, val tooltipComponent: Component?)
 
-    private fun updateComponentValue(value: RecordedObservations?) {
+    fun unhideEmpty() {
+        if (value === null) {
+            updateComponentValue(null, hideEmpty = false)
+        }
+    }
+
+    private fun updateComponentValue(value: RecordedObservations?, hideEmpty: Boolean) {
         val (textComponent, tooltipComponent) = if (value == null) {
-            pendingValueComponentPair
+            if (hideEmpty) {
+                emptyValueComponentPair
+            } else {
+                pendingValueComponentPair
+            }
         } else {
             val (_, observationMap) = value
             val cardinalities =
@@ -65,6 +75,8 @@ class ObservationValuePreviewDataComponent(
     }
 
     companion object {
+
+        private val emptyValueComponentPair = TextTooltipPair(Component.empty(), null)
 
         private val pendingValueComponentPair = TextTooltipPair(
             buildComponent("???") {
