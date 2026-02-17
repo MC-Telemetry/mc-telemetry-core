@@ -240,7 +240,6 @@ abstract class ObservationSourceContainerBlockEntity(
     }
 
     private fun generalBlockSync() {
-        setChanged()
         val level = level!!
         if (!level.isClientSide) {
             if (level.isLoaded(blockPos)) {
@@ -248,12 +247,28 @@ abstract class ObservationSourceContainerBlockEntity(
                 val chunkX = SectionPos.blockToSectionCoord(blockPos.x)
                 val chunkZ = SectionPos.blockToSectionCoord(blockPos.z)
                 val chunk = level.chunkSource.getChunkNow(chunkX, chunkZ)
+                if (chunk == null || chunk.loaded) {
+                    setChanged()
+                } else {
+                    // don't call setChanged when chunk is currently being constructed (chunk != null && !chunk.loaded),
+                    // otherwise deadlock potential during world load!
+                    OTelCoreMod.logger.trace(
+                        "Not marking {}/({}) as changed because containing chunk ({}, {}) is currently being constructed",
+                        level.dimension().location().toString(),
+                        blockPos.toShortString(),
+                        chunkX,
+                        chunkZ,
+                    )
+                }
                 if (chunk != null && chunk.loaded) {
                     level.scheduleTick(blockPos, blockState.block, 1)
                 }
             } else {
+                setChanged()
                 updateState()
             }
+        } else {
+            setChanged()
         }
     }
 
