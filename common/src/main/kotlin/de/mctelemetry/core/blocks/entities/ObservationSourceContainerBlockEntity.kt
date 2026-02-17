@@ -136,12 +136,12 @@ abstract class ObservationSourceContainerBlockEntity(
                     },
                     fallback = { it.partialOrThrow },
                 )
-            } else if (level.isClientSide) {
+            } else if (level.isClientSide || level !is ServerLevel) {
+                // fake levels (e.g. SchematicLevel from Ponder) can be `!isClientSide` but also not extend ServerLevel
                 container.loadStatesFromTag(compoundTag, null).ifError {
                     OTelCoreMod.logger.error("Error(s) during client-loading of ${this@ObservationSourceContainerBlockEntity}@$blockPos: ${it.message()}")
                 }.partialOrThrow
             } else {
-                level as ServerLevel
                 val manager = level.server.instrumentManager
                 if (manager != null) {
                     container.loadStatesFromTag(compoundTag, manager).ifError {
@@ -284,8 +284,9 @@ abstract class ObservationSourceContainerBlockEntity(
                 this._container = it
             })
             container.setupCallbacks()
-            if (!level.isClientSide) {
-                (level as ServerLevel).server.useInstrumentManagerWhenAvailable {
+            if (!level.isClientSide && level is ServerLevel) {
+                // fake levels (e.g. SchematicLevel from Ponder) can be `!isClientSide` but also not extend ServerLevel
+                level.server.useInstrumentManagerWhenAvailable {
                     container.cascadesUpdates = true
                 }
             } else {
@@ -296,8 +297,8 @@ abstract class ObservationSourceContainerBlockEntity(
                 onLevelCallback(level)
                 this.onLevelCallback = null
             }
-            if (!level.isClientSide) {
-                level as ServerLevel
+            if (!level.isClientSide && level is ServerLevel) {
+                // fake levels (e.g. SchematicLevel from Ponder) can be `!isClientSide` but also not extend ServerLevel
                 if (level.isLoaded(blockPos)) {
                     container.markInitialized()
                     val chunkX = SectionPos.blockToSectionCoord(blockPos.x)
@@ -321,7 +322,6 @@ abstract class ObservationSourceContainerBlockEntity(
     }
 
     private fun generalBlockSync() {
-        setChanged()
         val level = level!!
         if (!level.isClientSide) {
             if (level.isLoaded(blockPos)) {
@@ -329,12 +329,28 @@ abstract class ObservationSourceContainerBlockEntity(
                 val chunkX = SectionPos.blockToSectionCoord(blockPos.x)
                 val chunkZ = SectionPos.blockToSectionCoord(blockPos.z)
                 val chunk = level.chunkSource.getChunkNow(chunkX, chunkZ)
+                if (chunk == null || chunk.loaded) {
+                    setChanged()
+                } else {
+                    // don't call setChanged when chunk is currently being constructed (chunk != null && !chunk.loaded),
+                    // otherwise deadlock potential during world load!
+                    OTelCoreMod.logger.trace(
+                        "Not marking {}/({}) as changed because containing chunk ({}, {}) is currently being constructed",
+                        level.dimension().location().toString(),
+                        blockPos.toShortString(),
+                        chunkX,
+                        chunkZ,
+                    )
+                }
                 if (chunk != null && chunk.loaded) {
                     level.scheduleTick(blockPos, blockState.block, 1)
                 }
             } else {
+                setChanged()
                 updateState()
             }
+        } else {
+            setChanged()
         }
     }
 
@@ -722,12 +738,13 @@ abstract class ObservationSourceContainerBlockEntity(
                             state.cascadeUpdates = _cascadesUpdates
                         }
                     }
-                    if (level.isClientSide) {
+                    if (level.isClientSide || level !is ServerLevel) {
+                        // fake levels (e.g. SchematicLevel from Ponder) can be `!isClientSide` but also not extend ServerLevel
                         for (delayedCallback in delayedMap.values) {
                             delayedCallback.resultOrPartialOrElse { continue }.invoke(null)
                         }
                     } else {
-                        (level as ServerLevel).server.useInstrumentManagerWhenAvailable { manager ->
+                        level.server.useInstrumentManagerWhenAvailable { manager ->
                             for (delayedCallback in delayedMap.values) {
                                 delayedCallback.resultOrPartialOrElse { continue }.invoke(manager)
                             }
