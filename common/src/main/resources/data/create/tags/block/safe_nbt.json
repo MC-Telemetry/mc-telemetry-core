@@ -1,8 +1,8 @@
 {
+  "replace": false,
   "values": [
-    "mcotelcore:energy_scraper",
-    "mcotelcore:fluid_scraper",
-    "mcotelcore:item_scraper",
-    "mcotelcore:redstone_scraper"
+    "mcotelcore:nbt_scraper",
+    "mcotelcore:redstone_scraper",
+    "mcotelcore:container_scraper"
   ]
 }
