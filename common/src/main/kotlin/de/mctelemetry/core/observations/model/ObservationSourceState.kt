@@ -1,5 +1,6 @@
 package de.mctelemetry.core.observations.model
 
+import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
 import de.mctelemetry.core.api.instruments.IInstrumentSubRegistration
@@ -53,22 +54,54 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
 
     protected open fun runUpdateCascade(silent: Boolean = false): Boolean {
         var modified = false
+        val initialErrorState = this.errorState
         run {
             val configuration = configuration
             val oldInstrument = instrument
             if (oldInstrument != null && oldInstrument != configuration?.instrument) {
-                modified = setInstrument(null, silent = true)
+                val instrumentModified = setInstrument(null, silent = true)
+                modified = instrumentModified
+                if (instrumentModified && OTelCoreMod.logger.isTraceEnabled) {
+                    OTelCoreMod.logger.trace(
+                        "Modified during update cascade: {}/{} due to instrument-configuration mismatch: {} != {}",
+                        instance,
+                        id,
+                        oldInstrument,
+                        configuration?.instrument,
+                    )
+                }
             }
         }
         run {
             val instrument = instrument
             val oldSubRegistration = instrumentSubRegistration
             if (oldSubRegistration != null && oldSubRegistration.baseInstrument != instrument) {
-                modified = setInstrumentSubRegistration(null, silent = true) || modified
+                val subRegistrationModified = setInstrumentSubRegistration(null, silent = true)
+                modified = modified || subRegistrationModified
+                if (subRegistrationModified && OTelCoreMod.logger.isTraceEnabled) {
+                    OTelCoreMod.logger.trace(
+                        "Modified during update cascade: {}/{} due to subregistration-instrument mismatch: {} != {}",
+                        instance,
+                        id,
+                        oldSubRegistration.baseInstrument,
+                        instrument,
+                    )
+                }
             }
         }
         run {
-            modified = updateDerivedErrorState(silent = true) || modified
+            updateDerivedErrorState(silent = true)
+            val errorStateModified = initialErrorState != errorState
+            modified = modified || errorStateModified
+            if (errorStateModified && OTelCoreMod.logger.isTraceEnabled) {
+                OTelCoreMod.logger.trace(
+                    "Modified during update cascade: {}/{} due to errorstate change: {} -> {}",
+                    instance,
+                    id,
+                    initialErrorState,
+                    errorState,
+                )
+            }
         }
         if (modified && !silent) triggerOnDirty()
         return modified
