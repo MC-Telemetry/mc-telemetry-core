@@ -108,10 +108,10 @@ abstract class ObservationSourceContainerBlockEntity(
             val callback = container.loadStatesDelayedFromTag(compoundTag, provider)
             require(onLevelCallback == null) { "onLevelCallback already set" }
             onLevelCallback = callback
-        } else if (level.isClientSide) {
+        } else if (level.isClientSide || level !is ServerLevel) {
+            // fake levels (e.g. SchematicLevel from Ponder) can be `!isClientSide` but also not extend ServerLevel
             container.loadStatesFromTag(compoundTag, provider, null)
         } else {
-            level as ServerLevel
             val manager = level.server.instrumentManager
             if (manager != null) {
                 container.loadStatesFromTag(compoundTag, provider, manager)
@@ -202,8 +202,9 @@ abstract class ObservationSourceContainerBlockEntity(
                 this._container = it
             })
             container.setupCallbacks()
-            if (!level.isClientSide) {
-                (level as ServerLevel).server.useInstrumentManagerWhenAvailable {
+            if (!level.isClientSide && level is ServerLevel) {
+                // fake levels (e.g. SchematicLevel from Ponder) can be `!isClientSide` but also not extend ServerLevel
+                level.server.useInstrumentManagerWhenAvailable {
                     container.cascadesUpdates = true
                 }
             } else {
@@ -214,8 +215,8 @@ abstract class ObservationSourceContainerBlockEntity(
                 onLevelCallback(level)
                 this.onLevelCallback = null
             }
-            if (!level.isClientSide) {
-                level as ServerLevel
+            if (!level.isClientSide && level is ServerLevel) {
+                // fake levels (e.g. SchematicLevel from Ponder) can be `!isClientSide` but also not extend ServerLevel
                 if (level.isLoaded(blockPos)) {
                     container.markInitialized()
                     val chunkX = SectionPos.blockToSectionCoord(blockPos.x)
@@ -624,12 +625,13 @@ abstract class ObservationSourceContainerBlockEntity(
                         state.cascadeUpdates = _cascadesUpdates
                     }
                 }
-                if (level.isClientSide) {
+                if (level.isClientSide || level !is ServerLevel) {
+                    // fake levels (e.g. SchematicLevel from Ponder) can be `!isClientSide` but also not extend ServerLevel
                     for (delayedCallback in delayedMap.values) {
                         delayedCallback.invoke(null)
                     }
                 } else {
-                    (level as ServerLevel).server.useInstrumentManagerWhenAvailable { manager ->
+                    level.server.useInstrumentManagerWhenAvailable { manager ->
                         for (delayedCallback in delayedMap.values) {
                             delayedCallback.invoke(manager)
                         }
