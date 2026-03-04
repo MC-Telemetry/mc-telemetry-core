@@ -12,7 +12,7 @@ import java.util.function.Supplier
 
 object OTelCoreModBlockEntityTypes {
 
-    object ScraperBlockEntityType : BlockEntityType<ScraperBlockEntity>(::ScraperBlockEntity, emptySet(), null) {
+    object ScraperBlockEntityType : BlockEntityType<ScraperBlockEntity>(ScraperBlockEntity::invoke, emptySet(), null) {
         override fun isValid(blockState: BlockState): Boolean {
             return blockState.block is ScraperBlock
         }
