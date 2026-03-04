@@ -7,7 +7,7 @@
   ],
   "key": {
     "I": {
-      "item": "minecraft:iron_ingot"
+      "tag": "c:ingots/iron"
     },
     "L": {
       "item": "minecraft:redstone_lamp"
@@ -16,7 +16,7 @@
       "item": "minecraft:spyglass"
     },
     "R": {
-      "item": "minecraft:redstone"
+      "tag": "c:dusts/redstone"
     },
     "E": {
       "item": "minecraft:ender_eye"
