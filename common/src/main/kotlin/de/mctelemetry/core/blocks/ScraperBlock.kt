@@ -19,7 +19,7 @@ abstract class ScraperBlock(properties: Properties) : ObservationSourceContainer
     }
 
     override fun getRenderShape(blockState: BlockState): RenderShape {
-        return RenderShape.MODEL
+        return RenderShape.ENTITYBLOCK_ANIMATED
     }
 
     override fun getStateForPlacement(context: BlockPlaceContext): BlockState {
