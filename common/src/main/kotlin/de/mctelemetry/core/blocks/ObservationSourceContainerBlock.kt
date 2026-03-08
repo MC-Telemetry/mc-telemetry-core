@@ -29,7 +29,7 @@ abstract class ObservationSourceContainerBlock(properties: Properties) : BaseEnt
     abstract override fun newBlockEntity(
         blockPos: BlockPos,
         blockState: BlockState,
-    ): ObservationSourceContainerBlockEntity
+    ): ObservationSourceContainerBlockEntity<*>
 
     override fun getDrops(blockState: BlockState, builder: LootParams.Builder): List<ItemStack?>? {
         val item = asItem()
@@ -47,7 +47,7 @@ abstract class ObservationSourceContainerBlock(properties: Properties) : BaseEnt
     ) {
         super.tick(blockState, serverLevel, blockPos, randomSource)
         val entity = serverLevel.getBlockEntity(blockPos)
-        if (entity !is ObservationSourceContainerBlockEntity) {
+        if (entity !is ObservationSourceContainerBlockEntity<*>) {
             Util.logAndPauseIfInIde("Ticking unsupported entity $entity")
             return
         }
@@ -77,7 +77,7 @@ abstract class ObservationSourceContainerBlock(properties: Properties) : BaseEnt
 
         override fun click(player: Player, hand: InteractionHand, pos: BlockPos, face: Direction): EventResult {
             val blockEntity = player.level().getBlockEntity(pos)
-            if (blockEntity !is ObservationSourceContainerBlockEntity) {
+            if (blockEntity !is ObservationSourceContainerBlockEntity<*>) {
                 return EventResult.pass()
             }
 

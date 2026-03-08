@@ -171,11 +171,11 @@ class InstrumentGameTestHelper(
         registerFinalizer: IGameTestHelperFinalizer.FinalizerRegistration = IGameTestHelperFinalizer.FinalizerRegistration.TEST_END,
         customizer: IGaugeInstrumentBuilder<*>.(originalName: String, isDouble: Boolean) -> Unit = { _, _ -> },
     ): Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>> {
-        val observationSourceMap: Map<String, List<Pair<ObservationSourceContainerBlockEntity, ObservationSourceState<*, *>>>> =
+        val observationSourceMap: Map<String, List<Pair<ObservationSourceContainerBlockEntity<*>, ObservationSourceState<*, *>>>> =
             BlockPos.betweenClosedStream(gameTestHelper.bounds.contract(1.0, 1.0, 1.0))
                 .asSequence()
                 .mapNotNull { blockPos ->
-                    gameTestHelper.level.getBlockEntity(blockPos) as? ObservationSourceContainerBlockEntity
+                    gameTestHelper.level.getBlockEntity(blockPos) as? ObservationSourceContainerBlockEntity<*>
                 }
                 .flatMap { blockEntity ->
                     blockEntity.observationStates.values.mapNotNull { state ->
@@ -420,7 +420,7 @@ class InstrumentGameTestHelper(
             stateID: ObservationSourceStateID,
             block: (ObservationSourceState<*, *>) -> T,
         ): T {
-            val containerEntity: ObservationSourceContainerBlockEntity = this.getBlockEntityC(pos)
+            val containerEntity: ObservationSourceContainerBlockEntity<*> = this.getBlockEntityC(pos)
             val states = containerEntity.observationStatesIfInitialized
             try {
                 assertNotNullC(states, "Expected container to be configured on $containerEntity")
@@ -483,7 +483,7 @@ internal fun <T : Any> GameTestHelper.withConfiguredStartupSequence(
             forEveryBlockInStructure { blockPos ->
                 val state = getBlockState(blockPos)
                 if ((!state.hasBlockEntity()) ||
-                    getBlockEntity<BlockEntity>(blockPos) !is ObservationSourceContainerBlockEntity
+                    getBlockEntity<BlockEntity>(blockPos) !is ObservationSourceContainerBlockEntity<*>
                 ) return@forEveryBlockInStructure
                 val errorStateValue = state.getValue(ObservationSourceContainerBlock.ERROR)
                 if (errorStateValue != ObservationSourceErrorState.Type.Errors) {
@@ -506,7 +506,7 @@ internal fun <T : Any> GameTestHelper.withConfiguredStartupSequence(
                 val state = getBlockState(blockPos)
                 if (!state.hasBlockEntity()) return@forEveryBlockInStructure
                 val entity = getBlockEntity<BlockEntity>(blockPos)
-                if (entity !is ObservationSourceContainerBlockEntity) return@forEveryBlockInStructure
+                if (entity !is ObservationSourceContainerBlockEntity<*>) return@forEveryBlockInStructure
                 val errorStateValue = state.getValue(ObservationSourceContainerBlock.ERROR)
                 if (errorStateValue != ObservationSourceErrorState.Type.Ok) {
                     val problems = entity.observationStatesIfInitialized.orEmpty()

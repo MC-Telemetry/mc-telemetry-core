@@ -31,7 +31,7 @@ object OTelCoreModFabric : ModInitializer {
 
     private fun registerCallbacks() {
         ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register { blockEntity, level ->
-            if (blockEntity !is ObservationSourceContainerBlockEntity) return@register
+            if (blockEntity !is ObservationSourceContainerBlockEntity<*>) return@register
             OTelCoreMod.logger.trace(
                 "Detected BlockEntityLoad-Event for {}, scheduling tick at {}",
                 blockEntity,

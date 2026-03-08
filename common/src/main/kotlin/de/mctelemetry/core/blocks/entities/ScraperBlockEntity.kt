@@ -8,7 +8,7 @@ open class ScraperBlockEntity(
     blockPos: BlockPos,
     blockState: BlockState,
     blockEntityType: BlockEntityType<out ScraperBlockEntity>
-) : ObservationSourceContainerBlockEntity(
+) : ObservationSourceContainerBlockEntity<ScraperBlockEntity>(
     blockEntityType,
     blockPos,
     blockState,
@@ -18,6 +18,12 @@ open class ScraperBlockEntity(
         @Suppress("UNCHECKED_CAST") // known value from constructor
         return blockEntityType as BlockEntityType<out ScraperBlockEntity>
     }
+
+    override val context: ScraperBlockEntity?
+        get() = this
+
+    override val contextClass: Class<out ScraperBlockEntity>
+        get() = ScraperBlockEntity::class.java
 
     companion object {
         operator fun invoke(blockPos: BlockPos, blockState: BlockState): ScraperBlockEntity =

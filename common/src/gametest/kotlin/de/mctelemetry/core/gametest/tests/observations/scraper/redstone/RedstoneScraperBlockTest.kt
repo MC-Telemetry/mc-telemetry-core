@@ -3,6 +3,7 @@ package de.mctelemetry.core.gametest.tests.observations.scraper.redstone
 import de.mctelemetry.core.blocks.OTelCoreModBlocks
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
+import de.mctelemetry.core.blocks.entities.ScraperBlockEntity
 import de.mctelemetry.core.gametest.utils.assertBlockEntityDataC
 import de.mctelemetry.core.gametest.utils.assertBlockStateC
 import de.mctelemetry.core.gametest.utils.assertNotNullC
@@ -156,7 +157,7 @@ object RedstoneScraperBlockTest {
             it.getValue(ObservationSourceContainerBlock.ERROR) == ObservationSourceErrorState.Type.NotConfigured
         }
         fun validation() { // shared validation logic between "wait until this is true" and "assert this remains true"
-            helper.assertBlockEntityDataC<ObservationSourceContainerBlockEntity>(
+            helper.assertBlockEntityDataC<ScraperBlockEntity>(
                 BasePos,
                 { "Expected to be in NotConfigured state" }) {
                 val states = helper.assertNotNullC(it.observationStatesIfInitialized, "observationStates")

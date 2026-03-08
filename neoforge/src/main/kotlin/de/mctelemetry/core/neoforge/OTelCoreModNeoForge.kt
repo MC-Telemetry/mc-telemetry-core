@@ -76,7 +76,7 @@ object OTelCoreModNeoForge {
                         OTelCoreMod.logger.trace("Null blockentity in ChunkEvent.Load at {}", pos)
                         return@findBlocks
                     }
-                    if (entity !is ObservationSourceContainerBlockEntity) {
+                    if (entity !is ObservationSourceContainerBlockEntity<*>) {
                         Util.logAndPauseIfInIde("Unexpected blockentity $entity in ChunkEvent.Load")
                         return@findBlocks
                     }

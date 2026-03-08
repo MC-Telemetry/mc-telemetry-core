@@ -49,7 +49,7 @@ data class C2SObservationSourceStateRemovePayload(
                 )
             ) return
             val blockEntity = context.player.level() // cast should succeed because checkCanInteract tests for type
-                .getBlockEntity(value.blockPos.pos) as ObservationSourceContainerBlockEntity
+                .getBlockEntity(value.blockPos.pos) as ObservationSourceContainerBlockEntity<*>
             val container = blockEntity.container
             container.removeObservationSourceState(value.stateId)
         }
