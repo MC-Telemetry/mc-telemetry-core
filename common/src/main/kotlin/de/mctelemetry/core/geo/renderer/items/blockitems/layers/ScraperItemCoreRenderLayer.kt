@@ -1,9 +1,10 @@
-package de.mctelemetry.core.geo.renderer.blocks.entities.layers
+package de.mctelemetry.core.geo.renderer.items.blockitems.layers
 
 import com.mojang.blaze3d.vertex.PoseStack
 import com.mojang.blaze3d.vertex.VertexConsumer
 import de.mctelemetry.core.OTelCoreMod
-import de.mctelemetry.core.blocks.entities.ScraperBlockEntity
+import de.mctelemetry.core.geo.renderer.blocks.entities.layers.ScraperBlockEntityCoreRenderLayer
+import de.mctelemetry.core.items.ScraperBlockItem
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite
@@ -16,48 +17,9 @@ import software.bernie.geckolib.renderer.GeoRenderer
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer
 import kotlin.jvm.optionals.getOrElse
 
-class ScraperCoreRenderLayer(entityRendererIn: GeoRenderer<ScraperBlockEntity>) :
-    GeoRenderLayer<ScraperBlockEntity>(entityRendererIn) {
+class ScraperItemCoreRenderLayer(entityRendererIn: GeoRenderer<ScraperBlockItem>) :
+    GeoRenderLayer<ScraperBlockItem>(entityRendererIn) {
 
-    object CoreModel : DefaultedGeoModel<ScraperBlockEntity>(
-        ResourceLocation.fromNamespaceAndPath(
-            OTelCoreMod.MOD_ID,
-            "default"
-        )
-    ) {
-        override fun subtype(): String = "mcotelcore/scraper_core"
-
-        private fun getBlockResourceLocation(animatable: ScraperBlockEntity): ResourceLocation? {
-            val holder = animatable.blockState.blockHolder
-            return holder.unwrapKey().getOrElse {
-                logMissingBlockKeyWarning(holder)
-                return null
-            }.location()
-        }
-
-        private fun getCoreTextureForBlockResource(blockResourceLocation: ResourceLocation): ResourceLocation {
-            return blockResourceLocation.withPath("textures/mcotelcore/scraper_core/${blockResourceLocation.path}.png")
-        }
-
-        private fun getCoreAnimationForBlockResource(blockResourceLocation: ResourceLocation): ResourceLocation {
-            return blockResourceLocation.withPath("animations/mcotelcore/scraper_core/${blockResourceLocation.path}.animation.json")
-        }
-
-        @Deprecated("Deprecated")
-        override fun getTextureResource(animatable: ScraperBlockEntity): ResourceLocation {
-            return getCoreTextureForBlockResource(
-                getBlockResourceLocation(animatable)
-                    ?: return MissingTextureAtlasSprite.getLocation()
-            )
-        }
-
-        override fun getAnimationResource(animatable: ScraperBlockEntity): ResourceLocation {
-            return getCoreAnimationForBlockResource(
-                getBlockResourceLocation(animatable)
-                    ?: return MissingTextureAtlasSprite.getLocation().withSuffix(".animation.json")
-            )
-        }
-    }
 
     companion object {
 
@@ -71,9 +33,38 @@ class ScraperCoreRenderLayer(entityRendererIn: GeoRenderer<ScraperBlockEntity>) 
 
     }
 
+    object CoreModel : DefaultedGeoModel<ScraperBlockItem>(
+        ScraperBlockEntityCoreRenderLayer.CoreModel.assetSubPath,
+    ) {
+        public override fun subtype(): String = ScraperBlockEntityCoreRenderLayer.CoreModel.subtype()
+
+        private fun getBlockResourceLocation(animatable: ScraperBlockItem): ResourceLocation? {
+            val holder = animatable.block.`arch$holder`()
+            return holder.unwrapKey().getOrElse {
+                logMissingBlockKeyWarning(holder)
+                return null
+            }.location()
+        }
+
+        @Deprecated("Deprecated")
+        override fun getTextureResource(animatable: ScraperBlockItem): ResourceLocation {
+            return ScraperBlockEntityCoreRenderLayer.getCoreTextureForBlockResource(
+                getBlockResourceLocation(animatable)
+                    ?: return MissingTextureAtlasSprite.getLocation()
+            )
+        }
+
+        override fun getAnimationResource(animatable: ScraperBlockItem): ResourceLocation {
+            return ScraperBlockEntityCoreRenderLayer.getCoreAnimationForBlockResource(
+                getBlockResourceLocation(animatable)
+                    ?: return MissingTextureAtlasSprite.getLocation().withSuffix(".animation.json")
+            )
+        }
+    }
+
     override fun render(
         poseStack: PoseStack,
-        animatable: ScraperBlockEntity,
+        animatable: ScraperBlockItem,
         bakedModel: BakedGeoModel,
         renderType: RenderType?,
         bufferSource: MultiBufferSource,

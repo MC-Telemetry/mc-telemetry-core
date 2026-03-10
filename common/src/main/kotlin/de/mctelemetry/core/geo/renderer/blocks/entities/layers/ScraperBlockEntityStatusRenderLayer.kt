@@ -15,13 +15,15 @@ import software.bernie.geckolib.model.DefaultedGeoModel
 import software.bernie.geckolib.renderer.GeoRenderer
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer
 
-class ScraperStatusRenderLayer(entityRendererIn: GeoRenderer<ScraperBlockEntity>) :
+class ScraperBlockEntityStatusRenderLayer(entityRendererIn: GeoRenderer<ScraperBlockEntity>) :
     GeoRenderLayer<ScraperBlockEntity>(entityRendererIn) {
 
-    object StatusModel : DefaultedGeoModel<ScraperBlockEntity>(
-        ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "default")
-    ) {
-        override fun subtype(): String = "mcotelcore/scraper_status"
+    companion object {
+
+        private val statusModelLocation: ResourceLocation = ResourceLocation.fromNamespaceAndPath(
+            OTelCoreMod.MOD_ID,
+            "default"
+        )
 
         val ErrorTextureLocation: ResourceLocation =
             ResourceLocation.fromNamespaceAndPath(
@@ -62,12 +64,7 @@ class ScraperStatusRenderLayer(entityRendererIn: GeoRenderer<ScraperBlockEntity>
             "animations/mcotelcore/scraper_status/scraper_not_configured.png"
         )
 
-
-        private fun getStatus(animatable: ScraperBlockEntity): ObservationSourceErrorState.Type {
-            return animatable.blockState.getValue(ObservationSourceContainerBlock.ERROR)
-        }
-
-        private fun getStatusTextureForStateType(type: ObservationSourceErrorState.Type): ResourceLocation {
+        fun getStatusTextureForStateType(type: ObservationSourceErrorState.Type): ResourceLocation {
             return when (type) {
                 ObservationSourceErrorState.Type.NotConfigured -> NotConfiguredTextureLocation
                 ObservationSourceErrorState.Type.Ok -> OkTextureLocation
@@ -76,13 +73,25 @@ class ScraperStatusRenderLayer(entityRendererIn: GeoRenderer<ScraperBlockEntity>
             }
         }
 
-        private fun getStatusAnimationForStateType(type: ObservationSourceErrorState.Type): ResourceLocation {
+        fun getStatusAnimationForStateType(type: ObservationSourceErrorState.Type): ResourceLocation {
             return when (type) {
                 ObservationSourceErrorState.Type.NotConfigured -> NotConfiguredAnimationLocation
                 ObservationSourceErrorState.Type.Ok -> OkAnimationLocation
                 ObservationSourceErrorState.Type.Warnings -> WarningAnimationLocation
                 ObservationSourceErrorState.Type.Errors -> ErrorAnimationLocation
             }
+        }
+    }
+
+    object StatusModel : DefaultedGeoModel<ScraperBlockEntity>(
+        statusModelLocation
+    ) {
+        public override fun subtype(): String = "mcotelcore/scraper_status"
+
+        val assetSubPath: ResourceLocation = statusModelLocation
+
+        private fun getStatus(animatable: ScraperBlockEntity): ObservationSourceErrorState.Type {
+            return animatable.blockState.getValue(ObservationSourceContainerBlock.ERROR)
         }
 
         @Deprecated("Deprecated")
