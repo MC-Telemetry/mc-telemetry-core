@@ -9,29 +9,40 @@ import de.mctelemetry.core.observations.model.ObservationSourceErrorState
 import net.minecraft.client.renderer.MultiBufferSource
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.resources.ResourceLocation
-import software.bernie.geckolib.cache.GeckoLibCache
 import software.bernie.geckolib.cache.`object`.BakedGeoModel
+import software.bernie.geckolib.cache.texture.AutoGlowingTexture
 import software.bernie.geckolib.model.DefaultedBlockGeoModel
 import software.bernie.geckolib.model.GeoModel
 import software.bernie.geckolib.renderer.GeoRenderer
 import software.bernie.geckolib.renderer.layer.GeoRenderLayer
-import software.bernie.geckolib.util.GeckoLibUtil
 
 class ScraperStatusRenderLayer(entityRendererIn: GeoRenderer<ScraperBlockEntity>) :
     GeoRenderLayer<ScraperBlockEntity>(entityRendererIn) {
 
     companion object {
-        //val NotConfiguredTexture = ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "scraper_ok")
-        val ErrorModelLocation = ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "textures/block/scraper_error.png")
-        //val ErrorModelLocation = ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "geo/block/scraper_error")
-        operator fun get(errorState: ObservationSourceErrorState.Type): ResourceLocation? {
-            return when(errorState) {
-                ObservationSourceErrorState.Type.Errors -> ErrorModelLocation
-                else -> null
+        val StatusModelLocation: ResourceLocation =
+            ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "geo/block/scraper_error.geo.json")
+        val ErrorTextureLocation: ResourceLocation =
+            ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "textures/scraper_status/scraper_error.png")
+        val OkTextureLocation: ResourceLocation =
+            ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "textures/scraper_status/scraper_ok.png")
+        val WarningTextureLocation: ResourceLocation =
+            ResourceLocation.fromNamespaceAndPath(OTelCoreMod.MOD_ID, "textures/scraper_status/scraper_warning.png")
+        val NotConfiguredTextureLocation: ResourceLocation = ResourceLocation.fromNamespaceAndPath(
+            OTelCoreMod.MOD_ID,
+            "textures/scraper_status/scraper_not_configured.png"
+        )
+
+        fun getStatusTexture(errorState: ObservationSourceErrorState.Type): ResourceLocation {
+            return when (errorState) {
+                ObservationSourceErrorState.Type.NotConfigured -> NotConfiguredTextureLocation
+                ObservationSourceErrorState.Type.Ok -> OkTextureLocation
+                ObservationSourceErrorState.Type.Warnings -> WarningTextureLocation
+                ObservationSourceErrorState.Type.Errors -> ErrorTextureLocation
             }
         }
 
-        val ERROR_STATUS_MODEL: GeoModel<ScraperBlockEntity> = DefaultedBlockGeoModel(ErrorModelLocation)
+        val STATUS_MODEL: GeoModel<ScraperBlockEntity> = DefaultedBlockGeoModel(StatusModelLocation)
     }
 
     override fun render(
@@ -56,30 +67,22 @@ class ScraperStatusRenderLayer(entityRendererIn: GeoRenderer<ScraperBlockEntity>
             packedLight,
             packedOverlay
         )
-        if(buffer == null) return
-        poseStack.pushPose()
-        try {
-            val renderType2 = RenderType.entityTranslucent(ErrorModelLocation)
-            poseStack.scale(1.00001F,1.00001F,1.00001F)
-            renderer.reRender(
-                bakedModel,//ERROR_STATUS_MODEL.getBakedModel(ErrorModelLocation),
-                poseStack,
-                bufferSource,
-                animatable,
-                renderType2,
-                bufferSource.getBuffer(renderType2),
-                partialTick,
-                packedLight,
-                packedOverlay,
-                renderer.getRenderColor(animatable, partialTick, packedLight).argbInt,
-            )
-        } finally {
-            poseStack.popPose()
-        }
-    }
-
-    override fun getTextureResource(animatable: ScraperBlockEntity): ResourceLocation {
+        if (buffer == null) return
+        val renderer = renderer
+        val statusModel = STATUS_MODEL.getBakedModel(StatusModelLocation)
         val errorState = animatable.blockState.getValue(ObservationSourceContainerBlock.ERROR)
-        return ScraperStatusRenderLayer[errorState] ?: super.getTextureResource(animatable)
+        val statusRenderType = AutoGlowingTexture.getRenderType(getStatusTexture(errorState))
+        renderer.reRender(
+            statusModel,
+            poseStack,
+            bufferSource,
+            animatable,
+            statusRenderType,
+            bufferSource.getBuffer(statusRenderType),
+            partialTick,
+            packedLight,
+            packedOverlay,
+            renderer.getRenderColor(animatable, partialTick, packedLight).argbInt,
+        )
     }
 }
