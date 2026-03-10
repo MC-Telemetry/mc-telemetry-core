@@ -6,13 +6,24 @@ import de.mctelemetry.core.geo.renderer.blocks.entities.layers.ScraperCoreRender
 import de.mctelemetry.core.geo.renderer.blocks.entities.layers.ScraperStatusRenderLayer
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider
 import net.minecraft.resources.ResourceLocation
+import software.bernie.geckolib.animatable.GeoAnimatable
 import software.bernie.geckolib.model.DefaultedBlockGeoModel
+import software.bernie.geckolib.model.GeoModel
 import software.bernie.geckolib.renderer.GeoBlockRenderer
 
 class ScraperBlockEntityRenderer(context: BlockEntityRendererProvider.Context) :
     GeoBlockRenderer<ScraperBlockEntity>(
-        DefaultedBlockGeoModel(ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "scraper"))
+        model()
     ) {
+
+    companion object {
+        val Model: GeoModel<GeoAnimatable> =
+            DefaultedBlockGeoModel(ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "scraper"))
+
+        @Suppress("UNCHECKED_CAST")
+        fun <T: GeoAnimatable> model() = Model as GeoModel<T>
+    }
+
     init {
         addRenderLayer(ScraperCoreRenderLayer(this))
         addRenderLayer(ScraperStatusRenderLayer(this))

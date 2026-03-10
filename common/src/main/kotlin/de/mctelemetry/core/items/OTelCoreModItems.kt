@@ -7,7 +7,6 @@ import dev.architectury.registry.registries.DeferredRegister
 import dev.architectury.registry.registries.RegistrySupplier
 import net.minecraft.core.registries.Registries
 import net.minecraft.resources.ResourceLocation
-import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.Item
 import java.util.function.Supplier
 
@@ -19,7 +18,7 @@ object OTelCoreModItems {
     }
 
     val NBT_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("nbt_scraper") {
-        BlockItem(
+        ScraperBlockItem(
             OTelCoreModBlocks.NBT_SCRAPER_BLOCK.get(),
             Item.Properties().`arch$tab`(OTelCoreMod.OTEL_TAB)
                 .component(OTelCoreModComponents.GENERATE_SINGLETON_STATES.get(), true)
@@ -27,7 +26,7 @@ object OTelCoreModItems {
     }
 
     val CONTAINER_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("container_scraper") {
-        BlockItem(
+        ScraperBlockItem(
             OTelCoreModBlocks.CONTAINER_SCRAPER_BLOCK.get(),
             Item.Properties()
                 .`arch$tab`(OTelCoreMod.OTEL_TAB)
@@ -36,7 +35,7 @@ object OTelCoreModItems {
     }
 
     val REDSTONE_SCRAPER_BLOCK: RegistrySupplier<Item> = registerItem("redstone_scraper") {
-        BlockItem(
+        ScraperBlockItem(
             OTelCoreModBlocks.REDSTONE_SCRAPER_BLOCK.get(),
             Item.Properties()
                 .`arch$tab`(OTelCoreMod.OTEL_TAB)
