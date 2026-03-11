@@ -75,7 +75,7 @@ import kotlin.contracts.contract
 import kotlin.jvm.optionals.getOrElse
 import kotlin.streams.asSequence
 
-abstract class ObservationSourceContainerBlockEntity<SC : Any>(
+abstract class ObservationSourceContainerBlockEntity<SO : Any>(
     blockEntityType: BlockEntityType<*>,
     blockPos: BlockPos,
     blockState: BlockState,
@@ -90,27 +90,27 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
             }
             field = value
         }
-    val container: ObservationSourceContainer<SC>
+    val container: ObservationSourceContainer<SO>
         get() = _container ?: throw IllegalStateException("Container has not been initialized yet")
-    val containerIfInitialized: ObservationSourceContainer<SC>?
+    val containerIfInitialized: ObservationSourceContainer<SO>?
         get() = _container
 
     private var setupRun = false
     private var onLevelCallback: ((Level) -> Unit)? = null
 
-    val observationStates: Byte2ObjectMap<ObservationSourceState<in SC, *>>
+    val observationStates: Byte2ObjectMap<ObservationSourceState<in SO, *>>
         get() = (_container ?: throw IllegalStateException("Container has not been initialized yet")).observationStates
-    val observationStatesIfInitialized: Byte2ObjectMap<ObservationSourceState<in SC, *>>?
+    val observationStatesIfInitialized: Byte2ObjectMap<ObservationSourceState<in SO, *>>?
         get() = _container?.observationStates
 
     protected val blockEntityType: BlockEntityType<*>
         get() = super.type
 
-    abstract override fun getType(): BlockEntityType<out ObservationSourceContainerBlockEntity<SC>>
+    abstract override fun getType(): BlockEntityType<out ObservationSourceContainerBlockEntity<SO>>
 
-    abstract val contextClass: Class<out SC>
+    abstract val contextClass: Class<out SO>
 
-    abstract val context: SC?
+    abstract val context: SO?
 
     protected open fun findObservationSources(provider: HolderLookup.Provider): List<IObservationSource<*, *>> {
         val sourceLookup = provider.lookupOrThrow(OTelCoreModAPI.ObservationSources)
@@ -321,7 +321,7 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
         }
     }
 
-    private fun onDirty(state: ObservationSourceState<in SC, *>) {
+    private fun onDirty(state: ObservationSourceState<in SO, *>) {
         generalBlockSync()
     }
 
@@ -391,7 +391,7 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
             if (generateSingletonStates && container.observationStates.isEmpty()) {
                 for (source in container.observationSources) {
                     if (source !is IObservationSourceSingleton<*, *, *>) continue
-                    container.addObservationSourceState(source as IObservationSourceSingleton<in SC, *, *>)
+                    container.addObservationSourceState(source as IObservationSourceSingleton<in SO, *, *>)
                 }
             }
         }
@@ -399,15 +399,15 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
 
     protected open inner class BlockEntityObservationSourceContainer(
         observationSources: Iterable<IObservationSource<*, *>>,
-    ) : ObservationSourceContainer<SC>() {
+    ) : ObservationSourceContainer<SO>() {
 
-        override val observationSources: Set<IObservationSource<in SC, *>> =
+        override val observationSources: Set<IObservationSource<in SO, *>> =
             observationSources.mapNotNullTo(mutableSetOf()) {
-                if (!it.sourceContextType.isAssignableFrom(contextClass)) {
+                if (!it.sourceOwnerType.isAssignableFrom(contextClass)) {
                     return@mapNotNullTo null
                 }
                 @Suppress("UNCHECKED_CAST") // cast indirectly checked by contextType
-                (it as IObservationSource<SC, *>)
+                (it as IObservationSource<SO, *>)
             }
 
         protected var _cascadesUpdates: Boolean = false
@@ -442,24 +442,24 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
             }
         }
 
-        protected val _observationStates: Byte2ObjectMap<ObservationSourceState<in SC, *>> =
+        protected val _observationStates: Byte2ObjectMap<ObservationSourceState<in SO, *>> =
             Byte2ObjectOpenHashMap()
 
-        override val observationStates: Byte2ObjectMap<ObservationSourceState<in SC, *>> =
+        override val observationStates: Byte2ObjectMap<ObservationSourceState<in SO, *>> =
             Byte2ObjectMaps.unmodifiable(_observationStates)
 
         public override fun setupCallbacks() {
             super.setupCallbacks()
         }
 
-        override fun setupCallback(state: ObservationSourceState<in SC, *>) {
+        override fun setupCallback(state: ObservationSourceState<in SO, *>) {
             super.setupCallback(state)
             state.subscribeToDirty(this@ObservationSourceContainerBlockEntity::onDirty)
         }
 
         context(ops: DynamicOps<T>)
-        protected open fun <T, SC, I : IObservationSourceInstance<SC, *, I>>
-                instantiateObservationSource(source: IObservationSource<SC, I>, data: T?): DataResult<I> {
+        protected open fun <T, SO, I : IObservationSourceInstance<SO, *, I>>
+                instantiateObservationSource(source: IObservationSource<SO, I>, data: T?): DataResult<I> {
             return source.codec.parse(ops, data ?: ops.empty())
         }
 
@@ -469,21 +469,21 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
             return idCounter.getAndUpdate { (it + 1) % 256 }.toByte()
         }
 
-        protected open fun <SC, I : IObservationSourceInstance<SC, *, I>> makeNewSourceState(
+        protected open fun <SO, I : IObservationSourceInstance<SO, *, I>> makeNewSourceState(
             instance: I,
             id: ObservationSourceStateID
-        ): ObservationSourceState<SC, I> {
+        ): ObservationSourceState<SO, I> {
             return ObservationSourceState(instance, id)
         }
 
         context(ops: DynamicOps<T>)
         final override fun <T> addObservationSourceState(
-            source: IObservationSource<in SC, *>,
+            source: IObservationSource<in SO, *>,
             data: T?
-        ): ObservationSourceState<in SC, *> {
+        ): ObservationSourceState<in SO, *> {
             @Suppress("UNCHECKED_CAST")
             val instance = instantiateObservationSource(
-                source as IObservationSource<SC, *>,
+                source as IObservationSource<SO, *>,
                 data
             ).resultOrPartialOrElse(
                 onError = {
@@ -494,12 +494,12 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
         }
 
         override fun addObservationSourceState(
-            instance: IObservationSourceInstance<in SC, *, *>
-        ): ObservationSourceState<in SC, *> {
+            instance: IObservationSourceInstance<in SO, *, *>
+        ): ObservationSourceState<in SO, *> {
             if (_observationStates.size >= UByte.MAX_VALUE.toInt()) {
                 throw IllegalArgumentException("Cannot add more than 256 observations to one ObservationSourceContainer")
             }
-            var result: ObservationSourceState<in SC, *>? = null
+            var result: ObservationSourceState<in SO, *>? = null
             var nextId: Byte = getNextId()
             val startId: Byte = nextId
             result =
@@ -543,7 +543,7 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
             return true
         }
 
-        override val context: SC?
+        override val context: SO?
             get() = this@ObservationSourceContainerBlockEntity.context
 
         override val instrumentManager: IInstrumentManager
@@ -560,7 +560,7 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
             }
 
         context(ops: DynamicOps<T>)
-        private fun <T, I : IObservationSourceInstance<in SC, *, I>> mergeSourceInstanceIntoExistingState(
+        private fun <T, I : IObservationSourceInstance<in SO, *, I>> mergeSourceInstanceIntoExistingState(
             state: ObservationSourceState<*, *>,
             source: IObservationSource<*, I>,
             data: T?
@@ -573,11 +573,11 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
             @Suppress("UNCHECKED_CAST") // cast is guaranteed by equality of `source` and `state.source`
             state as ObservationSourceState<*, I>
             @Suppress("UNCHECKED_CAST")
-            // could be checked statically by providing SC as function type parameter, but SC is not known at call site.
+            // could be checked statically by providing SO as function type parameter, but SO is not known at call site.
             val instance = instantiateObservationSource(
                 source as IObservationSource<
-                        SC,
-                        IObservationSourceInstance<SC, *, *>
+                        SO,
+                        IObservationSourceInstance<SO, *, *>
                         >,
                 data
             ) as DataResult<I>
@@ -592,8 +592,8 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
         private inline fun <T, R> loadTagsAndApplyToState(
             input: T,
             removeMissing: Boolean = true,
-            crossinline block: context(DynamicOps<T>) (state: ObservationSourceState<in SC, *>, data: T?, isNew: Boolean) -> DataResult<R>,
-        ): DataResult<Map<ObservationSourceState<in SC, *>, DataResult<R>>> {
+            crossinline block: context(DynamicOps<T>) (state: ObservationSourceState<in SO, *>, data: T?, isNew: Boolean) -> DataResult<R>,
+        ): DataResult<Map<ObservationSourceState<in SO, *>, DataResult<R>>> {
             contract {
                 callsInPlace(block, InvocationKind.UNKNOWN)
             }
@@ -618,10 +618,10 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
                             })
                             return@forEachIndexed
                         }
-                        assert(source.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
+                        assert(source.sourceOwnerType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
                         @Suppress("UNCHECKED_CAST")
                         // cast indirectly checked by being element of observationSources
-                        source as IObservationSource<in SC, *>
+                        source as IObservationSource<in SO, *>
 
                         val instanceId: Byte = observationElement.getNumberValue("index").resultOrElse {
                             it.addErrorTo(errors)
@@ -719,7 +719,7 @@ abstract class ObservationSourceContainerBlockEntity<SC : Any>(
             input: T,
             removeMissing: Boolean = true,
         ): DataResult<(Level) -> Unit> {
-            var pendingNewStates: MutableList<ObservationSourceState<in SC, *>>? =
+            var pendingNewStates: MutableList<ObservationSourceState<in SO, *>>? =
                 null
             val delayedResultMap = loadTagsAndApplyToState(
                 input,

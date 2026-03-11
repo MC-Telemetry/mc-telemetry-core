@@ -6,11 +6,8 @@ import net.minecraft.core.GlobalPos
 import net.minecraft.world.level.block.entity.BlockEntity
 
 interface IPositionObservationSource<
-        I : IPositionObservationSourceInstance<*, I>
-        > : IObservationSource<BlockEntity, I> {
+        SO: BlockEntity,
+        I : IPositionObservationSourceInstance<SO, *, I>
+        > : IObservationSource<SO, I> {
     val observedPosition: AttributeDataSource.Reference.ObservationSourceAttributeReference<GlobalPos>
-
-
-    override val sourceContextType: Class<BlockEntity>
-        get() = BlockEntity::class.java
 }

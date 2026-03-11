@@ -10,15 +10,15 @@ import net.minecraft.network.codec.StreamCodec
 import net.minecraft.resources.ResourceKey
 
 interface IObservationSource<
-        SC,
-        I : IObservationSourceInstance<SC, *, I>
+        SO,
+        I : IObservationSourceInstance<SO, *, I>
         > {
 
     val id: ResourceKey<IObservationSource<*, *>>
 
     val attributes: IAttributeDateSourceReferenceSet
 
-    val sourceContextType: Class<SC>
+    val sourceOwnerType: Class<SO>
 
     val streamCodec: StreamCodec<in RegistryFriendlyByteBuf, I>
 

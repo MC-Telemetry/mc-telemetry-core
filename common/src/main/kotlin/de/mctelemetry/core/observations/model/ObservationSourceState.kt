@@ -21,12 +21,12 @@ import kotlin.jvm.optionals.getOrNull
 
 typealias ObservationSourceStateID = UByte
 
-open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
+open class ObservationSourceState<SO, I : IObservationSourceInstance<SO, *, I>>(
     instance: I,
     val id: ObservationSourceStateID,
 ) : AutoCloseable, IInstrumentAvailabilityCallback<IInstrumentRegistration.Mutable<*>> {
 
-    val source: IObservationSource<SC, out I> = instance.source
+    val source: IObservationSource<SO, out I> = instance.source
     open var instance: I
         get() = instanceField
         set(value) {
@@ -45,7 +45,7 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
         return true
     }
 
-    protected val onDirtyListeners: MutableSet<(ObservationSourceState<SC, I>) -> Unit> = linkedSetOf()
+    protected val onDirtyListeners: MutableSet<(ObservationSourceState<SO, I>) -> Unit> = linkedSetOf()
 
     var cascadeUpdates: Boolean = false
         set(value) {
@@ -272,7 +272,7 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
 
     open fun updateRegistration(
         manager: IMutableInstrumentManager,
-        instrumentSubRegistrationFactory: InstrumentSubRegistrationFactory<SC>,
+        instrumentSubRegistrationFactory: InstrumentSubRegistrationFactory<SO>,
     ) {
         val configuration = configuration ?: return
         val configurationInstrument = configuration.instrument
@@ -396,14 +396,14 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
         }
     }
 
-    fun subscribeToDirty(block: (ObservationSourceState<SC, I>) -> Unit): AutoCloseable {
+    fun subscribeToDirty(block: (ObservationSourceState<SO, I>) -> Unit): AutoCloseable {
         onDirtyListeners.add(block)
         return AutoCloseable {
             unsubscribeFromDirty(block)
         }
     }
 
-    fun unsubscribeFromDirty(block: (ObservationSourceState<SC, I>) -> Unit) {
+    fun unsubscribeFromDirty(block: (ObservationSourceState<SO, I>) -> Unit) {
         onDirtyListeners.remove(block)
     }
 
@@ -515,10 +515,10 @@ open class ObservationSourceState<SC, I : IObservationSourceInstance<SC, *, I>>(
             }
     }
 
-    interface InstrumentSubRegistrationFactory<out SC> {
+    interface InstrumentSubRegistrationFactory<out SO> {
 
         fun <T : IInstrumentRegistration.Mutable<T>> createInstrumentCallback(
-            state: ObservationSourceState<in SC, *>,
+            state: ObservationSourceState<in SO, *>,
             configuration: ObservationSourceConfiguration,
             instrument: IInstrumentRegistration.Mutable<*>,
         ): IInstrumentRegistration.Callback<T>

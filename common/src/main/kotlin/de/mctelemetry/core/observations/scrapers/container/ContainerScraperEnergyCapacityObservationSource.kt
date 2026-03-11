@@ -22,7 +22,7 @@ object ContainerScraperEnergyCapacityObservationSource :
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "container_scraper.energy.capacity")
     )
 
-    context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
     override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

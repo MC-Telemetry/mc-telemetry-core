@@ -9,33 +9,34 @@ import de.mctelemetry.core.api.observations.IObservationSourceSingleton
 import de.mctelemetry.core.api.observations.ObservationSourceBase
 import de.mctelemetry.core.api.observations.position.IPositionObservationSourceInstance.Companion.defaultFacingAccessor
 import de.mctelemetry.core.api.observations.position.IPositionObservationSourceInstance.Companion.observeDefaultImpl
+import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.persistence.DirectUnitCodec
+import de.mctelemetry.core.utils.EmptyAutoCloseable
 import net.minecraft.core.Direction
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 import net.minecraft.world.level.block.entity.BlockEntity
 
 abstract class PositionObservationSourceBase<
-        I : IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>
-        > : ObservationSourceBase<BlockEntity, I>(),
-    IPositionObservationSource<I> {
+        SO : BlockEntity,
+        I : IPositionObservationSourceInstance<SO, *, I>
+        > : ObservationSourceBase<SO, I>(),
+    IPositionObservationSource<SO, I> {
 
     final override val observedPosition =
         BuiltinAttributeKeyTypes.GlobalPosType.createObservationAttributeReference("pos")
 
-    final override val sourceContextType: Class<BlockEntity> = BlockEntity::class.java
-
-    open fun getFacingDirection(sourceContext: BlockEntity): Direction? {
-        return defaultFacingAccessor(sourceContext)
+    open fun getFacingDirection(sourceOwner: BlockEntity): Direction? {
+        return defaultFacingAccessor(sourceOwner)
     }
 
-    abstract class PositionInstanceBase<out I : PositionInstanceBase<I>>(
-        override val source: PositionObservationSourceBase<out I>
-    ) : InstanceBase<BlockEntity, I>(source),
-        IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>
+    abstract class PositionInstanceBase<SO: BlockEntity, OC: AutoCloseable, out I : PositionInstanceBase<SO, OC, I>>(
+        override val source: PositionObservationSourceBase<SO, out I>
+    ) : InstanceBase<SO, OC, I>(source),
+        IPositionObservationSourceInstance<SO, OC, I>
     {
 
-        context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+        context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
         final override fun observe(
             recorder: IObservationRecorder.Unresolved,
             unusedAttributes: Set<AttributeDataSource<*>>
@@ -43,19 +44,20 @@ abstract class PositionObservationSourceBase<
             observeDefaultImpl(recorder, unusedAttributes, source::getFacingDirection)
         }
 
-        context(sourceContext: BlockEntity)
-        override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
-            return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+        abstract class Simple<out I : Simple<I>>(source: PositionObservationSourceBase<BlockEntity, out I>) :
+            PositionInstanceBase<BlockEntity, EmptyAutoCloseable, I>(source) {
+            context(sourceOwner: BlockEntity, mapping: ObservationAttributeMapping)
+            final override fun createObservationContext(): EmptyAutoCloseable = EmptyAutoCloseable
         }
     }
 
-    abstract class PositionSingletonBase<I : PositionSingletonBase<I>> :
-        PositionObservationSourceBase<I>(),
-        IPositionObservationSource<I>,
-        IPositionObservationSourceInstance<IAttributeValueStore.MapAttributeStore, I>,
-        IObservationSourceSingleton<BlockEntity, IAttributeValueStore.MapAttributeStore, I> {
+    abstract class PositionSingletonBase<SO: BlockEntity, OC: AutoCloseable, I : PositionSingletonBase<SO, OC, I>> :
+        PositionObservationSourceBase<SO, I>(),
+        IPositionObservationSource<SO, I>,
+        IPositionObservationSourceInstance<SO, OC, I>,
+        IObservationSourceSingleton<SO, OC, I> {
 
-        override val source: PositionSingletonBase<I>
+        override val source: PositionSingletonBase<SO, OC, I>
             get() = this
 
         @Suppress("UNCHECKED_CAST")
@@ -65,9 +67,13 @@ abstract class PositionObservationSourceBase<
         override val streamCodec: StreamCodec<in RegistryFriendlyByteBuf, I> = StreamCodec.unit(typedThis)
         override val codec: Codec<I> = DirectUnitCodec(typedThis)
 
-        context(sourceContext: BlockEntity)
-        override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
-            return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+        abstract class Simple<I : Simple<I>> :
+            PositionSingletonBase<BlockEntity, EmptyAutoCloseable, I>() {
+            context(sourceOwner: BlockEntity, mapping: ObservationAttributeMapping)
+            final override fun createObservationContext(): EmptyAutoCloseable = EmptyAutoCloseable
+
+            override val sourceOwnerType: Class<BlockEntity>
+                get() = BlockEntity::class.java
         }
     }
 }

@@ -4,6 +4,7 @@ import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
+import de.mctelemetry.core.utils.withValue
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
@@ -12,14 +13,15 @@ import net.minecraft.world.level.block.entity.BlockEntity
 import net.minecraft.world.level.block.state.properties.BlockStateProperties
 
 interface IPositionObservationSourceInstance<
-        AS : IAttributeValueStore.Mutable,
-        out I : IPositionObservationSourceInstance<AS, I>,
-        > : IObservationSourceInstance<BlockEntity, AS, I> {
+        SO: BlockEntity,
+        OC: AutoCloseable,
+        out I : IPositionObservationSourceInstance<SO, OC, I>,
+        > : IObservationSourceInstance<SO, OC, I> {
 
 
-    override val source: IPositionObservationSource<out I>
+    override val source: IPositionObservationSource<SO, out I>
 
-    context(sourceContext: BlockEntity, attributeStore: AS)
+    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
     fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,
@@ -28,7 +30,7 @@ interface IPositionObservationSourceInstance<
         unusedAttributes: Set<AttributeDataSource<*>>
     )
 
-    context(sourceContext: BlockEntity, attributeStore: AS)
+    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
     override fun observe(recorder: IObservationRecorder.Unresolved, unusedAttributes: Set<AttributeDataSource<*>>) {
         observeDefaultImpl(recorder, unusedAttributes)
     }
@@ -43,18 +45,18 @@ interface IPositionObservationSourceInstance<
             return null
         }
 
-        context(sourceContext: BlockEntity, attributeStore: AS)
-        protected inline fun <AS : IAttributeValueStore.Mutable> IPositionObservationSourceInstance<AS, *>.observeDefaultImpl(
+        context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
+        protected inline fun <SO: BlockEntity, OC: AutoCloseable> IPositionObservationSourceInstance<SO, OC, *>.observeDefaultImpl(
             recorder: IObservationRecorder.Unresolved,
             unusedAttributes: Set<AttributeDataSource<*>>,
             facingAccessor: (BlockEntity) -> Direction? = ::defaultFacingAccessor,
         ) {
-            val level = sourceContext.level
-            if (level == null || sourceContext.isRemoved) return
+            val level = sourceOwner.level
+            if (level == null || sourceOwner.isRemoved) return
             if (level !is ServerLevel) throw IllegalArgumentException("Observed entity is part of a non-server level: $level")
-            val scraperPos = sourceContext.blockPos
+            val scraperPos = sourceOwner.blockPos
             if (!(level.isLoaded(scraperPos) && level.shouldTickBlocksAt(scraperPos))) return
-            val facing = facingAccessor(sourceContext)
+            val facing = facingAccessor(sourceOwner)
             val observationPos: BlockPos
             if (facing != null) {
                 observationPos = scraperPos.relative(facing)
@@ -62,8 +64,9 @@ interface IPositionObservationSourceInstance<
             } else {
                 observationPos = scraperPos
             }
-            source.observedPosition.set(GlobalPos(level.dimension(), observationPos))
-            observePosition(recorder, level, observationPos, facing, unusedAttributes)
+            source.observedPosition.withValue(GlobalPos(level.dimension(), observationPos)) {
+                observePosition(recorder, level, observationPos, facing, unusedAttributes)
+            }
         }
     }
 }

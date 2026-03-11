@@ -77,7 +77,7 @@ object NbtScraperSignLineObservationSource :
             require(line in 0..(2 * SignText.LINES)) { "Line number must be between 0 and ${2 * SignText.LINES}" }
         }
 
-        context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+        context(sourceOwner: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
         override fun observePosition(
             recorder: IObservationRecorder.Unresolved,
             level: ServerLevel,

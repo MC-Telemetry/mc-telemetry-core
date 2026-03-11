@@ -10,7 +10,6 @@ import de.mctelemetry.core.api.instruments.manager.IMutableInstrumentManager
 import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IObservationSourceInstance
-import de.mctelemetry.core.utils.closeAllRethrow
 import de.mctelemetry.core.utils.forEachRethrow
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import it.unimi.dsi.fastutil.bytes.Byte2ObjectMap
@@ -22,54 +21,54 @@ import net.minecraft.gametest.framework.GameTestTimeoutException
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
-    ObservationSourceState.InstrumentSubRegistrationFactory<SC> {
+abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
+    ObservationSourceState.InstrumentSubRegistrationFactory<SO> {
 
-    abstract val observationSources: Set<IObservationSource<in SC, *>>
-    abstract val observationStates: Byte2ObjectMap<ObservationSourceState<in SC, *>>
+    abstract val observationSources: Set<IObservationSource<in SO, *>>
+    abstract val observationStates: Byte2ObjectMap<ObservationSourceState<in SO, *>>
 
-    abstract val context: SC?
+    abstract val context: SO?
 
     abstract val instrumentManager: IInstrumentManager
 
     open fun createAttributeLookup(): IAttributeValueStore = IAttributeValueStore.empty()
 
-    protected val onStateAddedCallbacks: MutableSet<(ObservationSourceContainer<SC>, ObservationSourceState<in SC, *>) -> Unit> =
+    protected val onStateAddedCallbacks: MutableSet<(ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit> =
         linkedSetOf()
 
 
-    protected val onStateRemovedCallbacks: MutableSet<(ObservationSourceContainer<SC>, ObservationSourceState<in SC, *>) -> Unit> =
+    protected val onStateRemovedCallbacks: MutableSet<(ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit> =
         linkedSetOf()
 
-    fun subscribeOnStateAdded(block: (ObservationSourceContainer<SC>, ObservationSourceState<in SC, *>) -> Unit): AutoCloseable {
+    fun subscribeOnStateAdded(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit): AutoCloseable {
         onStateAddedCallbacks.add(block)
         return AutoCloseable {
             unsubscribeOnStateAdded(block)
         }
     }
 
-    fun unsubscribeOnStateAdded(block: (ObservationSourceContainer<SC>, ObservationSourceState<in SC, *>) -> Unit) {
+    fun unsubscribeOnStateAdded(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit) {
         onStateAddedCallbacks.remove(block)
     }
 
-    fun subscribeOnStateRemoved(block: (ObservationSourceContainer<SC>, ObservationSourceState<in SC, *>) -> Unit): AutoCloseable {
+    fun subscribeOnStateRemoved(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit): AutoCloseable {
         onStateRemovedCallbacks.add(block)
         return AutoCloseable {
             unsubscribeOnStateRemoved(block)
         }
     }
 
-    fun unsubscribeOnStateRemoved(block: (ObservationSourceContainer<SC>, ObservationSourceState<in SC, *>) -> Unit) {
+    fun unsubscribeOnStateRemoved(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit) {
         onStateRemovedCallbacks.remove(block)
     }
 
-    protected fun triggerStateAdded(state: ObservationSourceState<in SC, *>) {
+    protected fun triggerStateAdded(state: ObservationSourceState<in SO, *>) {
         onStateAddedCallbacks.forEachRethrow {
             it(this, state)
         }
     }
 
-    protected fun triggerStateRemoved(state: ObservationSourceState<in SC, *>) {
+    protected fun triggerStateRemoved(state: ObservationSourceState<in SO, *>) {
         onStateRemovedCallbacks.forEachRethrow {
             it(this, state)
         }
@@ -87,7 +86,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
         }
     }
 
-    protected open fun setupCallback(state: ObservationSourceState<in SC, *>) {
+    protected open fun setupCallback(state: ObservationSourceState<in SO, *>) {
         dirtyRunningTracker.add(state.id.toByte())
         state.subscribeToDirty(::onDirty)
         runWithExceptionCleanup({ state.unsubscribeFromDirty(::onDirty) }) {
@@ -107,7 +106,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
         }
     }
 
-    protected fun onDirty(sourceState: ObservationSourceState<in SC, *>) {
+    protected fun onDirty(sourceState: ObservationSourceState<in SO, *>) {
         if (!dirtyRunningTracker.add(sourceState.id.toByte())) return
         try {
             if (!sourceState.isClosed) {
@@ -123,7 +122,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
         }
     }
 
-    protected open fun doOnDirty(state: ObservationSourceState<in SC, *>) {
+    protected open fun doOnDirty(state: ObservationSourceState<in SO, *>) {
         if (state.cascadeUpdates && !state.isClosed) {
             val instrumentManager = instrumentManager
             if (instrumentManager is IMutableInstrumentManager) {
@@ -135,7 +134,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
     }
 
     override fun <T : IInstrumentRegistration.Mutable<T>> createInstrumentCallback(
-        state: ObservationSourceState<in SC, *>,
+        state: ObservationSourceState<in SO, *>,
         configuration: ObservationSourceConfiguration,
         instrument: IInstrumentRegistration.Mutable<*>,
     ): IInstrumentRegistration.Callback<T> {
@@ -144,7 +143,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
     }
 
     protected inner class DefaultCallback(
-        private val state: ObservationSourceState<in SC, *>,
+        private val state: ObservationSourceState<in SO, *>,
     ) : IInstrumentRegistration.Callback<IInstrumentRegistration> {
 
         override fun observe(instrument: IInstrumentRegistration, recorder: IObservationRecorder.Resolved) {
@@ -160,7 +159,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
 
     open fun observe(
         recorder: IObservationRecorder.Resolved,
-        state: ObservationSourceState<in SC, *>,
+        state: ObservationSourceState<in SO, *>,
         forceObservation: Boolean = false,
     ) {
         withValidMapping(state, forceObservation = forceObservation) { mapping ->
@@ -183,7 +182,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
 
     open fun observe(
         recorder: IObservationRecorder.Resolved,
-        filter: Set<ObservationSourceState<in SC, *>>? = null,
+        filter: Set<ObservationSourceState<in SO, *>>? = null,
         forceObservation: Boolean = false,
     ) {
         if (observationStates.isEmpty()) return
@@ -224,7 +223,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
 
     open fun observe(
         recorder: IObservationRecorder.Unresolved,
-        state: ObservationSourceState<in SC, *>,
+        state: ObservationSourceState<in SO, *>,
         forceObservation: Boolean = false,
     ) {
         withValidMapping(state, forceObservation = forceObservation) { mapping ->
@@ -245,8 +244,8 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
     }
 
     open fun observe(
-        recorderFactory: (ObservationAttributeMapping, ObservationSourceState<in SC, *>) -> IObservationRecorder.Unresolved,
-        state: ObservationSourceState<in SC, *>,
+        recorderFactory: (ObservationAttributeMapping, ObservationSourceState<in SO, *>) -> IObservationRecorder.Unresolved,
+        state: ObservationSourceState<in SO, *>,
         forceObservation: Boolean = false,
     ) {
         withValidMapping(state, forceObservation = forceObservation) { mapping ->
@@ -268,7 +267,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
 
     open fun observe(
         recorder: IObservationRecorder.Unresolved,
-        filter: Set<ObservationSourceState<in SC, *>>? = null,
+        filter: Set<ObservationSourceState<in SO, *>>? = null,
         forceObservation: Boolean = false,
     ) {
         if (observationStates.isEmpty()) return
@@ -295,8 +294,8 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
     }
 
     open fun observe(
-        recorderFactory: (ObservationAttributeMapping, ObservationSourceState<in SC, *>) -> IObservationRecorder.Unresolved,
-        filter: Set<ObservationSourceState<in SC, *>>? = null,
+        recorderFactory: (ObservationAttributeMapping, ObservationSourceState<in SO, *>) -> IObservationRecorder.Unresolved,
+        filter: Set<ObservationSourceState<in SO, *>>? = null,
         forceObservation: Boolean = false,
     ) {
         if (observationStates.isEmpty()) return
@@ -323,7 +322,7 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
     }
 
     protected inline fun withValidMapping(
-        state: ObservationSourceState<in SC, *>,
+        state: ObservationSourceState<in SO, *>,
         forceObservation: Boolean = false,
         observationBlock: (ObservationAttributeMapping) -> Unit,
     ) {
@@ -349,15 +348,15 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
         }
     }
 
-    protected open fun <AS : IAttributeValueStore.Mutable> doObservation(
-        sourceInstance: IObservationSourceInstance<in SC, AS, *>,
-        sourceContext: SC,
+    protected open fun doObservation(
+        sourceInstance: IObservationSourceInstance<in SO, *, *>,
+        sourceOwner: SO,
         parentStore: IAttributeValueStore,
         unusedAttributesSet: MutableSet<AttributeDataSource<*>>,
         mapping: ObservationAttributeMapping,
         recorder: IObservationRecorder.Unresolved,
     ) {
-        context(sourceContext) {
+        context(sourceOwner) {
             val attributeStore = sourceInstance.createAttributeStore(parentStore)
             unusedAttributesSet.clear()
             mapping.findUnusedAttributeDataSources(attributeStore.references, unusedAttributesSet)
@@ -370,13 +369,13 @@ abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
 
     context(ops: DynamicOps<T>)
     abstract fun <T> addObservationSourceState(
-        source: IObservationSource<in SC, *>,
+        source: IObservationSource<in SO, *>,
         data: T? = null
-    ): ObservationSourceState<in SC, *>
+    ): ObservationSourceState<in SO, *>
 
     abstract fun addObservationSourceState(
-        instance: IObservationSourceInstance<in SC, *, *>
-    ): ObservationSourceState<in SC, *>
+        instance: IObservationSourceInstance<in SO, *, *>
+    ): ObservationSourceState<in SO, *>
 
     abstract fun removeObservationSourceState(id: ObservationSourceStateID): Boolean
 }

@@ -22,7 +22,7 @@ object RedstoneScraperPowerObservationSource :
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "redstone_scraper.power")
     )
 
-    context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
     override fun observeSide(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

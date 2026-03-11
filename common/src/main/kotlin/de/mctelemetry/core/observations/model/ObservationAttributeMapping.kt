@@ -13,6 +13,7 @@ import de.mctelemetry.core.api.attributes.MappedAttributeKeyValue
 import de.mctelemetry.core.api.attributes.canConvertTo
 import de.mctelemetry.core.api.attributes.convertFrom
 import de.mctelemetry.core.api.instruments.IInstrumentDefinition
+import de.mctelemetry.core.api.observations.IObservationAttributeMapping
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.common.Attributes
@@ -48,19 +49,19 @@ class ObservationAttributeMapping(
      *  - `A.assignableFrom(X)`, which will result in the conversion `it: X -> A.convertFrom(X, it) as A`
      **/
     mapping: Map<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>>,
-) {
+) : IObservationAttributeMapping {
 
     // store mapping sorted by base key name to reduce later sorting overhead during OTel-Attributes construction
-    val mapping: Map<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>> = mapping.toMap()
+    override val mapping: Map<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>> = mapping.toMap()
 
-    val attributeDataSources: Collection<AttributeDataSource<*>>
+    override val attributeDataSources: Collection<AttributeDataSource<*>>
         get() = mapping.values
-    val instrumentAttributes: Set<MappedAttributeKeyInfo<*, *, *>>
+    override val instrumentAttributes: Set<MappedAttributeKeyInfo<*, *, *>>
         get() = mapping.keys
 
     private val validationFlags: AtomicInteger = AtomicInteger(0)
 
-    fun copy(): ObservationAttributeMapping {
+    override fun copy(): ObservationAttributeMapping {
         return ObservationAttributeMapping(mapping)
     }
 
@@ -95,7 +96,7 @@ class ObservationAttributeMapping(
         return result
     }
 
-    fun validateTypes(force: Boolean = false): MutableComponent? = cacheableValidation(VALIDATION_FLAG_TYPES, force) {
+    override fun validateTypes(force: Boolean): MutableComponent? = cacheableValidation(VALIDATION_FLAG_TYPES, force) {
         for ((target, source) in mapping) {
             if (!(source.type.templateType canConvertTo target.templateType))
                 return TranslationKeys.Errors.attributeTypesIncompatible(source, target)
@@ -104,13 +105,13 @@ class ObservationAttributeMapping(
     }
 
 
-    fun validateStatic(force: Boolean = false): MutableComponent? {
+    override fun validateStatic(force: Boolean): MutableComponent? {
         return validateTypes(force)
     }
 
-    fun validateTargets(
+    override fun validateTargets(
         targetAttributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
-        force: Boolean = false,
+        force: Boolean,
     ): MutableComponent? = cacheableValidation(VALIDATION_FLAG_TARGET_ATTRIBUTES, force) {
         for (target in targetAttributes) {
             if (target !in mapping) {
@@ -120,22 +121,22 @@ class ObservationAttributeMapping(
         return null
     }
 
-    fun validateDynamic(
+    override fun validateDynamic(
         targetAttributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
-        force: Boolean = false,
+        force: Boolean,
     ): MutableComponent? {
         return validateTargets(targetAttributes, force)
     }
 
-    fun validate(
+    override fun validate(
         targetAttributes: Collection<MappedAttributeKeyInfo<*, *, *>>,
-        force: Boolean = false,
+        force: Boolean,
     ): MutableComponent? {
         if ((!force) && ((validationFlags.get() and VALIDATION_COMPLETE) == VALIDATION_COMPLETE)) return null
         return validateStatic() ?: validateDynamic(targetAttributes)
     }
 
-    fun findUnusedAttributeDataSources(
+    override fun findUnusedAttributeDataSources(
         sourceAttributes: Collection<AttributeDataSource<*>>,
         output: MutableSet<AttributeDataSource<*>>,
     ) {
@@ -144,7 +145,7 @@ class ObservationAttributeMapping(
     }
 
     context(attributeStore: IAttributeValueStore)
-    fun resolveAttributes(): Attributes {
+    override fun resolveAttributes(): Attributes {
         if (mapping.isEmpty()) {
             return Attributes.empty()
         }
@@ -154,7 +155,7 @@ class ObservationAttributeMapping(
     }
 
     context(attributeStore: IAttributeValueStore)
-    fun resolveAttributesToKeyValues(): List<MappedAttributeKeyValue<*, *>> {
+    override fun resolveAttributesToKeyValues(): List<MappedAttributeKeyValue<*, *>> {
         if (mapping.isEmpty()) {
             return emptyList()
         }
@@ -163,16 +164,16 @@ class ObservationAttributeMapping(
         }
     }
 
-    operator fun get(instrumentAttribute: MappedAttributeKeyInfo<*, *, *>): AttributeDataSource<*>? =
+    override operator fun get(instrumentAttribute: MappedAttributeKeyInfo<*, *, *>): AttributeDataSource<*>? =
         mapping[instrumentAttribute]
 
-    fun plus(instrumentAttribute: MappedAttributeKeyInfo<*, *, *>, attributeDataSource: AttributeDataSource<*>) =
+    override fun plus(instrumentAttribute: MappedAttributeKeyInfo<*, *, *>, attributeDataSource: AttributeDataSource<*>) =
         this + (instrumentAttribute to attributeDataSource)
 
-    operator fun plus(entry: Pair<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>>): ObservationAttributeMapping =
+    override operator fun plus(entry: Pair<MappedAttributeKeyInfo<*, *, *>, AttributeDataSource<*>>): ObservationAttributeMapping =
         ObservationAttributeMapping(mapping + entry)
 
-    operator fun minus(instrumentAttribute: MappedAttributeKeyInfo<*, *, *>): ObservationAttributeMapping {
+    override operator fun minus(instrumentAttribute: MappedAttributeKeyInfo<*, *, *>): ObservationAttributeMapping {
         val other = mapping - instrumentAttribute
         return if (other.size == mapping.size)
             this
@@ -180,7 +181,7 @@ class ObservationAttributeMapping(
             ObservationAttributeMapping(other)
     }
 
-    fun filterForInstrument(instrumentAttributes: Collection<MappedAttributeKeyInfo<*, *, *>>): ObservationAttributeMapping {
+    override fun filterForInstrument(instrumentAttributes: Collection<MappedAttributeKeyInfo<*, *, *>>): ObservationAttributeMapping {
         val unneededKeys = mapping.keys - instrumentAttributes.toSet()
         return if (unneededKeys.isEmpty())
             this
@@ -188,7 +189,7 @@ class ObservationAttributeMapping(
             ObservationAttributeMapping(mapping - unneededKeys)
     }
 
-    fun filterForInstrument(definition: IInstrumentDefinition): ObservationAttributeMapping {
+    override fun filterForInstrument(definition: IInstrumentDefinition): ObservationAttributeMapping {
         return filterForInstrument(definition.attributes.values)
     }
 

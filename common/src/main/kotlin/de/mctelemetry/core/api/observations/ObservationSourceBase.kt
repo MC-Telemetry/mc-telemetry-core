@@ -4,14 +4,16 @@ import com.mojang.serialization.Codec
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeInstance
-import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.persistence.DirectUnitCodec
+import de.mctelemetry.core.utils.EmptyAutoCloseable
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
+import net.minecraft.world.level.block.entity.BlockEntity
 
-abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAttributeValueStore.MapAttributeStore, I>> :
-    IObservationSource<SC, I> {
+abstract class ObservationSourceBase<SO, I : IObservationSourceInstance<SO, *, I>> :
+    IObservationSource<SO, I> {
 
     final override val attributes: IAttributeDateSourceReferenceSet by lazy {
         val attributes =
@@ -40,18 +42,25 @@ abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAtt
         return newValue
     }
 
-    abstract class InstanceBase<SC, out I : InstanceBase<SC, I>>(
-        override val source: ObservationSourceBase<SC, out I>
-    ) : IObservationSourceInstance<SC, IAttributeValueStore.MapAttributeStore, I> {
+    abstract class Simple<I : InstanceBase<BlockEntity, *, I>> : ObservationSourceBase<BlockEntity, I>() {
+        final override val sourceOwnerType: Class<BlockEntity>
+            get() = BlockEntity::class.java
+    }
 
-        context(sourceContext: SC)
-        override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
-            return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+    abstract class InstanceBase<SO, OC : AutoCloseable, out I : InstanceBase<SO, OC, I>>(
+        override val source: ObservationSourceBase<SO, out I>
+    ) : IObservationSourceInstance<SO, OC, I> {
+
+        abstract class Simple<out I : Simple<I>>(
+            source: ObservationSourceBase<BlockEntity, out I>
+        ) : InstanceBase<BlockEntity, EmptyAutoCloseable, I>(source) {
+            context(sourceOwner: BlockEntity, mapping: ObservationAttributeMapping)
+            final override fun createObservationContext(): EmptyAutoCloseable = EmptyAutoCloseable
         }
     }
 
-    abstract class SingletonBase<SC, I : SingletonBase<SC, I>> : ObservationSourceBase<SC, I>(),
-        IObservationSourceSingleton<SC, IAttributeValueStore.MapAttributeStore, I> {
+    abstract class SingletonBase<SO, OC : AutoCloseable, I : SingletonBase<SO, OC, I>> : ObservationSourceBase<SO, I>(),
+        IObservationSourceSingleton<SO, OC, I> {
 
         @Suppress("UNCHECKED_CAST")
         private val typedThis: I
@@ -60,9 +69,13 @@ abstract class ObservationSourceBase<SC, I : IObservationSourceInstance<SC, IAtt
         override val streamCodec: StreamCodec<in RegistryFriendlyByteBuf, I> = StreamCodec.unit(typedThis)
         override val codec: Codec<I> = DirectUnitCodec(typedThis)
 
-        context(sourceContext: SC)
-        override fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
-            return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+        abstract class Simple<I : Simple<I>> :
+            SingletonBase<BlockEntity, EmptyAutoCloseable, I>() {
+            final override val sourceOwnerType: Class<BlockEntity>
+                get() = BlockEntity::class.java
+
+            context(sourceOwner: BlockEntity, mapping: ObservationAttributeMapping)
+            final override fun createObservationContext(): EmptyAutoCloseable = EmptyAutoCloseable
         }
     }
 }

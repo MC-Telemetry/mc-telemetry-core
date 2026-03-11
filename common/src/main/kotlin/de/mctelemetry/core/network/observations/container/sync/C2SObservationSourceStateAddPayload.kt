@@ -53,7 +53,7 @@ data class C2SObservationSourceStateAddPayload(
             applyReceived(value, blockEntity)
         }
 
-        private fun <SC: Any> applyReceived(value: C2SObservationSourceStateAddPayload, blockEntity: ObservationSourceContainerBlockEntity<SC>) {
+        private fun <SO: Any> applyReceived(value: C2SObservationSourceStateAddPayload, blockEntity: ObservationSourceContainerBlockEntity<SO>) {
             val container = blockEntity.container
             val sourceInstance = value.sourceInstance
             if (sourceInstance.source !in container.observationSources) {
@@ -63,7 +63,7 @@ data class C2SObservationSourceStateAddPayload(
             assert(sourceInstance.sourceContextType.isAssignableFrom(ObservationSourceContainerBlockEntity::class.java))
             @Suppress("UNCHECKED_CAST")
             // cast is checked by being element in `container.observationSources`, all of which are of the given type
-            sourceInstance as IObservationSourceInstance<SC, *, *>
+            sourceInstance as IObservationSourceInstance<SO, *, *>
             container.addObservationSourceState(instance=sourceInstance)
         }
     }

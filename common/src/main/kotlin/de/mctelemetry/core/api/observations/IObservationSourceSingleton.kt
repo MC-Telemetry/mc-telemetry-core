@@ -4,15 +4,15 @@ import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
 
 interface IObservationSourceSingleton<
-        SC,
-        AS : IAttributeValueStore.Mutable,
-        I : IObservationSourceSingleton<SC, AS, I>
+        SO,
+        OC : AutoCloseable,
+        I : IObservationSourceSingleton<SO, OC, I>
         > :
-    IObservationSource<SC, I>,
-    IObservationSourceInstance<SC, AS, I> {
+    IObservationSource<SO, I>,
+    IObservationSourceInstance<SO, OC, I> {
 
     override val attributes: IAttributeDateSourceReferenceSet
 
-    override val source: IObservationSourceSingleton<SC, AS, I>
+    override val source: IObservationSourceSingleton<SO, OC, I>
         get() = this
 }

@@ -22,7 +22,7 @@ object ContainerScraperEnergyFillRatioObservationSource :
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "container_scraper.energy.fill_ratio")
     )
 
-    context(sourceContext: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
     override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

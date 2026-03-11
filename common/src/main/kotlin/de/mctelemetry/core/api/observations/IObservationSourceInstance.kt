@@ -5,23 +5,29 @@ import com.mojang.serialization.DynamicOps
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
+import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
 
 interface IObservationSourceInstance<
-        SC,
-        AS : IAttributeValueStore.Mutable,
-        out I : IObservationSourceInstance<SC, AS, I>
+        SO,
+        OC : AutoCloseable,
+        out I : IObservationSourceInstance<SO, OC, I>
         > {
-    val source: IObservationSource<SC, out I>
+    val source: IObservationSource<SO, out I>
 
     val attributes: IAttributeDateSourceReferenceSet
         get() = source.attributes
 
-    context(sourceContext: SC)
-    fun createAttributeStore(parent: IAttributeValueStore): AS
+    context(sourceOwner: SO, mapping: ObservationAttributeMapping)
+    fun createObservationContext(): OC
 
-    context(sourceContext: SC, attributeStore: AS)
+    context(sourceOwner: SO, observationContext: OC)
+    fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
+        return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
+    }
+
+    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
     fun observe(
         recorder: IObservationRecorder.Unresolved,
         unusedAttributes: Set<AttributeDataSource<*>>,
@@ -44,8 +50,8 @@ interface IObservationSourceInstance<
     }
 }
 
-val <SC> IObservationSourceInstance<SC, *, *>.sourceContextType: Class<SC>
-    get() = source.sourceContextType
+val <SO> IObservationSourceInstance<SO, *, *>.sourceContextType: Class<SO>
+    get() = source.sourceOwnerType
 
 @Suppress("UNCHECKED_CAST")
 context(ops: DynamicOps<T>)

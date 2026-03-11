@@ -4,7 +4,7 @@ import com.mojang.brigadier.StringReader
 import com.mojang.brigadier.arguments.ArgumentType
 import net.minecraft.network.chat.Component
 
-interface IParameterizedObservationSource<SC, I : IObservationSourceInstance<SC, *, I>> : IObservationSource<SC, I> {
+interface IParameterizedObservationSource<SO, I : IObservationSourceInstance<SO, *, I>> : IObservationSource<SO, I> {
 
     val parameters: Map<String, Parameter<*>>
 
