@@ -107,7 +107,9 @@ class ScraperBlockEntityStatusRenderLayer(entityRendererIn: GeoRenderer<ScraperB
             )
         }
 
-        override fun getRenderType(animatable: ScraperBlockEntity, texture: ResourceLocation): RenderType {
+        override fun getRenderType(animatable: ScraperBlockEntity, texture: ResourceLocation): RenderType? {
+            if (animatable.blockState.getValue(ObservationSourceContainerBlock.ERROR) == ObservationSourceErrorState.Type.NotConfigured)
+                return super.getRenderType(animatable, texture)
             return AutoGlowingTexture.getRenderType(texture)
         }
     }
