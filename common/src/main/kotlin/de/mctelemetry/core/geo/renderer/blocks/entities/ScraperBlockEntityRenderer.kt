@@ -17,7 +17,7 @@ class ScraperBlockEntityRenderer(context: BlockEntityRendererProvider.Context) :
     ) {
 
     companion object {
-        val Model: GeoModel<GeoAnimatable> =
+        private val Model: GeoModel<GeoAnimatable> =
             DefaultedBlockGeoModel(ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "scraper"))
 
         @Suppress("UNCHECKED_CAST")

@@ -1,16 +1,24 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [
-    {
-      "item": "mcotelcore:telemetry_core"
-    },
-    {
-      "item": "minecraft:observer"
-    },
-    {
-      "tag": "c:chests"
-    }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " C ",
+    "FMF",
+    " B "
   ],
+  "key": {
+    "F": {
+      "item": "mcotelcore:frame"
+    },
+    "M": {
+      "item": "mcotelcore:observation_module"
+    },
+    "C": {
+      "tag": "c:chests"
+    },
+    "B": {
+      "tag": "c:buckets/empty"
+    }
+  },
   "result": {
     "id": "mcotelcore:container_scraper",
     "count": 1

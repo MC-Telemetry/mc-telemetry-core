@@ -1,32 +1,29 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "ILS",
-    "RER",
-    "ICI"
+    "WWG",
+    "CES",
+    "WWG"
   ],
   "key": {
-    "I": {
-      "tag": "c:ingots/iron"
-    },
-    "L": {
-      "item": "minecraft:redstone_lamp"
-    },
     "S": {
       "item": "minecraft:spyglass"
-    },
-    "R": {
-      "tag": "c:dusts/redstone"
     },
     "E": {
       "item": "minecraft:ender_eye"
     },
     "C": {
       "item": "minecraft:comparator"
+    },
+    "G": {
+      "tag": "c:nuggets/gold"
+    },
+    "W": {
+      "tag": "minecraft:wooden_slabs"
     }
   },
   "result": {
-    "id": "mcotelcore:telemetry_core",
+    "id": "mcotelcore:observation_module",
     "count": 1
   }
 }

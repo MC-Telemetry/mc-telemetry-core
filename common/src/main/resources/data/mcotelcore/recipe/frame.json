@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "RSR",
+    "S S",
+    "RSR"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:deepslate"
+    },
+    "R": {
+      "tag": "c:rods"
+    }
+  },
+  "result": {
+    "id": "mcotelcore:frame",
+    "count": 4
+  }
+}

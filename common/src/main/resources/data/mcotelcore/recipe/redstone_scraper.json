@@ -1,16 +1,24 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [
-    {
-      "item": "mcotelcore:telemetry_core"
-    },
-    {
-      "item": "minecraft:observer"
-    },
-    {
-      "tag": "c:dusts/redstone"
-    }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " R ",
+    "FMF",
+    " C "
   ],
+  "key": {
+    "F": {
+      "item": "mcotelcore:frame"
+    },
+    "M": {
+      "item": "mcotelcore:observation_module"
+    },
+    "R": {
+      "tag": "c:dusts/redstone"
+    },
+    "C": {
+      "item": "minecraft:comparator"
+    }
+  },
   "result": {
     "id": "mcotelcore:redstone_scraper",
     "count": 1

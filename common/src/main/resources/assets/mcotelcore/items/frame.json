@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "mcotelcore:item/telemetry_core"
+    "model": "mcotelcore:item/frame"
   }
 }
