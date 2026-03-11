@@ -12,6 +12,7 @@ import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManage
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import dev.architectury.platform.Platform
 import dev.architectury.registry.client.rendering.BlockEntityRendererRegistry
+import dev.architectury.utils.Env
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -69,10 +70,12 @@ object OTelCoreModFabric : ModInitializer {
         ArgumentTypes.register {
             it.register()
         }
-        BlockEntityRendererRegistry.register(
-            OTelCoreModBlockEntityTypes.SCRAPER_BLOCK_ENTITY.get(),
-            ::ScraperBlockEntityRenderer
-        )
+        if(Platform.getEnvironment() == Env.CLIENT) {
+            BlockEntityRendererRegistry.register(
+                OTelCoreModBlockEntityTypes.SCRAPER_BLOCK_ENTITY.get(),
+                ::ScraperBlockEntityRenderer
+            )
+        }
     }
 
     override fun onInitialize() {

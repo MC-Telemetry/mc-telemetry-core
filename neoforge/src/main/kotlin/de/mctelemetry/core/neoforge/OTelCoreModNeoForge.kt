@@ -13,6 +13,8 @@ import de.mctelemetry.core.geo.renderer.blocks.entities.ScraperBlockEntityRender
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.neoforge.instruments.manager.client.register
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
+import dev.architectury.platform.Platform
+import dev.architectury.utils.Env
 import net.minecraft.Util
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.commands.synchronization.ArgumentTypeInfos
@@ -92,11 +94,13 @@ object OTelCoreModNeoForge {
                 }
             }
         }
-        MOD_BUS.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
-            event.registerBlockEntityRenderer(
-                OTelCoreModBlockEntityTypes.SCRAPER_BLOCK_ENTITY.get(),
-                ::ScraperBlockEntityRenderer
-            )
+        if (Platform.getEnvironment() == Env.CLIENT) {
+            MOD_BUS.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
+                event.registerBlockEntityRenderer(
+                    OTelCoreModBlockEntityTypes.SCRAPER_BLOCK_ENTITY.get(),
+                    ::ScraperBlockEntityRenderer
+                )
+            }
         }
     }
 
