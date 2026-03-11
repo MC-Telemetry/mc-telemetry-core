@@ -92,7 +92,7 @@ class C2SObservationSourceSettingsUpdatePayload(
                 return
             }
             val blockEntity = level.getBlockEntity(value.pos.pos)
-            if (blockEntity !is ObservationSourceContainerBlockEntity) {
+            if (blockEntity !is ObservationSourceContainerBlockEntity<*>) {
                 return
             }
             @Suppress("UNCHECKED_CAST")

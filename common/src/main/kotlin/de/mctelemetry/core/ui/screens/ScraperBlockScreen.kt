@@ -66,7 +66,7 @@ class ScraperBlockScreen(
     )
 ), AutoCloseable {
 
-    constructor(entity: ObservationSourceContainerBlockEntity) : this(
+    constructor(entity: ObservationSourceContainerBlockEntity<*>) : this(
         entity.globalPosOrThrow, entity.container,
         Component.translatable(entity.blockState.blockHolder.unwrapKey().get().location().toLanguageKey("block"))
     )

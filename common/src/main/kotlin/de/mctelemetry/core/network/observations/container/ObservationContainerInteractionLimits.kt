@@ -31,7 +31,7 @@ object ObservationContainerInteractionLimits {
             if (!level.isLoaded(pos)) return false
             if (checkBlockEntity) {
                 val blockEntity = level.getBlockEntity(pos)
-                if (blockEntity !is ObservationSourceContainerBlockEntity) {
+                if (blockEntity !is ObservationSourceContainerBlockEntity<*>) {
                     return false
                 }
             }
@@ -95,7 +95,7 @@ object ObservationContainerInteractionLimits {
             return false
         } else if (checkBlockEntity) {
             val blockEntity = playerLevel.getBlockEntity(pos)
-            if (blockEntity !is ObservationSourceContainerBlockEntity) {
+            if (blockEntity !is ObservationSourceContainerBlockEntity<*>) {
                 if (log) {
                     subLogger.trace(
                         "Player cannot interact because position does not contain an {}: Tried to interact with {} in {} is {}",

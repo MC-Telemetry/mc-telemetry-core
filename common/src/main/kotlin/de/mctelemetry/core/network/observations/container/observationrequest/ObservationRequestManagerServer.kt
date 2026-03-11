@@ -283,7 +283,7 @@ class ObservationRequestManagerServer(
         val observations: Map<Pair<IObservationSource<*, *>, ObservationSourceStateID>, RecordedObservations>
         if (!level.isLoaded(pos)) return
         val entity = level.getBlockEntity(pos)
-        if (entity !is ObservationSourceContainerBlockEntity) return
+        if (entity !is ObservationSourceContainerBlockEntity<*>) return
         val container = entity.containerIfInitialized ?: return
         val memoryRecorders: Byte2ObjectMap<MemoryObservationRecorder> = Byte2ObjectOpenHashMap()
         container.observe(

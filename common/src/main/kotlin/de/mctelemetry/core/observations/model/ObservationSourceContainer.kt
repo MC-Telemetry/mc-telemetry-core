@@ -1,6 +1,7 @@
 package de.mctelemetry.core.observations.model
 
 import com.mojang.serialization.DynamicOps
+import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeValueStore
 import de.mctelemetry.core.api.instruments.IInstrumentRegistration
@@ -21,13 +22,13 @@ import net.minecraft.gametest.framework.GameTestTimeoutException
 import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
-abstract class ObservationSourceContainer<SC> : AutoCloseable,
+abstract class ObservationSourceContainer<SC : Any> : AutoCloseable,
     ObservationSourceState.InstrumentSubRegistrationFactory<SC> {
 
     abstract val observationSources: Set<IObservationSource<in SC, *>>
     abstract val observationStates: Byte2ObjectMap<ObservationSourceState<in SC, *>>
 
-    abstract val context: SC
+    abstract val context: SC?
 
     abstract val instrumentManager: IInstrumentManager
 
@@ -163,6 +164,11 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
         forceObservation: Boolean = false,
     ) {
         withValidMapping(state, forceObservation = forceObservation) { mapping ->
+            val context = context
+            if (context == null) {
+                OTelCoreMod.logger.trace("Skipping observation of {} on {} due to missing context", state, this)
+                return
+            }
             val mappingResolver = ObservationMappingResolver(recorder, mapping)
             doObservation(
                 state.instance,
@@ -180,8 +186,13 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
         filter: Set<ObservationSourceState<in SC, *>>? = null,
         forceObservation: Boolean = false,
     ) {
-        val attributeLookup = createAttributeLookup()
+        if (observationStates.isEmpty()) return
         val context = context
+        if (context == null) {
+            OTelCoreMod.logger.trace("Skipping observations on {} due to missing context", this)
+            return
+        }
+        val attributeLookup = createAttributeLookup()
         var mappingResolver: ObservationMappingResolver? = null
         val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
         for (state in observationStates.values) {
@@ -217,6 +228,11 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
         forceObservation: Boolean = false,
     ) {
         withValidMapping(state, forceObservation = forceObservation) { mapping ->
+            val context = context
+            if (context == null) {
+                OTelCoreMod.logger.trace("Skipping observation of {} on {} due to missing context", state, this)
+                return
+            }
             doObservation(
                 state.instance,
                 context,
@@ -234,6 +250,11 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
         forceObservation: Boolean = false,
     ) {
         withValidMapping(state, forceObservation = forceObservation) { mapping ->
+            val context = context
+            if (context == null) {
+                OTelCoreMod.logger.trace("Skipping observation of {} on {} due to missing context", state, this)
+                return
+            }
             doObservation(
                 state.instance,
                 context,
@@ -250,8 +271,13 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
         filter: Set<ObservationSourceState<in SC, *>>? = null,
         forceObservation: Boolean = false,
     ) {
-        val attributeLookup = createAttributeLookup()
+        if (observationStates.isEmpty()) return
         val context = context
+        if (context == null) {
+            OTelCoreMod.logger.trace("Skipping observations on {} due to missing context", this)
+            return
+        }
+        val attributeLookup = createAttributeLookup()
         val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
         for (state in observationStates.values) {
             if (filter != null && state !in filter) continue
@@ -273,8 +299,13 @@ abstract class ObservationSourceContainer<SC> : AutoCloseable,
         filter: Set<ObservationSourceState<in SC, *>>? = null,
         forceObservation: Boolean = false,
     ) {
-        val attributeLookup = createAttributeLookup()
+        if (observationStates.isEmpty()) return
         val context = context
+        if (context == null) {
+            OTelCoreMod.logger.trace("Skipping observations on {} due to missing context", this)
+            return
+        }
+        val attributeLookup = createAttributeLookup()
         val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
         for (state in observationStates.values) {
             if (filter != null && state !in filter) continue
