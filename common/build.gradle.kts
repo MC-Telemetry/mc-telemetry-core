@@ -31,6 +31,10 @@ dependencies {
     // Should be fine to be specified as compileOnly due to implementation in subprojects?
     modCompileOnly("io.wispforest:owo-lib:${rootProject.property("owo_fabric_version")}")
 
+
+    // GeckoLib
+    modCompileOnly("software.bernie.geckolib:geckolib-common-1.21.1:${rootProject.property("geckolib_version")}")
+
     // opentelemetry
     compileOnly("io.opentelemetry:opentelemetry-api:${rootProject.property("otel_version")}")
 

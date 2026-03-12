@@ -3,12 +3,16 @@ package de.mctelemetry.core.fabric
 import com.mojang.brigadier.arguments.ArgumentType
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.api.OTelCoreModAPI
+import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.commands.types.ArgumentTypes
 import de.mctelemetry.core.fabric.instruments.manager.client.register
+import de.mctelemetry.core.geo.renderer.blocks.entities.ScraperBlockEntityRenderer
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
 import dev.architectury.platform.Platform
+import dev.architectury.registry.client.rendering.BlockEntityRendererRegistry
+import dev.architectury.utils.Env
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -65,6 +69,12 @@ object OTelCoreModFabric : ModInitializer {
         OTelCoreMod.registerObservationSources(observationSourceRegistry)
         ArgumentTypes.register {
             it.register()
+        }
+        if(Platform.getEnvironment() == Env.CLIENT) {
+            BlockEntityRendererRegistry.register(
+                OTelCoreModBlockEntityTypes.SCRAPER_BLOCK_ENTITY.get(),
+                ::ScraperBlockEntityRenderer
+            )
         }
     }
 

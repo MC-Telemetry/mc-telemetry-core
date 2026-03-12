@@ -1,0 +1,9 @@
+{
+  "parent": "mcotelcore:item/scraper_block_item",
+  "display": {
+    "fixed": {
+      "scale": [0.5, 0.5, 0.5],
+      "rotation": [0, 0, 0]
+    }
+  }
+}

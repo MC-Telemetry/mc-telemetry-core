@@ -1,16 +1,24 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [
-    {
-      "item": "mcotelcore:telemetry_core"
-    },
-    {
-      "item": "minecraft:observer"
-    },
-    {
-      "item": "minecraft:name_tag"
-    }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " N ",
+    "FMF",
+    " O "
   ],
+  "key": {
+    "F": {
+      "item": "mcotelcore:frame"
+    },
+    "M": {
+      "item": "mcotelcore:observation_module"
+    },
+    "N": {
+      "item": "minecraft:name_tag"
+    },
+    "O": {
+      "item": "minecraft:observer"
+    }
+  },
   "result": {
     "id": "mcotelcore:nbt_scraper",
     "count": 1

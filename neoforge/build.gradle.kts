@@ -189,6 +189,9 @@ dependencies {
     forgeRuntimeLibrary("io.wispforest.endec:gson:0.1.3.1")
     forgeRuntimeLibrary("io.wispforest.endec:jankson:0.1.3.1")
 
+    // GeckoLib
+    modImplementation("software.bernie.geckolib:geckolib-neoforge-1.21.1:${rootProject.property("geckolib_version")}")
+
     // opentelemetry
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
     common("io.opentelemetry:opentelemetry-api:$otelVersion")
@@ -221,6 +224,7 @@ tasks.processResources {
         "architectury_version" to rootProject.property("architectury_version"),
         "kotlin_for_forge_version" to rootProject.property("kotlin_for_forge_version"),
         "owo_neoforge_version" to rootProject.property("owo_neoforge_version"),
+        "geckolib_version" to rootProject.property("geckolib_version"),
     )
     inputs.properties(expansionMap)
 

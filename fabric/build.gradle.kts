@@ -153,6 +153,9 @@ dependencies {
     modImplementation("io.wispforest:owo-lib:${rootProject.property("owo_fabric_version")}")
     include("io.wispforest:owo-sentinel:${rootProject.property("owo_fabric_version")}")
 
+    // GeckoLib
+    modImplementation("software.bernie.geckolib:geckolib-fabric-1.21.1:${rootProject.property("geckolib_version")}")
+
     // opentelemetry
     api("io.opentelemetry:opentelemetry-api:$otelVersion")
     common("io.opentelemetry:opentelemetry-api:$otelVersion")
@@ -178,6 +181,7 @@ tasks.processResources {
         "architectury_version" to rootProject.property("architectury_version"),
         "fabric_kotlin_version" to rootProject.property("fabric_kotlin_version"),
         "owo_fabric_version" to rootProject.property("owo_fabric_version"),
+        "geckolib_version" to rootProject.property("geckolib_version"),
     )
     inputs.properties(expansionMap)
 

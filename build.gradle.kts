@@ -65,6 +65,13 @@ allprojects {
         // for more information about repositories.
         maven { url = uri("https://maven.wispforest.io/releases/") }
         maven { url = uri("https://maven.su5ed.dev/releases") }
+        maven {
+            name = "GeckoLib"
+            url = uri("https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/")
+            content {
+                includeGroup("software.bernie.geckolib")
+            }
+        }
     }
 
     dependencies {

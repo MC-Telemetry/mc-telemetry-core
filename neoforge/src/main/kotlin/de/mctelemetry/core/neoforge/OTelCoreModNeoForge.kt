@@ -6,11 +6,15 @@ import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeTemplate
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.blocks.ObservationSourceContainerBlock
+import de.mctelemetry.core.blocks.entities.OTelCoreModBlockEntityTypes
 import de.mctelemetry.core.blocks.entities.ObservationSourceContainerBlockEntity
 import de.mctelemetry.core.commands.types.ArgumentTypes
+import de.mctelemetry.core.geo.renderer.blocks.entities.ScraperBlockEntityRenderer
 import de.mctelemetry.core.instruments.manager.client.ClientInstrumentMetaManager
 import de.mctelemetry.core.neoforge.instruments.manager.client.register
 import de.mctelemetry.core.network.observations.container.observationrequest.ObservationRequestManagerClient
+import dev.architectury.platform.Platform
+import dev.architectury.utils.Env
 import net.minecraft.Util
 import net.minecraft.commands.synchronization.ArgumentTypeInfo
 import net.minecraft.commands.synchronization.ArgumentTypeInfos
@@ -19,6 +23,7 @@ import net.minecraft.core.registries.Registries
 import net.minecraft.world.level.chunk.status.ChunkStatus
 import net.neoforged.fml.common.Mod
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent
+import net.neoforged.neoforge.client.event.EntityRenderersEvent
 import net.neoforged.neoforge.event.level.ChunkEvent
 import net.neoforged.neoforge.registries.DeferredRegister
 import net.neoforged.neoforge.registries.NewRegistryEvent
@@ -68,8 +73,8 @@ object OTelCoreModNeoForge {
         FORGE_BUS.addListener(ChunkEvent.Load::class.java) { event ->
             if (event.chunk.highestGeneratedStatus.isOrAfter(ChunkStatus.FULL)) {
                 event.chunk.findBlocks({ state ->
-                                           state.hasBlockEntity() && state.block is ObservationSourceContainerBlock
-                                       }) { pos, state ->
+                    state.hasBlockEntity() && state.block is ObservationSourceContainerBlock
+                }) { pos, state ->
 
                     val entity = event.chunk.getBlockEntity(pos)
                     if (entity == null) {
@@ -87,6 +92,14 @@ object OTelCoreModNeoForge {
                     )
                     event.level.scheduleTick(pos, state.block, 1)
                 }
+            }
+        }
+        if (Platform.getEnvironment() == Env.CLIENT) {
+            MOD_BUS.addListener(EntityRenderersEvent.RegisterRenderers::class.java) { event ->
+                event.registerBlockEntityRenderer(
+                    OTelCoreModBlockEntityTypes.SCRAPER_BLOCK_ENTITY.get(),
+                    ::ScraperBlockEntityRenderer
+                )
             }
         }
     }
