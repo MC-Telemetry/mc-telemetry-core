@@ -8,6 +8,7 @@ import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.position.PositionObservationSourceBase
 import de.mctelemetry.core.platform.ModPlatformProvider
+import de.mctelemetry.core.utils.EmptyAutoCloseable
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.resources.ResourceKey
@@ -18,7 +19,7 @@ import net.minecraft.world.level.material.Fluid
 import kotlin.collections.iterator
 
 object ContainerScraperFluidAmountObservationSource :
-    PositionObservationSourceBase.PositionSingletonBase<ContainerScraperFluidAmountObservationSource>() {
+    PositionObservationSourceBase.PositionSingletonBase.Simple<ContainerScraperFluidAmountObservationSource>() {
 
     val observedFluid = BuiltinAttributeKeyTypes.FluidType.createObservationAttributeReference("fluid")
 
@@ -27,7 +28,7 @@ object ContainerScraperFluidAmountObservationSource :
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "container_scraper.fluid.amount")
     )
 
-    context(sourceOwner: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: BlockEntity, observationContext: EmptyAutoCloseable, attributeStore: IAttributeValueStore.Mutable)
     override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

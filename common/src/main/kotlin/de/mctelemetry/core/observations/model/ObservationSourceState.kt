@@ -17,11 +17,14 @@ import de.mctelemetry.core.persistence.SerializationAttributes
 import de.mctelemetry.core.utils.injectAttributeIntoContext
 import de.mctelemetry.core.utils.runWithExceptionCleanup
 import java.util.Optional
+import java.util.concurrent.atomic.AtomicReference
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 import kotlin.jvm.optionals.getOrNull
 
 typealias ObservationSourceStateID = UByte
 
-open class ObservationSourceState<SO, I : IObservationSourceInstance<SO, *, I>>(
+open class ObservationSourceState<SO, OC : AutoCloseable, I : IObservationSourceInstance<SO, OC, I>>(
     instance: I,
     val id: ObservationSourceStateID,
 ) : AutoCloseable, IInstrumentAvailabilityCallback<IInstrumentRegistration.Mutable<*>> {
@@ -41,11 +44,12 @@ open class ObservationSourceState<SO, I : IObservationSourceInstance<SO, *, I>>(
         }
         instanceField = value
         configuration?.mapping?.resetValidationFlags()
+        setObservationContext(null, silent = true)
         if (!silent) triggerOnDirty()
         return true
     }
 
-    protected val onDirtyListeners: MutableSet<(ObservationSourceState<SO, I>) -> Unit> = linkedSetOf()
+    protected val onDirtyListeners: MutableSet<(ObservationSourceState<SO, OC, I>) -> Unit> = linkedSetOf()
 
     var cascadeUpdates: Boolean = false
         set(value) {
@@ -131,6 +135,7 @@ open class ObservationSourceState<SO, I : IObservationSourceInstance<SO, *, I>>(
         try {
             if (cascadeUpdates) {
                 value?.mapping?.resetValidationFlags()
+                setObservationContext(null, silent = true)
                 if (instrument != value?.instrument) {
                     setInstrument(null, silent = true)
                 }
@@ -214,6 +219,54 @@ open class ObservationSourceState<SO, I : IObservationSourceInstance<SO, *, I>>(
 
     var isClosed: Boolean = false
 
+
+    open var context: OC?
+        get() {
+            return contextField.get()
+        }
+        set(value) {
+            setObservationContext(value)
+        }
+    protected val contextField: AtomicReference<OC?> = AtomicReference(null)
+
+    protected open fun setObservationContext(value: OC?, silent: Boolean = false, preferOld: Boolean = true) {
+        if (isClosed) throw IllegalStateException("ObservationSourceState is closed")
+        val oldValue = contextField.getAndSet(value)
+        if (oldValue === value) return
+        oldValue?.close()
+    }
+
+    open fun obtainObservationContext(owner: SO, silent: Boolean = false): Boolean {
+        if (isClosed) throw IllegalStateException("ObservationSourceState is closed")
+        if (contextField.get() != null) return true
+        val mapping = (configuration ?: return false).mapping
+        if (mapping.validateStatic(false) != null) return false
+        var newContextStored = false
+        val newContext = context(owner, mapping) {
+            instance.createObservationContext()
+        }
+        try {
+            if (isClosed) throw IllegalStateException("ObservationSourceState is closed")
+            newContextStored = contextField.compareAndSet(null, newContext)
+        } finally {
+            if (!newContextStored)
+                newContext.close()
+        }
+        if (newContextStored && !silent) {
+            triggerOnDirty()
+        }
+        return contextField.get() != null
+    }
+
+    inline fun obtainObservationContext(silent: Boolean = false, ownerProvider: () -> SO): Boolean {
+        contract {
+            callsInPlace(ownerProvider, InvocationKind.AT_MOST_ONCE)
+        }
+        if (isClosed) throw IllegalStateException("ObservationSourceState is closed")
+        if (context != null) return true
+        return obtainObservationContext(ownerProvider(), silent = silent)
+    }
+
     final override fun close() {
         close(false)
     }
@@ -222,12 +275,23 @@ open class ObservationSourceState<SO, I : IObservationSourceInstance<SO, *, I>>(
         isClosed = true
         try {
             try {
-                setInstrumentSubRegistration(null, silent)
+                try {
+                    setInstrumentSubRegistration(null, silent)
+                } finally {
+                    availabilityCallbackCloser = null
+                }
             } finally {
-                availabilityCallbackCloser = null
+                onDirtyListeners.clear()
             }
         } finally {
-            onDirtyListeners.clear()
+            var context = contextField.get()
+            while (context != null) {
+                val nextContext = contextField.compareAndExchange(context, null)
+                if (nextContext === context) {
+                    nextContext.close()
+                }
+                context = nextContext
+            }
         }
     }
 
@@ -396,14 +460,14 @@ open class ObservationSourceState<SO, I : IObservationSourceInstance<SO, *, I>>(
         }
     }
 
-    fun subscribeToDirty(block: (ObservationSourceState<SO, I>) -> Unit): AutoCloseable {
+    fun subscribeToDirty(block: (ObservationSourceState<SO, OC, I>) -> Unit): AutoCloseable {
         onDirtyListeners.add(block)
         return AutoCloseable {
             unsubscribeFromDirty(block)
         }
     }
 
-    fun unsubscribeFromDirty(block: (ObservationSourceState<SO, I>) -> Unit) {
+    fun unsubscribeFromDirty(block: (ObservationSourceState<SO, OC, I>) -> Unit) {
         onDirtyListeners.remove(block)
     }
 
@@ -518,7 +582,7 @@ open class ObservationSourceState<SO, I : IObservationSourceInstance<SO, *, I>>(
     interface InstrumentSubRegistrationFactory<out SO> {
 
         fun <T : IInstrumentRegistration.Mutable<T>> createInstrumentCallback(
-            state: ObservationSourceState<in SO, *>,
+            state: ObservationSourceState<in SO, *, *>,
             configuration: ObservationSourceConfiguration,
             instrument: IInstrumentRegistration.Mutable<*>,
         ): IInstrumentRegistration.Callback<T>

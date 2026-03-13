@@ -12,6 +12,7 @@ import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.IParameterizedObservationSource
 import de.mctelemetry.core.api.observations.IParameterizedObservationSource.Parameter.Companion.get
 import de.mctelemetry.core.api.observations.position.PositionObservationSourceBase
+import de.mctelemetry.core.utils.EmptyAutoCloseable
 import de.mctelemetry.core.utils.observePreferred
 import de.mctelemetry.core.utils.observePreferredAccumulatedNullable
 import de.mctelemetry.core.utils.withoutValue
@@ -30,13 +31,16 @@ import net.minecraft.world.level.block.entity.SignBlockEntity
 import net.minecraft.world.level.block.entity.SignText
 
 object NbtScraperSignLineObservationSource :
-    PositionObservationSourceBase<NbtScraperSignLineObservationSource.Instance>(),
+    PositionObservationSourceBase<BlockEntity, NbtScraperSignLineObservationSource.Instance>(),
     IParameterizedObservationSource<BlockEntity, NbtScraperSignLineObservationSource.Instance> {
 
     override val id: ResourceKey<IObservationSource<*, *>> = ResourceKey.create(
         OTelCoreModAPI.ObservationSources,
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "nbt_scraper.sign_line")
     )
+
+    override val sourceOwnerType: Class<BlockEntity>
+        get() = BlockEntity::class.java
 
     val lineParameter: IParameterizedObservationSource.Parameter<Int> = IParameterizedObservationSource.Parameter(
         name = "line",
@@ -71,13 +75,13 @@ object NbtScraperSignLineObservationSource :
         it.line
     })
 
-    class Instance(val line: Byte) : PositionInstanceBase<Instance>(NbtScraperSignLineObservationSource) {
+    class Instance(val line: Byte) : PositionInstanceBase.Simple<Instance>(NbtScraperSignLineObservationSource) {
 
         init {
             require(line in 0..(2 * SignText.LINES)) { "Line number must be between 0 and ${2 * SignText.LINES}" }
         }
 
-        context(sourceOwner: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+        context(sourceOwner: BlockEntity, observationContext: EmptyAutoCloseable, attributeStore: IAttributeValueStore.Mutable)
         override fun observePosition(
             recorder: IObservationRecorder.Unresolved,
             level: ServerLevel,

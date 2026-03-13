@@ -140,7 +140,7 @@ class ScraperBlockEntityStatusRenderLayer(entityRendererIn: GeoRenderer<ScraperB
         val renderer = renderer
         val statusModel = StatusModel.getBakedModel(StatusModel.getModelResource(animatable, renderer))
         val statusTexture = StatusModel.getTextureResource(animatable, renderer)
-        val statusRenderType = StatusModel.getRenderType(animatable, statusTexture)
+        val statusRenderType = StatusModel.getRenderType(animatable, statusTexture) ?: return
         renderer.reRender(
             statusModel,
             poseStack,

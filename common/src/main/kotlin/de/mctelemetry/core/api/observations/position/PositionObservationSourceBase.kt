@@ -12,9 +12,11 @@ import de.mctelemetry.core.api.observations.position.IPositionObservationSourceI
 import de.mctelemetry.core.observations.model.ObservationAttributeMapping
 import de.mctelemetry.core.persistence.DirectUnitCodec
 import de.mctelemetry.core.utils.EmptyAutoCloseable
+import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.StreamCodec
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.entity.BlockEntity
 
 abstract class PositionObservationSourceBase<
@@ -30,13 +32,12 @@ abstract class PositionObservationSourceBase<
         return defaultFacingAccessor(sourceOwner)
     }
 
-    abstract class PositionInstanceBase<SO: BlockEntity, OC: AutoCloseable, out I : PositionInstanceBase<SO, OC, I>>(
+    abstract class PositionInstanceBase<SO : BlockEntity, OC : AutoCloseable, out I : PositionInstanceBase<SO, OC, I>>(
         override val source: PositionObservationSourceBase<SO, out I>
     ) : InstanceBase<SO, OC, I>(source),
-        IPositionObservationSourceInstance<SO, OC, I>
-    {
+        IPositionObservationSourceInstance<SO, OC, I> {
 
-        context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
+        context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.Mutable)
         final override fun observe(
             recorder: IObservationRecorder.Unresolved,
             unusedAttributes: Set<AttributeDataSource<*>>
@@ -51,7 +52,7 @@ abstract class PositionObservationSourceBase<
         }
     }
 
-    abstract class PositionSingletonBase<SO: BlockEntity, OC: AutoCloseable, I : PositionSingletonBase<SO, OC, I>> :
+    abstract class PositionSingletonBase<SO : BlockEntity, OC : AutoCloseable, I : PositionSingletonBase<SO, OC, I>> :
         PositionObservationSourceBase<SO, I>(),
         IPositionObservationSource<SO, I>,
         IPositionObservationSourceInstance<SO, OC, I>,

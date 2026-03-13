@@ -22,7 +22,7 @@ interface IPositionSideObservationSourceInstance<
     val directions: Iterable<Direction>
         get() = Direction.entries
 
-    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.Mutable)
     fun observeUnsided(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,
@@ -33,7 +33,7 @@ interface IPositionSideObservationSourceInstance<
         observeSide(recorder, level, position, (facing ?: Direction.UP).opposite, unusedAttributes)
     }
 
-    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.Mutable)
     fun observeSide(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,
@@ -42,7 +42,7 @@ interface IPositionSideObservationSourceInstance<
         unusedAttributes: Set<AttributeDataSource<*>>
     )
 
-    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.Mutable)
     override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

@@ -23,11 +23,11 @@ interface IObservationSourceInstance<
     fun createObservationContext(): OC
 
     context(sourceOwner: SO, observationContext: OC)
-    fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.MapAttributeStore {
+    fun createAttributeStore(parent: IAttributeValueStore): IAttributeValueStore.Mutable {
         return IAttributeValueStore.MapAttributeStore(attributes.references, parent)
     }
 
-    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.Mutable)
     fun observe(
         recorder: IObservationRecorder.Unresolved,
         unusedAttributes: Set<AttributeDataSource<*>>,

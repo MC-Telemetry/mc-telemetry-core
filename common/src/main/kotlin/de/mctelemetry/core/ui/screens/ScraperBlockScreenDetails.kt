@@ -42,7 +42,7 @@ import java.util.regex.PatternSyntaxException
 class ScraperBlockScreenDetails(
     val parent: Screen,
     val globalPos: GlobalPos,
-    val sourceState: ObservationSourceState<*,*>,
+    val sourceState: ObservationSourceState<*, *, *>,
     instrumentName: String,
     mapping: ObservationAttributeMapping = sourceState.configuration?.mapping ?: ObservationAttributeMapping.empty(),
     val sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.instance.attributes,
@@ -57,7 +57,7 @@ class ScraperBlockScreenDetails(
     constructor(
         parent: Screen,
         position: GlobalPos,
-        sourceState: ObservationSourceState<*,*>,
+        sourceState: ObservationSourceState<*, *, *>,
         configuration: ObservationSourceConfiguration? = sourceState.configuration,
         sourceAttributes: IAttributeDateSourceReferenceSet = sourceState.instance.attributes,
     ) : this(

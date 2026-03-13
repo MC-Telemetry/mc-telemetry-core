@@ -25,10 +25,10 @@ open class ScraperBlockEntity(
         return blockEntityType as BlockEntityType<out ScraperBlockEntity>
     }
 
-    override val context: ScraperBlockEntity?
+    override val owner: ScraperBlockEntity?
         get() = this
 
-    override val contextClass: Class<out ScraperBlockEntity>
+    override val ownerType: Class<out ScraperBlockEntity>
         get() = ScraperBlockEntity::class.java
 
     override fun registerControllers(controllers: AnimatableManager.ControllerRegistrar) {

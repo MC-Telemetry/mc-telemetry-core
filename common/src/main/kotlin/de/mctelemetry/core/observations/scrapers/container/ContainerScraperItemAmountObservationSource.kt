@@ -8,6 +8,7 @@ import de.mctelemetry.core.api.observations.IObservationRecorder
 import de.mctelemetry.core.api.observations.IObservationSource
 import de.mctelemetry.core.api.observations.position.PositionObservationSourceBase
 import de.mctelemetry.core.platform.ModPlatformProvider
+import de.mctelemetry.core.utils.EmptyAutoCloseable
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.resources.ResourceKey
@@ -17,7 +18,7 @@ import net.minecraft.world.item.Item
 import net.minecraft.world.level.block.entity.BlockEntity
 
 object ContainerScraperItemAmountObservationSource :
-    PositionObservationSourceBase.PositionSingletonBase<ContainerScraperItemAmountObservationSource>() {
+    PositionObservationSourceBase.PositionSingletonBase.Simple<ContainerScraperItemAmountObservationSource>() {
 
     val observedItem = BuiltinAttributeKeyTypes.ItemType.createObservationAttributeReference("item")
 
@@ -26,7 +27,7 @@ object ContainerScraperItemAmountObservationSource :
         ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "container_scraper.item.amount")
     )
 
-    context(sourceOwner: BlockEntity, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: BlockEntity, observationContext: EmptyAutoCloseable, attributeStore: IAttributeValueStore.Mutable)
     override fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,

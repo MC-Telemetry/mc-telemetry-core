@@ -25,50 +25,50 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
     ObservationSourceState.InstrumentSubRegistrationFactory<SO> {
 
     abstract val observationSources: Set<IObservationSource<in SO, *>>
-    abstract val observationStates: Byte2ObjectMap<ObservationSourceState<in SO, *>>
+    abstract val observationStates: Byte2ObjectMap<ObservationSourceState<in SO, *, *>>
 
-    abstract val context: SO?
+    abstract val owner: SO?
 
     abstract val instrumentManager: IInstrumentManager
 
     open fun createAttributeLookup(): IAttributeValueStore = IAttributeValueStore.empty()
 
-    protected val onStateAddedCallbacks: MutableSet<(ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit> =
+    protected val onStateAddedCallbacks: MutableSet<(ObservationSourceContainer<SO>, ObservationSourceState<in SO, *, *>) -> Unit> =
         linkedSetOf()
 
 
-    protected val onStateRemovedCallbacks: MutableSet<(ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit> =
+    protected val onStateRemovedCallbacks: MutableSet<(ObservationSourceContainer<SO>, ObservationSourceState<in SO, *, *>) -> Unit> =
         linkedSetOf()
 
-    fun subscribeOnStateAdded(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit): AutoCloseable {
+    fun subscribeOnStateAdded(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *, *>) -> Unit): AutoCloseable {
         onStateAddedCallbacks.add(block)
         return AutoCloseable {
             unsubscribeOnStateAdded(block)
         }
     }
 
-    fun unsubscribeOnStateAdded(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit) {
+    fun unsubscribeOnStateAdded(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *, *>) -> Unit) {
         onStateAddedCallbacks.remove(block)
     }
 
-    fun subscribeOnStateRemoved(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit): AutoCloseable {
+    fun subscribeOnStateRemoved(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *, *>) -> Unit): AutoCloseable {
         onStateRemovedCallbacks.add(block)
         return AutoCloseable {
             unsubscribeOnStateRemoved(block)
         }
     }
 
-    fun unsubscribeOnStateRemoved(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *>) -> Unit) {
+    fun unsubscribeOnStateRemoved(block: (ObservationSourceContainer<SO>, ObservationSourceState<in SO, *, *>) -> Unit) {
         onStateRemovedCallbacks.remove(block)
     }
 
-    protected fun triggerStateAdded(state: ObservationSourceState<in SO, *>) {
+    protected fun triggerStateAdded(state: ObservationSourceState<in SO, *, *>) {
         onStateAddedCallbacks.forEachRethrow {
             it(this, state)
         }
     }
 
-    protected fun triggerStateRemoved(state: ObservationSourceState<in SO, *>) {
+    protected fun triggerStateRemoved(state: ObservationSourceState<in SO, *, *>) {
         onStateRemovedCallbacks.forEachRethrow {
             it(this, state)
         }
@@ -86,7 +86,7 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
         }
     }
 
-    protected open fun setupCallback(state: ObservationSourceState<in SO, *>) {
+    protected open fun setupCallback(state: ObservationSourceState<in SO, *, *>) {
         dirtyRunningTracker.add(state.id.toByte())
         state.subscribeToDirty(::onDirty)
         runWithExceptionCleanup({ state.unsubscribeFromDirty(::onDirty) }) {
@@ -106,7 +106,7 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
         }
     }
 
-    protected fun onDirty(sourceState: ObservationSourceState<in SO, *>) {
+    protected fun onDirty(sourceState: ObservationSourceState<in SO, *, *>) {
         if (!dirtyRunningTracker.add(sourceState.id.toByte())) return
         try {
             if (!sourceState.isClosed) {
@@ -122,7 +122,7 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
         }
     }
 
-    protected open fun doOnDirty(state: ObservationSourceState<in SO, *>) {
+    protected open fun doOnDirty(state: ObservationSourceState<in SO, *, *>) {
         if (state.cascadeUpdates && !state.isClosed) {
             val instrumentManager = instrumentManager
             if (instrumentManager is IMutableInstrumentManager) {
@@ -130,11 +130,12 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
                     state.updateRegistration(instrumentManager, this)
                 }
             }
+            state.obtainObservationContext { owner ?: return }
         }
     }
 
     override fun <T : IInstrumentRegistration.Mutable<T>> createInstrumentCallback(
-        state: ObservationSourceState<in SO, *>,
+        state: ObservationSourceState<in SO, *, *>,
         configuration: ObservationSourceConfiguration,
         instrument: IInstrumentRegistration.Mutable<*>,
     ): IInstrumentRegistration.Callback<T> {
@@ -143,7 +144,7 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
     }
 
     protected inner class DefaultCallback(
-        private val state: ObservationSourceState<in SO, *>,
+        private val state: ObservationSourceState<in SO, *, *>,
     ) : IInstrumentRegistration.Callback<IInstrumentRegistration> {
 
         override fun observe(instrument: IInstrumentRegistration, recorder: IObservationRecorder.Resolved) {
@@ -159,19 +160,19 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
 
     open fun observe(
         recorder: IObservationRecorder.Resolved,
-        state: ObservationSourceState<in SO, *>,
+        state: ObservationSourceState<in SO, *, *>,
         forceObservation: Boolean = false,
     ) {
-        withValidMapping(state, forceObservation = forceObservation) { mapping ->
-            val context = context
-            if (context == null) {
-                OTelCoreMod.logger.trace("Skipping observation of {} on {} due to missing context", state, this)
-                return
-            }
+        val owner = owner
+        if (owner == null) {
+            OTelCoreMod.logger.trace("Skipping observation of {} on {} due to missing owner", state, this)
+            validateMapping(state, forceValidation = forceObservation)
+            return
+        }
+        withValidMappingAndContext(state, owner, forceObservation = forceObservation) { mapping ->
             val mappingResolver = ObservationMappingResolver(recorder, mapping)
-            doObservation(
-                state.instance,
-                context,
+            state.doObservation(
+                owner,
                 createAttributeLookup(),
                 mutableSetOf(),
                 mapping,
@@ -182,13 +183,17 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
 
     open fun observe(
         recorder: IObservationRecorder.Resolved,
-        filter: Set<ObservationSourceState<in SO, *>>? = null,
+        filter: Set<ObservationSourceState<in SO, *, *>>? = null,
         forceObservation: Boolean = false,
     ) {
         if (observationStates.isEmpty()) return
-        val context = context
-        if (context == null) {
-            OTelCoreMod.logger.trace("Skipping observations on {} due to missing context", this)
+        val owner = owner
+        if (owner == null) {
+            OTelCoreMod.logger.trace("Skipping observations on {} due to missing owner", this)
+            for (state in observationStates.values) {
+                if (filter != null && state !in filter) continue
+                validateMapping(state, forceValidation = forceObservation)
+            }
             return
         }
         val attributeLookup = createAttributeLookup()
@@ -198,15 +203,14 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
             if (filter != null && state !in filter) continue
             try {
                 if ((!forceObservation) && !state.shouldBeObserved()) continue
-                withValidMapping(state, forceObservation = forceObservation) { mapping ->
+                withValidMappingAndContext(state, owner, forceObservation = forceObservation) { mapping ->
                     if (mappingResolver != null) {
                         mappingResolver.mapping = mapping
                     } else {
                         mappingResolver = ObservationMappingResolver(recorder, mapping)
                     }
-                    doObservation(
-                        state.instance,
-                        context,
+                    state.doObservation(
+                        owner,
                         attributeLookup,
                         unusedAttributesSet,
                         mapping,
@@ -223,18 +227,18 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
 
     open fun observe(
         recorder: IObservationRecorder.Unresolved,
-        state: ObservationSourceState<in SO, *>,
+        state: ObservationSourceState<in SO, *, *>,
         forceObservation: Boolean = false,
     ) {
-        withValidMapping(state, forceObservation = forceObservation) { mapping ->
-            val context = context
-            if (context == null) {
-                OTelCoreMod.logger.trace("Skipping observation of {} on {} due to missing context", state, this)
-                return
-            }
-            doObservation(
-                state.instance,
-                context,
+        val owner = owner
+        if (owner == null) {
+            OTelCoreMod.logger.trace("Skipping observation of {} on {} due to missing owner", state, this)
+            validateMapping(state, forceValidation = forceObservation)
+            return
+        }
+        withValidMappingAndContext(state, owner, forceObservation = forceObservation) { mapping ->
+            state.doObservation(
+                owner,
                 createAttributeLookup(),
                 mutableSetOf(),
                 mapping,
@@ -244,19 +248,19 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
     }
 
     open fun observe(
-        recorderFactory: (ObservationAttributeMapping, ObservationSourceState<in SO, *>) -> IObservationRecorder.Unresolved,
-        state: ObservationSourceState<in SO, *>,
+        recorderFactory: (ObservationAttributeMapping, ObservationSourceState<in SO, *, *>) -> IObservationRecorder.Unresolved,
+        state: ObservationSourceState<in SO, *, *>,
         forceObservation: Boolean = false,
     ) {
-        withValidMapping(state, forceObservation = forceObservation) { mapping ->
-            val context = context
-            if (context == null) {
-                OTelCoreMod.logger.trace("Skipping observation of {} on {} due to missing context", state, this)
-                return
-            }
-            doObservation(
-                state.instance,
-                context,
+        val owner = owner
+        if (owner == null) {
+            OTelCoreMod.logger.trace("Skipping observation of {} on {} due to missing owner", state, this)
+            validateMapping(state, forceValidation = forceObservation)
+            return
+        }
+        withValidMappingAndContext(state, owner, forceObservation = forceObservation) { mapping ->
+            state.doObservation(
+                owner,
                 createAttributeLookup(),
                 mutableSetOf(),
                 mapping,
@@ -267,23 +271,26 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
 
     open fun observe(
         recorder: IObservationRecorder.Unresolved,
-        filter: Set<ObservationSourceState<in SO, *>>? = null,
+        filter: Set<ObservationSourceState<in SO, *, *>>? = null,
         forceObservation: Boolean = false,
     ) {
         if (observationStates.isEmpty()) return
-        val context = context
-        if (context == null) {
-            OTelCoreMod.logger.trace("Skipping observations on {} due to missing context", this)
+        val owner = owner
+        if (owner == null) {
+            OTelCoreMod.logger.trace("Skipping observations on {} due to missing owner", this)
+            for (state in observationStates.values) {
+                if (filter != null && state !in filter) continue
+                validateMapping(state, forceValidation = forceObservation)
+            }
             return
         }
         val attributeLookup = createAttributeLookup()
         val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
         for (state in observationStates.values) {
             if (filter != null && state !in filter) continue
-            withValidMapping(state, forceObservation = forceObservation) { mapping ->
-                doObservation(
-                    state.instance,
-                    context,
+            withValidMappingAndContext(state, owner, forceObservation = forceObservation) { mapping ->
+                state.doObservation(
+                    owner,
                     attributeLookup,
                     unusedAttributesSet,
                     mapping,
@@ -294,24 +301,27 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
     }
 
     open fun observe(
-        recorderFactory: (ObservationAttributeMapping, ObservationSourceState<in SO, *>) -> IObservationRecorder.Unresolved,
-        filter: Set<ObservationSourceState<in SO, *>>? = null,
+        recorderFactory: (ObservationAttributeMapping, ObservationSourceState<in SO, *, *>) -> IObservationRecorder.Unresolved,
+        filter: Set<ObservationSourceState<in SO, *, *>>? = null,
         forceObservation: Boolean = false,
     ) {
         if (observationStates.isEmpty()) return
-        val context = context
-        if (context == null) {
-            OTelCoreMod.logger.trace("Skipping observations on {} due to missing context", this)
+        val owner = owner
+        if (owner == null) {
+            OTelCoreMod.logger.trace("Skipping observations on {} due to missing owner", this)
+            for (state in observationStates.values) {
+                if (filter != null && state !in filter) continue
+                validateMapping(state, forceValidation = forceObservation)
+            }
             return
         }
         val attributeLookup = createAttributeLookup()
         val unusedAttributesSet: MutableSet<AttributeDataSource<*>> = mutableSetOf()
         for (state in observationStates.values) {
             if (filter != null && state !in filter) continue
-            withValidMapping(state, forceObservation = forceObservation) { mapping ->
-                doObservation(
-                    state.instance,
-                    context,
+            withValidMappingAndContext(state, owner, forceObservation = forceObservation) { mapping ->
+                state.doObservation(
+                    owner,
                     attributeLookup,
                     unusedAttributesSet,
                     mapping,
@@ -321,8 +331,12 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
         }
     }
 
+    protected fun validateMapping(state: ObservationSourceState<in SO, *, *>, forceValidation: Boolean = false) {
+        withValidMapping(state, forceValidation) {}
+    }
+
     protected inline fun withValidMapping(
-        state: ObservationSourceState<in SO, *>,
+        state: ObservationSourceState<in SO, *, *>,
         forceObservation: Boolean = false,
         observationBlock: (ObservationAttributeMapping) -> Unit,
     ) {
@@ -348,15 +362,39 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
         }
     }
 
-    protected open fun doObservation(
-        sourceInstance: IObservationSourceInstance<in SO, *, *>,
+    protected inline fun withValidMappingAndContext(
+        state: ObservationSourceState<in SO, *, *>,
+        owner: SO,
+        forceObservation: Boolean = false,
+        observationBlock: (ObservationAttributeMapping) -> Unit
+    ) {
+        contract {
+            callsInPlace(observationBlock, InvocationKind.AT_MOST_ONCE)
+        }
+        withValidMapping(state, forceObservation) { mapping ->
+            //TODO: check if registration changes because of observation context change (can trigger dirty)
+            if (!state.obtainObservationContext(owner)) {
+                OTelCoreMod.logger.trace(
+                    "Skipping observation of {} on {} for {} due to missing context",
+                    state,
+                    this,
+                    owner
+                )
+                return
+            }
+            observationBlock(mapping)
+        }
+    }
+
+    protected open fun <OC : AutoCloseable> ObservationSourceState<in SO, OC, *>.doObservation(
         sourceOwner: SO,
         parentStore: IAttributeValueStore,
         unusedAttributesSet: MutableSet<AttributeDataSource<*>>,
         mapping: ObservationAttributeMapping,
         recorder: IObservationRecorder.Unresolved,
     ) {
-        context(sourceOwner) {
+        val sourceInstance = instance
+        context(sourceOwner, context ?: return) {
             val attributeStore = sourceInstance.createAttributeStore(parentStore)
             unusedAttributesSet.clear()
             mapping.findUnusedAttributeDataSources(attributeStore.references, unusedAttributesSet)
@@ -371,11 +409,11 @@ abstract class ObservationSourceContainer<SO : Any> : AutoCloseable,
     abstract fun <T> addObservationSourceState(
         source: IObservationSource<in SO, *>,
         data: T? = null
-    ): ObservationSourceState<in SO, *>
+    ): ObservationSourceState<in SO, *, *>
 
     abstract fun addObservationSourceState(
         instance: IObservationSourceInstance<in SO, *, *>
-    ): ObservationSourceState<in SO, *>
+    ): ObservationSourceState<in SO, *, *>
 
     abstract fun removeObservationSourceState(id: ObservationSourceStateID): Boolean
 }

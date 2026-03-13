@@ -171,7 +171,7 @@ class InstrumentGameTestHelper(
         registerFinalizer: IGameTestHelperFinalizer.FinalizerRegistration = IGameTestHelperFinalizer.FinalizerRegistration.TEST_END,
         customizer: IGaugeInstrumentBuilder<*>.(originalName: String, isDouble: Boolean) -> Unit = { _, _ -> },
     ): Map<String, Either<ILongInstrumentRegistration.Mutable<*>, IDoubleInstrumentRegistration.Mutable<*>>> {
-        val observationSourceMap: Map<String, List<Pair<ObservationSourceContainerBlockEntity<*>, ObservationSourceState<*, *>>>> =
+        val observationSourceMap: Map<String, List<Pair<ObservationSourceContainerBlockEntity<*>, ObservationSourceState<*, *, *>>>> =
             BlockPos.betweenClosedStream(gameTestHelper.bounds.contract(1.0, 1.0, 1.0))
                 .asSequence()
                 .mapNotNull { blockPos ->
@@ -208,7 +208,7 @@ class InstrumentGameTestHelper(
         }
         // two passes through observationSourceMap to first check all, then instantiate all
         val completedInstruments = ArrayDeque<AutoCloseable>(observationSourceMap.size)
-        val originalConfigurations = ArrayDeque<Pair<ObservationSourceState<*, *>, ObservationSourceConfiguration?>>()
+        val originalConfigurations = ArrayDeque<Pair<ObservationSourceState<*, *, *>, ObservationSourceConfiguration?>>()
         gameTestHelper.finalizer(registerFinalizer) {
             originalConfigurations.consumeAllRethrow { (state, config) ->
                 state.configuration = config
@@ -418,7 +418,7 @@ class InstrumentGameTestHelper(
         internal inline fun <T> GameTestHelper.configureObservationSource(
             pos: BlockPos,
             stateID: ObservationSourceStateID,
-            block: (ObservationSourceState<*, *>) -> T,
+            block: (ObservationSourceState<*, *, *>) -> T,
         ): T {
             val containerEntity: ObservationSourceContainerBlockEntity<*> = this.getBlockEntityC(pos)
             val states = containerEntity.observationStatesIfInitialized

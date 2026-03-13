@@ -21,7 +21,7 @@ interface IPositionObservationSourceInstance<
 
     override val source: IPositionObservationSource<SO, out I>
 
-    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.Mutable)
     fun observePosition(
         recorder: IObservationRecorder.Unresolved,
         level: ServerLevel,
@@ -30,7 +30,7 @@ interface IPositionObservationSourceInstance<
         unusedAttributes: Set<AttributeDataSource<*>>
     )
 
-    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
+    context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.Mutable)
     override fun observe(recorder: IObservationRecorder.Unresolved, unusedAttributes: Set<AttributeDataSource<*>>) {
         observeDefaultImpl(recorder, unusedAttributes)
     }
@@ -45,7 +45,7 @@ interface IPositionObservationSourceInstance<
             return null
         }
 
-        context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.MapAttributeStore)
+        context(sourceOwner: SO, observationContext: OC, attributeStore: IAttributeValueStore.Mutable)
         protected inline fun <SO: BlockEntity, OC: AutoCloseable> IPositionObservationSourceInstance<SO, OC, *>.observeDefaultImpl(
             recorder: IObservationRecorder.Unresolved,
             unusedAttributes: Set<AttributeDataSource<*>>,
