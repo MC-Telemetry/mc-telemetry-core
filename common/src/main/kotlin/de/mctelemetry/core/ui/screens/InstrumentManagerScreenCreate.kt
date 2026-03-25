@@ -1,6 +1,7 @@
 package de.mctelemetry.core.ui.screens
 
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.create
 import de.mctelemetry.core.api.instruments.manager.client.IClientWorldInstrumentManager
 import de.mctelemetry.core.api.instruments.manager.client.sendGaugeInstrument
@@ -41,6 +42,8 @@ class InstrumentManagerScreenCreate(
         val saveButton = rootComponent.childWidgetByIdOrThrow<ButtonComponent>("save")
 
         val instrumentNameTextBox = rootComponent.childWidgetByIdOrThrow<TextBoxComponent>("instrument-name")
+        instrumentNameTextBox.setMaxLength(OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH)
+
         val useDecimalsCheckBox = rootComponent.childByIdOrThrow<SmallCheckboxComponent>("instrument-use-decimals")
 
         val attributesList = observableListOf<AttributeCreatorEntry>()

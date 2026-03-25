@@ -2,6 +2,7 @@ package de.mctelemetry.core.ui.components
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException
 import de.mctelemetry.core.OTelCoreMod
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.observations.IParameterizedObservationSource
 import de.mctelemetry.core.api.observations.IParameterizedObservationSource.Parameter.Companion.setFromText
 import io.wispforest.owo.ui.component.Components
@@ -110,6 +111,7 @@ class ParameterInputComponent(
         entryList.child(nameLabel)
 
         val textBox = ParameterValidationTextBoxComponent(parameter, Sizing.fill(60))
+        textBox.setMaxLength(OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_NAME_MAX_LENGTH)
         entryList.child(textBox as Component)
 
         list.child(entryList)

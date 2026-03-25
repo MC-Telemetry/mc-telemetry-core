@@ -175,6 +175,7 @@ class ScraperBlockScreenDetails(
 
         val metricNameTextBox = rootComponent.childWidgetByIdOrThrow<SuggestingTextBoxComponent>("metric-name")
         metricNameTextBox.setMaxLength(OTelCoreModAPI.Limits.INSTRUMENT_NAME_MAX_LENGTH)
+
         instrumentNameObservable.onChange {
             val it = instrumentName
             if (it == metricNameTextBox.value) return@onChange

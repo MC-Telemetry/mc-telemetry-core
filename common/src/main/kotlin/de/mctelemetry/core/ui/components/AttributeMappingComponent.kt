@@ -2,6 +2,7 @@ package de.mctelemetry.core.ui.components
 
 import de.mctelemetry.core.OTelCoreMod
 import de.mctelemetry.core.TranslationKeys
+import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.api.attributes.AttributeDataSource
 import de.mctelemetry.core.api.attributes.IAttributeDateSourceReferenceSet
 import de.mctelemetry.core.api.attributes.IAttributeKeyTypeInstance
@@ -123,6 +124,7 @@ class AttributeMappingComponent(
             val valueCol = Containers.verticalFlow(Sizing.fill(60), Sizing.content())
 
             val customInput = Components.textBox(Sizing.expand())
+            customInput.setMaxLength(OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_NAME_MAX_LENGTH)
             customInput.setEditable(false)
 
             val selectedOption: SelectBoxComponentEntry<AttributeMappingSources> = when (selected) {

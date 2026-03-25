@@ -47,6 +47,7 @@ class AttributeCreatorComponent(
 
             val valueCol = Containers.verticalFlow(Sizing.fill(80), Sizing.content())
             val nameInput = Components.textBox(Sizing.expand(), attributeEntry.name)
+            nameInput.setMaxLength(OTelCoreModAPI.Limits.INSTRUMENT_ATTRIBUTES_NAME_MAX_LENGTH)
             nameInput.onChanged().subscribe {
                 attributeEntry.name = it
             }
