@@ -1,5 +1,7 @@
 package de.mctelemetry.core.api.attributes
 
+import com.mojang.brigadier.StringReader
+import com.mojang.brigadier.exceptions.CommandSyntaxException
 import com.mojang.serialization.Codec
 import de.mctelemetry.core.api.OTelCoreModAPI
 import io.netty.buffer.ByteBuf
@@ -148,6 +150,20 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<Boolean> = Boolean::class.java
 
         override fun format(value: Boolean): Boolean = value
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (subtype) {
+                StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): Boolean? {
+            return when (subtype) {
+                StringType -> (value as String).toBooleanStrictOrNull() ?: return null
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
     }
 
     object LongType : IAttributeKeyTypeInstance.InstanceType<Long, Long, LongType> {
@@ -163,6 +179,20 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<Long> = Long::class.java
 
         override fun format(value: Long): Long = value
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): Long? {
+            return when (subtype) {
+                StringType -> (value as String).toLongOrNull()
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (subtype) {
+                StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
     }
 
     object DoubleType : IAttributeKeyTypeInstance.InstanceType<Double, Double, DoubleType> {
@@ -178,6 +208,20 @@ object NativeAttributeKeyTypes {
         override val valueType: Class<Double> = Double::class.java
 
         override fun format(value: Double): Double = value
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): Double? {
+            return when (subtype) {
+                StringType -> (value as String).toDoubleOrNull()
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (subtype) {
+                StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
     }
 
     object StringArrayType : IAttributeKeyTypeInstance.InstanceType<List<String>, List<String>, StringArrayType> {
@@ -196,6 +240,68 @@ object NativeAttributeKeyTypes {
             ByteBufCodecs.collection({ if (it == 0) emptyList() else ArrayList(it) }, ByteBufCodecs.STRING_UTF8)
 
         override fun format(value: List<String>): List<String> = value
+
+        override fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (supertype) {
+                StringType -> true
+                else -> false
+            }
+        }
+
+        override fun <R : Any> convertDirectlyTo(
+            supertype: IAttributeKeyTypeTemplate<R, *, *>,
+            value: List<String>
+        ): R? {
+            @Suppress("UNCHECKED_CAST") // known values from when-matching
+            return when (supertype) {
+                StringType -> value.joinToString(",") {
+                    buildString {
+                        append("\"")
+                        append(it.replace("\\", "\\\\").replace("\"", "\\\""))
+                        append("\"")
+                    }
+                } as R
+
+                else -> null
+            }
+        }
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (subtype) {
+                StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
+
+        override fun <R : Any> convertDirectlyFrom(
+            subtype: IAttributeKeyTypeTemplate<R, *, *>,
+            value: R
+        ): List<String>? {
+            return when (subtype) {
+                StringType -> (value as String).let {
+                    val reader = StringReader(it)
+                    buildList {
+                        try {
+                            if (!reader.canRead()) return@buildList
+                            while (true) {
+                                add(reader.readQuotedString())
+                                reader.skipWhitespace()
+                                if (reader.canRead()) {
+                                    reader.expect(',')
+                                    reader.skipWhitespace()
+                                } else {
+                                    break
+                                }
+                            }
+                        } catch (_: CommandSyntaxException) {
+                            return null
+                        }
+                    }
+                }
+
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
     }
 
     object BooleanArrayType : IAttributeKeyTypeInstance.InstanceType<List<Boolean>, List<Boolean>, BooleanArrayType> {
@@ -258,6 +364,28 @@ object NativeAttributeKeyTypes {
                 }
             }
 
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (subtype) {
+                StringType -> true
+                StringArrayType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
+
+        override fun <R : Any> convertDirectlyFrom(
+            subtype: IAttributeKeyTypeTemplate<R, *, *>,
+            value: R
+        ): List<Boolean>? {
+            @Suppress("UNCHECKED_CAST") // known values from when-matching
+            return when (subtype) {
+                StringType -> (value as String).splitToSequence(' ', ',')
+                    .mapNotNull { word -> word.trim().takeUnless { it.isEmpty() } }
+                    .mapTo(mutableListOf()) { it.toBooleanStrictOrNull() ?: return null }
+
+                StringArrayType -> (value as List<String>).map { it.toBooleanStrictOrNull() ?: return null }
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
     }
 
     object LongArrayType : IAttributeKeyTypeInstance.InstanceType<List<Long>, List<Long>, LongArrayType> {
@@ -278,6 +406,29 @@ object NativeAttributeKeyTypes {
             ByteBufCodecs.collection({ if (it == 0) emptyList() else LongArrayList(it) }, ByteBufCodecs.VAR_LONG)
 
         override fun format(value: List<Long>): List<Long> = value
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (subtype) {
+                StringType -> true
+                StringArrayType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
+
+        override fun <R : Any> convertDirectlyFrom(
+            subtype: IAttributeKeyTypeTemplate<R, *, *>,
+            value: R
+        ): List<Long>? {
+            @Suppress("UNCHECKED_CAST") // known values from when-matching
+            return when (subtype) {
+                StringType -> (value as String).splitToSequence(' ', ',')
+                    .mapNotNull { word -> word.trim().takeUnless { it.isEmpty() } }
+                    .mapTo(mutableListOf()) { it.toLongOrNull() ?: return null }
+
+                StringArrayType -> (value as List<String>).map { it.toLongOrNull() ?: return null }
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
     }
 
     object DoubleArrayType : IAttributeKeyTypeInstance.InstanceType<List<Double>, List<Double>, DoubleArrayType> {
@@ -299,5 +450,29 @@ object NativeAttributeKeyTypes {
             ByteBufCodecs.collection({ if (it == 0) emptyList() else DoubleArrayList(it) }, ByteBufCodecs.DOUBLE)
 
         override fun format(value: List<Double>): List<Double> = value
+
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (subtype) {
+                StringType -> true
+                StringArrayType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
+
+        override fun <R : Any> convertDirectlyFrom(
+            subtype: IAttributeKeyTypeTemplate<R, *, *>,
+            value: R
+        ): List<Double>? {
+            @Suppress("UNCHECKED_CAST") // known values from when-matching
+            return when (subtype) {
+                StringType -> (value as String).splitToSequence(' ', ',')
+                    .mapNotNull { word -> word.trim().takeUnless { it.isEmpty() } }
+                    .mapTo(mutableListOf()) { it.toDoubleOrNull() ?: return null }
+
+                StringArrayType -> (value as List<String>).map { it.toDoubleOrNull() ?: return null }
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
     }
 }

@@ -61,6 +61,7 @@
   "mcotelcore.attribute_types.minecraft.uuid": "UUID",
   "mcotelcore.attribute_types.minecraft.item": "Item",
   "mcotelcore.attribute_types.minecraft.fluid": "Fluid",
+  "mcotelcore.attribute_types.minecraft.resource_location": "ResourceLocation",
   "errors.mcotelcore.metricsaccessor.missing": "No metrics-accessor found",
   "errors.mcotelcore.metric.name.empty": "Metric name must not be empty",
   "errors.mcotelcore.metric.name.invalid_char": "Metric name has invalid character at index %2$c: %1$d",

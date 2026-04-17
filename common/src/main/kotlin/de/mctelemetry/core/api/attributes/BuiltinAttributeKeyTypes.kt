@@ -1,13 +1,17 @@
 package de.mctelemetry.core.api.attributes
 
+import com.mojang.brigadier.StringReader
+import com.mojang.brigadier.exceptions.CommandSyntaxException
 import com.mojang.serialization.Codec
 import de.mctelemetry.core.api.OTelCoreModAPI
 import de.mctelemetry.core.persistence.RegistryIdFieldCodec
 import io.netty.buffer.ByteBuf
+import net.minecraft.commands.arguments.DimensionArgument
 import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.core.GlobalPos
 import net.minecraft.core.UUIDUtil
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.RegistryFriendlyByteBuf
 import net.minecraft.network.codec.ByteBufCodecs
@@ -28,6 +32,7 @@ object BuiltinAttributeKeyTypes {
         FluidType,
         DirectionType,
         UUIDType,
+        ResourceLocationType,
     )
 
     object BlockPosType : IAttributeKeyTypeInstance.InstanceType<BlockPos, List<Long>, BlockPosType> {
@@ -53,6 +58,7 @@ object BuiltinAttributeKeyTypes {
         override fun canConvertDirectlyTo(supertype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
             return when (supertype) {
                 NativeAttributeKeyTypes.StringType -> true
+                NativeAttributeKeyTypes.StringArrayType -> true
                 else -> false
             }
         }
@@ -68,6 +74,25 @@ object BuiltinAttributeKeyTypes {
                 ) as R
 
                 else -> null
+            }
+        }
+
+        private val regex = Regex("""(-?\d+)\s*[,\s]\s*(-?\d+)\s*[,\s]\s*(-?\d+)""")
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when(subtype){
+                NativeAttributeKeyTypes.StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): BlockPos? {
+            return when(subtype) {
+                NativeAttributeKeyTypes.StringType -> (value as String).let {
+                    val match = regex.matchEntire(it) ?: return@let null
+                    BlockPos(match.groupValues[1].toInt(), match.groupValues[2].toInt(), match.groupValues[3].toInt())
+                }
+                else ->super.convertDirectlyFrom(subtype, value)
             }
         }
     }
@@ -113,6 +138,43 @@ object BuiltinAttributeKeyTypes {
                 else -> null
             }
         }
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when(subtype) {
+                NativeAttributeKeyTypes.StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): GlobalPos? {
+            return when(subtype) {
+                NativeAttributeKeyTypes.StringType -> (value as String).let {
+                    val reader = StringReader(value)
+                    val dimensionResourceLocation = try {
+                        DimensionArgument.dimension().parse(reader)
+                    } catch (_: CommandSyntaxException) {
+                        return@let null
+                    }
+                    if(!reader.canRead()) return null
+                    when(reader.peek()) {
+                        ' ' -> {
+                            reader.skipWhitespace()
+                            when(reader.peek()) {
+                                '@', ',' -> reader.skip()
+                                else -> {}
+                            }
+                        }
+                        '@', ',' -> reader.skip()
+                        else -> return null
+                    }
+                    reader.skipWhitespace()
+                    val blockPos = BlockPosType.convertFrom(NativeAttributeKeyTypes.StringType, reader.remaining) ?: return@let null
+                    val rk = ResourceKey.create(Registries.DIMENSION, dimensionResourceLocation)
+                    GlobalPos(rk , blockPos)
+                }
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
     }
 
     object DirectionType : IAttributeKeyTypeInstance.InstanceType<Direction, String, DirectionType> {
@@ -129,6 +191,22 @@ object BuiltinAttributeKeyTypes {
 
         override fun format(value: Direction): String {
             return value.toString()
+        }
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): Direction? {
+            return when(subtype) {
+                NativeAttributeKeyTypes.StringType -> (value as String).let {
+                    Direction.byName(value.lowercase())
+                }
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when(subtype) {
+                NativeAttributeKeyTypes.StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
         }
     }
 
@@ -150,6 +228,23 @@ object BuiltinAttributeKeyTypes {
             val key = value.`arch$holder`().unwrapKey().orElseThrow()
             return key.location().toString()
         }
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): Item? {
+            return when(subtype) {
+                NativeAttributeKeyTypes.StringType -> (value as String).let {
+                    val rl = ResourceLocation.tryParse(it) ?: return null
+                    return BuiltInRegistries.ITEM.getOptional(rl).orElse(null)
+                }
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when(subtype) {
+                NativeAttributeKeyTypes.StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
     }
 
     object FluidType : IAttributeKeyTypeInstance.InstanceType<Fluid, String, FluidType> {
@@ -170,6 +265,23 @@ object BuiltinAttributeKeyTypes {
             val key = value.`arch$holder`().unwrapKey().orElseThrow()
             return key.location().toString()
         }
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): Fluid? {
+            return when(subtype) {
+                NativeAttributeKeyTypes.StringType -> (value as String).let {
+                    val rl = ResourceLocation.tryParse(it) ?: return null
+                    return BuiltInRegistries.FLUID.getOptional(rl).orElse(null)
+                }
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when(subtype) {
+                NativeAttributeKeyTypes.StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
     }
 
     object UUIDType : IAttributeKeyTypeInstance.InstanceType<UUID, String, UUIDType> {
@@ -187,6 +299,69 @@ object BuiltinAttributeKeyTypes {
 
         override fun format(value: UUID): String {
             return value.toString()
+        }
+
+        override fun <R : Any> convertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<R, *, *>, value: R): UUID? {
+            return when (subtype) {
+                NativeAttributeKeyTypes.StringType -> try {
+                    UUID.fromString(value as String)
+                } catch (_: IllegalArgumentException) {
+                    null
+                }
+
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (subtype) {
+                NativeAttributeKeyTypes.StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
+        }
+    }
+
+    object ResourceLocationType :
+        IAttributeKeyTypeInstance.InstanceType<ResourceLocation, String, ResourceLocationType> {
+
+        override val id: ResourceKey<IAttributeKeyTypeTemplate<*, *, *>>
+            get() = ResourceKey.create(
+                OTelCoreModAPI.AttributeTypeMappings,
+                ResourceLocation.fromNamespaceAndPath(OTelCoreModAPI.MOD_ID, "resource_location")
+            )
+
+        override fun format(value: ResourceLocation): String {
+            return value.toString()
+        }
+
+        override val baseType: GenericAttributeType<String>
+            get() = GenericAttributeType.STRING
+        override val valueCodec: Codec<ResourceLocation>
+            get() = ResourceLocation.CODEC
+        override val valueStreamCodec: StreamCodec<in ByteBuf, ResourceLocation>
+            get() = ResourceLocation.STREAM_CODEC
+        override val valueType: Class<ResourceLocation>
+            get() = ResourceLocation::class.java
+
+        override fun <R : Any> convertDirectlyFrom(
+            subtype: IAttributeKeyTypeTemplate<R, *, *>,
+            value: R
+        ): ResourceLocation? {
+            return when (subtype) {
+                FluidType -> (value as Fluid).`arch$registryName`()
+                ItemType -> (value as Item).`arch$registryName`()
+                NativeAttributeKeyTypes.StringType -> ResourceLocation.tryParse(value as String)
+                else -> super.convertDirectlyFrom(subtype, value)
+            }
+        }
+
+        override fun canConvertDirectlyFrom(subtype: IAttributeKeyTypeTemplate<*, *, *>): Boolean {
+            return when (subtype) {
+                FluidType -> true
+                ItemType -> true
+                NativeAttributeKeyTypes.StringType -> true
+                else -> super.canConvertDirectlyFrom(subtype)
+            }
         }
     }
 }
